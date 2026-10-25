@@ -108,7 +108,6 @@ export interface Database {
           color: string | null;
           is_system_reserved: boolean;
           rollover_policy: 'carry_forward' | 'sweep_to_regular' | 'reset';
-          sort_order: number;
           created_at: string;
           updated_at: string;
         };
@@ -121,7 +120,6 @@ export interface Database {
           color?: string | null;
           is_system_reserved?: boolean;
           rollover_policy?: 'carry_forward' | 'sweep_to_regular' | 'reset';
-          sort_order?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -134,43 +132,66 @@ export interface Database {
           color?: string | null;
           is_system_reserved?: boolean;
           rollover_policy?: 'carry_forward' | 'sweep_to_regular' | 'reset';
-          sort_order?: number;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      budget_periods: {
+        Row: {
+          id: string;
+          user_id: string;
+          period_key: string;
+          is_closed: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          period_key: string;
+          is_closed?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          period_key?: string;
+          is_closed?: boolean;
+          created_at?: string;
         };
         Relationships: [];
       };
       envelope_allocations: {
         Row: {
           id: string;
-          envelope_id: string;
           user_id: string;
-          year_month: string;
+          envelope_id: string;
+          period_id: string;
           allocated_paise: number;
-          carried_over_paise: number;
           spent_paise: number;
+          carried_over_paise: number;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          envelope_id: string;
           user_id: string;
-          year_month: string;
+          envelope_id: string;
+          period_id: string;
           allocated_paise?: number;
-          carried_over_paise?: number;
           spent_paise?: number;
+          carried_over_paise?: number;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          envelope_id?: string;
           user_id?: string;
-          year_month?: string;
+          envelope_id?: string;
+          period_id?: string;
           allocated_paise?: number;
-          carried_over_paise?: number;
           spent_paise?: number;
+          carried_over_paise?: number;
           created_at?: string;
           updated_at?: string;
         };

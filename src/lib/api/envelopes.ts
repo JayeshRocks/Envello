@@ -10,7 +10,6 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#38bdf8', // sky-400
     is_system_reserved: true,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
-    sort_order: 1,
   },
   {
     name: 'Emergency',
@@ -19,7 +18,6 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#f87171', // red-400
     is_system_reserved: true,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
-    sort_order: 2,
   },
   {
     name: 'Essentials',
@@ -28,7 +26,6 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#fbbf24', // amber-400
     is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
-    sort_order: 3,
   },
   {
     name: 'Gym',
@@ -37,7 +34,6 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#34d399', // emerald-400
     is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
-    sort_order: 4,
   },
   {
     name: 'Outing',
@@ -46,7 +42,6 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#c084fc', // purple-400
     is_system_reserved: false,
     rollover_policy: 'sweep_to_regular' as EnvelopeRolloverPolicy,
-    sort_order: 5,
   },
   {
     name: 'Birthdays',
@@ -55,9 +50,55 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#f472b6', // pink-400
     is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
-    sort_order: 6,
   },
 ];
+
+/**
+ * Gets an existing budget_period record for a user and period key (YYYY-MM),
+ * or creates one if it does not yet exist.
+ */
+export async function getOrCreateBudgetPeriod(userId: string, periodKey: string): Promise<string> {
+  const { data: existing, error: fetchError } = await supabase
+    .from('budget_periods')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('period_key', periodKey)
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error('[Envello API] Error fetching budget period:', fetchError.message);
+  }
+
+  if (existing?.id) {
+    return existing.id;
+  }
+
+  const { data: created, error: insertError } = await supabase
+    .from('budget_periods')
+    .insert({
+      user_id: userId,
+      period_key: periodKey,
+      is_closed: false,
+    })
+    .select('id')
+    .single();
+
+  if (insertError) {
+    // If a concurrent insert occurred, attempt one final lookup
+    const { data: retry } = await supabase
+      .from('budget_periods')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('period_key', periodKey)
+      .maybeSingle();
+
+    if (retry?.id) return retry.id;
+    console.error('[Envello API] Error creating budget period:', insertError.message);
+    throw insertError;
+  }
+
+  return created.id;
+}
 
 /**
  * Ensures a user has the default six financial envelopes seeded in their personal workspace.
@@ -87,7 +128,6 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
     color: env.color,
     is_system_reserved: env.is_system_reserved,
     rollover_policy: env.rollover_policy,
-    sort_order: env.sort_order,
   }));
 
   const { error: insertError } = await supabase.from('envelopes').insert(rowsToInsert);
@@ -107,24 +147,27 @@ export async function fetchEnvelopesWithAllocations(
   // 1. Ensure user has default envelopes seeded
   await ensureDefaultEnvelopes(userId);
 
-  // 2. Fetch all user envelopes ordered by sort_order
+  // 2. Resolve budget_period ID
+  const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+
+  // 3. Fetch all user envelopes
   const { data: envelopesData, error: envError } = await supabase
     .from('envelopes')
     .select('*')
     .eq('user_id', userId)
-    .order('sort_order', { ascending: true });
+    .order('created_at', { ascending: true });
 
   if (envError) {
     console.error('[Envello API] Error fetching envelopes:', envError.message);
     throw envError;
   }
 
-  // 3. Fetch allocations for the specified month
+  // 4. Fetch allocations for the specified period
   const { data: allocationsData, error: allocError } = await supabase
     .from('envelope_allocations')
     .select('*')
     .eq('user_id', userId)
-    .eq('year_month', yearMonth);
+    .eq('period_id', periodId);
 
   if (allocError) {
     console.error('[Envello API] Error fetching allocations:', allocError.message);
@@ -136,7 +179,7 @@ export async function fetchEnvelopesWithAllocations(
     allocMap.set(alloc.envelope_id, alloc);
   }
 
-  // 4. Combine into EnvelopeWithAllocation domain objects
+  // 5. Combine into EnvelopeWithAllocation domain objects
   return (envelopesData || []).map((env) => {
     const alloc = allocMap.get(env.id);
     const allocatedPaise = BigInt(alloc?.allocated_paise ?? 0);
@@ -152,7 +195,6 @@ export async function fetchEnvelopesWithAllocations(
       color: env.color ?? undefined,
       isSystemReserved: env.is_system_reserved,
       rolloverPolicy: env.rollover_policy as EnvelopeRolloverPolicy,
-      sortOrder: env.sort_order,
       allocationId: alloc?.id,
       allocatedPaise,
       carriedOverPaise,
@@ -171,11 +213,14 @@ export async function upsertEnvelopeAllocation(
   yearMonth: string,
   allocatedPaise: bigint
 ): Promise<void> {
+  const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+
   const { data: existing } = await supabase
     .from('envelope_allocations')
     .select('id')
+    .eq('user_id', userId)
     .eq('envelope_id', envelopeId)
-    .eq('year_month', yearMonth)
+    .eq('period_id', periodId)
     .maybeSingle();
 
   if (existing?.id) {
@@ -187,18 +232,24 @@ export async function upsertEnvelopeAllocation(
       })
       .eq('id', existing.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Envello API] Error updating allocation:', error.message);
+      throw error;
+    }
   } else {
     const { error } = await supabase.from('envelope_allocations').insert({
       envelope_id: envelopeId,
+      period_id: periodId,
       user_id: userId,
-      year_month: yearMonth,
       allocated_paise: Number(allocatedPaise),
       carried_over_paise: 0,
       spent_paise: 0,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Envello API] Error inserting allocation:', error.message);
+      throw error;
+    }
   }
 }
 
@@ -217,19 +268,23 @@ export async function transferBetweenEnvelopes(
     throw new Error('Transfer amount must be greater than zero.');
   }
 
+  const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+
   // 1. Get current allocations
   const { data: fromAlloc } = await supabase
     .from('envelope_allocations')
     .select('*')
+    .eq('user_id', userId)
     .eq('envelope_id', fromEnvelopeId)
-    .eq('year_month', yearMonth)
+    .eq('period_id', periodId)
     .maybeSingle();
 
   const { data: toAlloc } = await supabase
     .from('envelope_allocations')
     .select('*')
+    .eq('user_id', userId)
     .eq('envelope_id', toEnvelopeId)
-    .eq('year_month', yearMonth)
+    .eq('period_id', periodId)
     .maybeSingle();
 
   const currentFromPaise = BigInt(fromAlloc?.allocated_paise ?? 0);
@@ -256,26 +311,36 @@ export async function createCustomEnvelope(
     rolloverPolicy: EnvelopeRolloverPolicy;
   }
 ): Promise<void> {
-  const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  // Generate safe slug
+  const baseSlug =
+    data.slug ||
+    data.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') ||
+    'category';
 
-  const { data: maxSortOrderData } = await supabase
+  // Check if slug already exists for this user to prevent unique constraint conflict
+  const { data: existingSlug } = await supabase
     .from('envelopes')
-    .select('sort_order')
+    .select('id')
     .eq('user_id', userId)
-    .order('sort_order', { ascending: false })
-    .limit(1);
+    .eq('slug', baseSlug)
+    .maybeSingle();
 
-  const nextSortOrder = (maxSortOrderData?.[0]?.sort_order ?? 6) + 1;
+  const finalSlug = existingSlug?.id
+    ? `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`
+    : baseSlug;
 
   const { error } = await supabase.from('envelopes').insert({
     user_id: userId,
     name: data.name.trim(),
-    slug,
+    slug: finalSlug,
     icon: data.icon || 'Folder',
     color: data.color || '#38bdf8',
     is_system_reserved: false,
     rollover_policy: data.rolloverPolicy,
-    sort_order: nextSortOrder,
   });
 
   if (error) {
