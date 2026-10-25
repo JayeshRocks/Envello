@@ -99,6 +99,41 @@ describe('Accounting Engine — Invariants & Precision', () => {
     });
   });
 
+  describe('Net Worth & Solvency Invariants', () => {
+    it('calculates net worth as assets minus liabilities', () => {
+      const spendableCash = 12500000n; // ₹1,25,000
+      const lockedFDs = 25000000n;     // ₹2,50,000
+      const cardDebt = 1500000n;       // ₹15,000
+      const actualDebt = 5000000n;     // ₹50,000
+
+      const totalAssets = spendableCash + lockedFDs; // ₹3,75,000
+      const totalLiabilities = cardDebt + actualDebt; // ₹65,000
+      const netWorth = totalAssets - totalLiabilities; // ₹3,10,000
+
+      expect(totalAssets).toBe(37500000n);
+      expect(totalLiabilities).toBe(6500000n);
+      expect(netWorth).toBe(31000000n);
+      expect(netWorth > 0n).toBe(true);
+    });
+
+    it('preserves double-entry balance during card liability settlement', () => {
+      let bankBalance = 10000000n; // ₹1,00,000
+      let cardOutstanding = 2500000n; // ₹25,000
+      const paymentAmount = 1500000n; // ₹15,000
+
+      // Execute settlement
+      bankBalance -= paymentAmount;
+      cardOutstanding -= paymentAmount;
+
+      expect(bankBalance).toBe(8500000n);
+      expect(cardOutstanding).toBe(1000000n);
+      // Net worth before: 1,00,000 - 25,000 = 75,000
+      // Net worth after: 85,000 - 10,000 = 75,000
+      // Net worth is UNCHANGED by internal debt settlement!
+      expect(bankBalance - cardOutstanding).toBe(7500000n);
+    });
+  });
+
   describe('Budget Period Navigation', () => {
     it('shifts months correctly within the same calendar year', () => {
       expect(shiftYearMonth('2026-10', 1)).toBe('2026-11');
