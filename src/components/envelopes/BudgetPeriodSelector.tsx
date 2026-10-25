@@ -28,7 +28,8 @@ export const BudgetPeriodSelector: React.FC<BudgetPeriodSelectorProps> = ({
         <button
           onClick={onPrev}
           title="Previous Month"
-          className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
+          aria-label="Previous Month"
+          className="p-2 sm:p-1.5 min-h-[34px] min-w-[34px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -41,7 +42,8 @@ export const BudgetPeriodSelector: React.FC<BudgetPeriodSelectorProps> = ({
         <button
           onClick={onNext}
           title="Next Month"
-          className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
+          aria-label="Next Month"
+          className="p-2 sm:p-1.5 min-h-[34px] min-w-[34px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

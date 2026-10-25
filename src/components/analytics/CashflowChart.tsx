@@ -17,6 +17,8 @@ interface MonthlyCashflow {
 }
 
 export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) => {
+  const [activeMonthKey, setActiveMonthKey] = React.useState<string | null>(null);
+
   const monthlyData = useMemo<MonthlyCashflow[]>(() => {
     const map = new Map<string, { income: bigint; expense: bigint }>();
 
@@ -111,13 +113,13 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
       </div>
 
       {/* Summary KPI Strip */}
-      <div className="grid grid-cols-3 gap-3 p-3.5 rounded-xl bg-neutral-900/60 border border-white/5">
+      <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 p-3.5 rounded-xl bg-neutral-900/60 border border-white/5">
         <div>
           <div className="text-[11px] text-neutral-400 flex items-center space-x-1">
             <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
             <span>Monthly Inflow</span>
           </div>
-          <div className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
+          <div className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5 truncate">
             {formatINR(currentMonth.incomePaise)}
           </div>
         </div>
@@ -126,7 +128,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
             <ArrowDownRight className="w-3.5 h-3.5 text-rose-400" />
             <span>Monthly Outflow</span>
           </div>
-          <div className="text-sm sm:text-base font-bold font-mono text-rose-400 mt-0.5">
+          <div className="text-sm sm:text-base font-bold font-mono text-rose-400 mt-0.5 truncate">
             {formatINR(currentMonth.expensePaise)}
           </div>
         </div>
@@ -136,7 +138,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
             <span>Savings Rate</span>
           </div>
           <div
-            className={`text-sm sm:text-base font-bold font-mono mt-0.5 ${
+            className={`text-sm sm:text-base font-bold font-mono mt-0.5 truncate ${
               currentMonth.savingsRate >= 0 ? 'text-emerald-400' : 'text-rose-400'
             }`}
           >
@@ -147,17 +149,26 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
 
       {/* Interactive Bar Chart Visualization */}
       <div className="space-y-2 pt-2">
-        <div className="h-44 flex items-end justify-between gap-4 sm:gap-8 px-2 border-b border-white/5 pb-2">
+        <div className="h-44 flex items-end justify-between gap-1.5 sm:gap-4 md:gap-8 px-1 sm:px-2 border-b border-white/5 pb-2">
           {monthlyData.map((m) => {
             const incomeHeight =
               maxVal > 0n ? Math.max(8, Number((m.incomePaise * 100n) / maxVal)) : 8;
             const expenseHeight =
               maxVal > 0n ? Math.max(8, Number((m.expensePaise * 100n) / maxVal)) : 8;
+            const isSelected = activeMonthKey === m.monthKey;
 
             return (
-              <div key={m.monthKey} className="flex-1 flex flex-col items-center h-full justify-end group">
-                {/* Tooltip on hover */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none mb-2 text-[10px] bg-neutral-900 border border-white/10 rounded-lg p-2 shadow-xl text-center space-y-0.5 whitespace-nowrap z-10">
+              <div
+                key={m.monthKey}
+                onClick={() => setActiveMonthKey(isSelected ? null : m.monthKey)}
+                className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
+              >
+                {/* Tooltip on hover / tap */}
+                <div
+                  className={`transition-opacity duration-200 pointer-events-none mb-2 text-[10px] bg-neutral-900 border border-white/10 rounded-lg p-2 shadow-xl text-center space-y-0.5 whitespace-nowrap z-20 absolute bottom-full ${
+                    isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                >
                   <div className="font-semibold text-white">{m.monthLabel}</div>
                   <div className="text-emerald-400 font-mono">In: {formatINR(m.incomePaise)}</div>
                   <div className="text-rose-400 font-mono">Out: {formatINR(m.expensePaise)}</div>
@@ -165,7 +176,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
                 </div>
 
                 {/* Bars side by side */}
-                <div className="w-full flex items-end justify-center space-x-1.5 sm:space-x-3 h-full">
+                <div className="w-full flex items-end justify-center space-x-1 sm:space-x-2 md:space-x-3 h-full">
                   {/* Income bar */}
                   <div
                     className="w-1/2 max-w-[24px] bg-emerald-500/80 hover:bg-emerald-400 rounded-t-md transition-all duration-500 shadow-lg shadow-emerald-500/10"
@@ -185,9 +196,15 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
         </div>
 
         {/* X-axis labels */}
-        <div className="flex items-center justify-between gap-4 sm:gap-8 px-2 text-[10px] font-mono text-neutral-400">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-4 md:gap-8 px-1 sm:px-2 text-[10px] font-mono text-neutral-400">
           {monthlyData.map((m) => (
-            <div key={m.monthKey} className="flex-1 text-center truncate">
+            <div
+              key={m.monthKey}
+              onClick={() => setActiveMonthKey(activeMonthKey === m.monthKey ? null : m.monthKey)}
+              className={`flex-1 text-center truncate cursor-pointer transition ${
+                activeMonthKey === m.monthKey ? 'text-sky-300 font-bold' : 'hover:text-white'
+              }`}
+            >
               {m.monthLabel}
             </div>
           ))}

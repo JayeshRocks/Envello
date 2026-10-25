@@ -138,9 +138,10 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                       <button
                         onClick={() => setEditingDebt(debt)}
                         title="Edit Debt Details"
-                        className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+                        aria-label="Edit Debt Details"
+                        className="p-1.5 sm:p-1 min-h-[32px] min-w-[32px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
                       >
-                        <Pencil className="w-3 h-3" />
+                        <Pencil className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                       </button>
                     )}
                   </div>
@@ -183,7 +184,7 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                         <select
                           value={destAccountId}
                           onChange={(e) => setDestAccountId(e.target.value)}
-                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-xs text-white"
                         >
                           {accounts.map((a) => (
                             <option key={a.id} value={a.id}>
@@ -199,18 +200,18 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                           value={customAmountRupees}
                           onChange={(e) => setCustomAmountRupees(e.target.value)}
                           placeholder={(debt.monthly_instalment_paise / 100).toString()}
-                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-white font-mono"
+                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-xs text-white font-mono"
                         />
                         <button
                           onClick={() => handlePay(debt)}
                           disabled={isSubmitting}
-                          className="px-3 py-1 rounded-lg bg-orange-600 hover:bg-orange-500 text-xs text-white font-medium flex-shrink-0"
+                          className="px-3.5 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-orange-600 hover:bg-orange-500 text-xs text-white font-medium flex-shrink-0 transition"
                         >
                           {isSubmitting ? '...' : 'Pay'}
                         </button>
                         <button
                           onClick={() => setPayingDebtId(null)}
-                          className="p-1 rounded-lg bg-neutral-800 text-xs text-neutral-400"
+                          className="p-2 sm:p-1 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg bg-neutral-800 text-xs text-neutral-400 transition"
                         >
                           ✕
                         </button>
@@ -229,10 +230,10 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                             if (accounts[0]) setDestAccountId(accounts[0].id);
                             setCustomAmountRupees((debt.monthly_instalment_paise / 100).toString());
                           }}
-                          className="text-xs text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1"
+                          className="text-xs text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1 py-1.5 px-3 rounded-lg hover:bg-orange-500/10 min-h-[34px] transition"
                         >
                           <span>Record Payment</span>
-                          <ArrowUpRight className="w-3 h-3" />
+                          <ArrowUpRight className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>

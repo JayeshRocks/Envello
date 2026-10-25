@@ -165,9 +165,10 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
                       <button
                         onClick={() => setEditingCard(card)}
                         title="Edit Card Details"
-                        className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+                        aria-label="Edit Card Details"
+                        className="p-1.5 sm:p-1 min-h-[32px] min-w-[32px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
                       >
-                        <Pencil className="w-3 h-3" />
+                        <Pencil className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                       </button>
                     )}
                   </div>
@@ -211,10 +212,10 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
                   {card.outstanding_balance_paise > 0 && accounts.length > 0 && (
                     <button
                       onClick={() => handleOpenPayment(card.id)}
-                      className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center space-x-1"
+                      className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center space-x-1 py-1.5 px-3 min-h-[34px] rounded-lg hover:bg-sky-500/10 transition"
                     >
                       <span>Pay Bill</span>
-                      <ArrowUpRight className="w-3 h-3" />
+                      <ArrowUpRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>

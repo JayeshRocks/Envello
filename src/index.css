@@ -128,6 +128,42 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.28);
   }
+
+  /* Utility to hide scrollbars on touch horizontally scrolling chips */
+  .scrollbar-none {
+    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /* Mobile safe-area helpers */
+  .safe-padding-bottom {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
+  }
+
+  .safe-bottom-fab {
+    bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem));
+  }
+}
+
+@keyframes bottomSheetUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 639px) {
+  .modal-panel {
+    animation: bottomSheetUp 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
 /* Reduced motion support */

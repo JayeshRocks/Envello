@@ -126,9 +126,10 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
                       <button
                         onClick={() => setEditingEmi(emi)}
                         title="Edit Self EMI Details"
-                        className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+                        aria-label="Edit Self EMI Details"
+                        className="p-1.5 sm:p-1 min-h-[32px] min-w-[32px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
                       >
-                        <Pencil className="w-3 h-3" />
+                        <Pencil className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                       </button>
                     )}
                   </div>
@@ -173,18 +174,18 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
                           value={customAmountRupees}
                           onChange={(e) => setCustomAmountRupees(e.target.value)}
                           placeholder={(emi.monthly_reimbursement_paise / 100).toString()}
-                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-white font-mono"
+                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-xs text-white font-mono"
                         />
                         <button
                           onClick={() => handleReimburse(emi)}
                           disabled={isSubmitting}
-                          className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-medium flex-shrink-0"
+                          className="px-3.5 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-medium flex-shrink-0 transition"
                         >
                           {isSubmitting ? '...' : 'Pay'}
                         </button>
                         <button
                           onClick={() => setReimbursingEmiId(null)}
-                          className="p-1 rounded-lg bg-neutral-800 text-xs text-neutral-400"
+                          className="p-2 sm:p-1 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg bg-neutral-800 text-xs text-neutral-400 transition"
                         >
                           ✕
                         </button>
@@ -201,10 +202,10 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
                           setReimbursingEmiId(emi.id);
                           setCustomAmountRupees((emi.monthly_reimbursement_paise / 100).toString());
                         }}
-                        className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-1"
+                        className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-1 py-1.5 px-3 rounded-lg hover:bg-indigo-500/10 min-h-[34px] transition"
                       >
                         <span>Reimburse</span>
-                        <ArrowUpRight className="w-3 h-3" />
+                        <ArrowUpRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   )}

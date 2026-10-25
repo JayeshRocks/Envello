@@ -80,16 +80,16 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
         </div>
 
         {/* Quick Summary Pill Boxes */}
-        <div className="flex items-center space-x-3 text-xs">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:space-x-3 text-xs w-full sm:w-auto">
           <div className="p-3 rounded-xl bg-neutral-800/60 border border-white/5 space-y-0.5">
             <div className="text-[10px] text-neutral-400">Total Assets</div>
-            <div className="font-mono font-bold text-emerald-400">
+            <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm truncate">
               {formatINR(totalAssetsPaise)}
             </div>
           </div>
           <div className="p-3 rounded-xl bg-neutral-800/60 border border-white/5 space-y-0.5">
             <div className="text-[10px] text-neutral-400">Total Obligations</div>
-            <div className="font-mono font-bold text-rose-400">
+            <div className="font-mono font-bold text-rose-400 text-xs sm:text-sm truncate">
               {formatINR(totalLiabilitiesPaise)}
             </div>
           </div>
@@ -112,7 +112,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
             style={{ width: `${liabilitySharePercent}%` }}
           />
         </div>
-        <div className="text-[10px] text-neutral-400 flex items-center justify-between pt-0.5">
+        <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5">
           <span>Spendable Cash: {formatINR(spendableCashPaise)} • FDs: {formatINR(savingsAndFDsPaise)}</span>
           <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
         </div>

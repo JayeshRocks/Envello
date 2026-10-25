@@ -157,7 +157,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                       <select
                         value={destAccountId}
                         onChange={(e) => setDestAccountId(e.target.value)}
-                        className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white"
+                        className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1.5 text-base sm:text-xs text-white"
                       >
                         {accounts.map((a) => (
                           <option key={a.id} value={a.id}>
@@ -168,14 +168,14 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                       <div className="flex items-center justify-end space-x-2 pt-1">
                         <button
                           onClick={() => setLiquidatingFdId(null)}
-                          className="px-2.5 py-1 rounded-lg bg-neutral-800 text-[11px] text-neutral-300"
+                          className="px-3 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-neutral-800 text-xs sm:text-[11px] text-neutral-300 transition"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleConfirmLiquidation(fd.id)}
                           disabled={isLiquidating}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-[11px] text-white font-medium"
+                          className="px-3 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs sm:text-[11px] text-white font-medium transition"
                         >
                           {isLiquidating ? 'Redeeming...' : 'Confirm'}
                         </button>
@@ -193,7 +193,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                             setLiquidatingFdId(fd.id);
                             if (accounts[0]) setDestAccountId(accounts[0].id);
                           }}
-                          className="text-xs text-neutral-400 hover:text-white transition"
+                          className="text-xs text-neutral-400 hover:text-white transition py-1.5 px-3 rounded-lg hover:bg-white/5 min-h-[34px] flex items-center"
                         >
                           Redeem / Liquidate
                         </button>

@@ -326,7 +326,7 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums">
+                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums truncate">
                       {formatINR(effectiveSpendableCashPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1">Liquid Bank Accounts & Cash</div>
@@ -344,7 +344,7 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold font-mono tracking-tight text-indigo-300 tabular-nums">
+                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-indigo-300 tabular-nums truncate">
                       {formatINR(effectiveEnvelopeAllocationsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1">Allocated for Current Month Spending</div>
@@ -362,7 +362,7 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums">
+                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums truncate">
                       {formatINR(effectiveSavingsAndFDsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1">Super.Money FDs & Locked Reserves</div>
@@ -380,7 +380,7 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold font-mono tracking-tight text-purple-400 tabular-nums">
+                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-purple-400 tabular-nums truncate">
                       {formatINR(effectiveCreditCardLiabilitiesPaise)}
                     </div>
                     <div className="flex items-center space-x-2 text-xs mt-1">
@@ -411,7 +411,7 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums">
+                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums truncate">
                       {formatINR(effectiveActualDebtsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1">External Loans & Debts Owed</div>
@@ -429,7 +429,7 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold font-mono tracking-tight text-cyan-300 tabular-nums">
+                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-cyan-300 tabular-nums truncate">
                       {formatINR(effectiveMonthlyTargetsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1">Planned Goals (Not Yet Deducted)</div>
@@ -704,7 +704,7 @@ export const App: React.FC = () => {
       {user && (
         <button
           onClick={() => setIsRecordTxModalOpen(true)}
-          className="fixed bottom-5 right-5 sm:hidden z-40 p-4 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-neutral-950 font-bold shadow-2xl shadow-sky-500/50 active:scale-90 transition-all duration-200 flex items-center justify-center border border-white/20 touch-manipulation"
+          className="fixed bottom-5 right-5 safe-bottom-fab sm:hidden z-40 p-4 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-neutral-950 font-bold shadow-2xl shadow-sky-500/50 active:scale-90 transition-all duration-200 flex items-center justify-center border border-white/20 touch-manipulation"
           title="Record Transaction"
           aria-label="Record Transaction"
         >
@@ -713,7 +713,7 @@ export const App: React.FC = () => {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-4 text-center text-xs text-neutral-500">
+      <footer className="border-t border-white/5 py-4 pb-8 sm:pb-4 safe-padding-bottom text-center text-xs text-neutral-500">
         Envello Personal Finance Platform • Target ₹0/mo Budget • Deterministic Accounting Engine
       </footer>
     </div>
