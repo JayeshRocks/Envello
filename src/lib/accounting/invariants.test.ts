@@ -7,6 +7,7 @@ import {
   getCreditCardUtilizationStatus,
   calculateRollover,
   calculateSelfEmiProgress,
+  calculateReconciliationDiscrepancy,
 } from './calculations';
 import { shiftYearMonth } from '@/hooks/useEnvelopes';
 
@@ -143,6 +144,41 @@ describe('Accounting Engine — Invariants & Precision', () => {
     it('crosses year boundaries cleanly forward and backward', () => {
       expect(shiftYearMonth('2026-12', 1)).toBe('2027-01');
       expect(shiftYearMonth('2026-01', -1)).toBe('2025-12');
+    });
+  });
+
+  describe('Bank Statement Reconciliation Invariants', () => {
+    it('detects exact match with zero adjustment', () => {
+      const statement = 10000000n; // ₹1,00,000.00
+      const ledger = 10000000n;    // ₹1,00,000.00
+      const result = calculateReconciliationDiscrepancy(statement, ledger);
+
+      expect(result.status).toBe('matched');
+      expect(result.discrepancyPaise).toBe(0n);
+      expect(result.adjustmentType).toBe('none');
+      expect(result.adjustmentAmountPaise).toBe(0n);
+    });
+
+    it('detects bank statement surplus requiring a credit adjustment', () => {
+      const statement = 10500000n; // ₹1,05,000.00 (Statement has more)
+      const ledger = 10000000n;    // ₹1,00,000.00
+      const result = calculateReconciliationDiscrepancy(statement, ledger);
+
+      expect(result.status).toBe('surplus');
+      expect(result.discrepancyPaise).toBe(500000n); // +₹5,000
+      expect(result.adjustmentType).toBe('credit');
+      expect(result.adjustmentAmountPaise).toBe(500000n);
+    });
+
+    it('detects bank statement deficit requiring a debit adjustment', () => {
+      const statement = 9850000n; // ₹98,500.00 (Statement has less)
+      const ledger = 10000000n;   // ₹1,00,000.00
+      const result = calculateReconciliationDiscrepancy(statement, ledger);
+
+      expect(result.status).toBe('deficit');
+      expect(result.discrepancyPaise).toBe(-150000n); // -₹1,500
+      expect(result.adjustmentType).toBe('debit');
+      expect(result.adjustmentAmountPaise).toBe(150000n);
     });
   });
 });

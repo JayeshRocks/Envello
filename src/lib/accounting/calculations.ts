@@ -105,3 +105,48 @@ export function calculateSelfEmiProgress(
     isFullyReimbursed: remaining === 0n,
   };
 }
+
+export interface ReconciliationResult {
+  discrepancyPaise: bigint;
+  status: 'matched' | 'surplus' | 'deficit';
+  adjustmentType: 'credit' | 'debit' | 'none';
+  adjustmentAmountPaise: bigint;
+}
+
+/**
+ * Calculates reconciliation discrepancy between physical bank statement and ledger balance.
+ * Statement > Ledger = Surplus (Credit adjustment required)
+ * Statement < Ledger = Deficit (Debit adjustment required)
+ * Statement == Ledger = Matched (No financial adjustment required)
+ */
+export function calculateReconciliationDiscrepancy(
+  statementBalancePaise: bigint,
+  ledgerBalancePaise: bigint
+): ReconciliationResult {
+  const discrepancy = statementBalancePaise - ledgerBalancePaise;
+
+  if (discrepancy === 0n) {
+    return {
+      discrepancyPaise: 0n,
+      status: 'matched',
+      adjustmentType: 'none',
+      adjustmentAmountPaise: 0n,
+    };
+  }
+
+  if (discrepancy > 0n) {
+    return {
+      discrepancyPaise: discrepancy,
+      status: 'surplus',
+      adjustmentType: 'credit',
+      adjustmentAmountPaise: discrepancy,
+    };
+  }
+
+  return {
+    discrepancyPaise: discrepancy,
+    status: 'deficit',
+    adjustmentType: 'debit',
+    adjustmentAmountPaise: -discrepancy,
+  };
+}

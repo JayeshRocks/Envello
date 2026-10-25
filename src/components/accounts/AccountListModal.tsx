@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Landmark, Wallet, Plus, AlertCircle, Edit2, Trash2, Check, ArrowRight } from 'lucide-react';
+import { X, Landmark, Wallet, Plus, AlertCircle, Edit2, Trash2, Check, ArrowRight, Scale } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { AccountType } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
@@ -24,6 +24,7 @@ interface AccountListModalProps {
     }
   ) => Promise<void>;
   onDeleteAccount?: (accountId: string) => Promise<void>;
+  onOpenReconcileModal?: (accountId: string) => void;
 }
 
 export const AccountListModal: React.FC<AccountListModalProps> = ({
@@ -33,6 +34,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
   onAddAccount,
   onEditAccount,
   onDeleteAccount,
+  onOpenReconcileModal,
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
@@ -292,16 +294,30 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                   <div className="font-mono text-sm font-bold text-white tabular-nums">
                     {formatINR(acc.balancePaise)}
                   </div>
-                  {onEditAccount && (
-                    <button
-                      onClick={() => handleStartEdit(acc)}
-                      aria-label={`Edit ${acc.name}`}
-                      className="p-1.5 rounded-lg text-neutral-500 hover:text-sky-400 hover:bg-white/5 transition"
-                      title="Edit Account / Adjust Balance"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <div className="flex items-center space-x-1">
+                    {onOpenReconcileModal && (
+                      <button
+                        onClick={() => {
+                          onOpenReconcileModal(acc.id);
+                        }}
+                        aria-label={`Reconcile ${acc.name} with bank statement`}
+                        className="p-1.5 rounded-lg text-neutral-400 hover:text-emerald-400 hover:bg-white/5 transition"
+                        title="Reconcile against bank statement"
+                      >
+                        <Scale className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {onEditAccount && (
+                      <button
+                        onClick={() => handleStartEdit(acc)}
+                        aria-label={`Edit ${acc.name}`}
+                        className="p-1.5 rounded-lg text-neutral-500 hover:text-sky-400 hover:bg-white/5 transition"
+                        title="Edit Account Details"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

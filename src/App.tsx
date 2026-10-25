@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Landmark,
   Download,
+  Scale,
 } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import {
@@ -35,6 +36,7 @@ import { AccessRestricted } from '@/components/auth/AccessRestricted';
 import { EnvelopeGrid } from '@/components/envelopes/EnvelopeGrid';
 import { RecordTransactionModal } from '@/components/transactions/RecordTransactionModal';
 import { AccountListModal } from '@/components/accounts/AccountListModal';
+import { ReconcileModal } from '@/components/accounts/ReconcileModal';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { LiabilitiesAndAssetsContainer } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
@@ -48,6 +50,8 @@ export const App: React.FC = () => {
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
   const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
+  const [reconcileAccountId, setReconcileAccountId] = useState<string | undefined>(undefined);
 
   // Live hooks
   const {
@@ -190,6 +194,7 @@ export const App: React.FC = () => {
         setIsRecordTxModalOpen(false);
         setIsAccountsModalOpen(false);
         setIsExportModalOpen(false);
+        setIsReconcileModalOpen(false);
       }
       if (
         (e.key === 't' || e.key === 'T') &&
@@ -289,6 +294,17 @@ export const App: React.FC = () => {
                 >
                   <Download className="w-3.5 h-3.5 text-sky-400" />
                   <span className="hidden sm:inline">Export</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setReconcileAccountId(undefined);
+                    setIsReconcileModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition"
+                  title="Reconcile Account Balance against Bank Statement"
+                >
+                  <Scale className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">Reconcile</span>
                 </button>
                 <button
                   onClick={() => setIsAccountsModalOpen(true)}
@@ -668,6 +684,23 @@ export const App: React.FC = () => {
         onDeleteAccount={async (accountId) => {
           await removeAccount(accountId);
           showToast('Account deleted', 'info');
+        }}
+        onOpenReconcileModal={(accountId) => {
+          setReconcileAccountId(accountId);
+          setIsAccountsModalOpen(false);
+          setIsReconcileModalOpen(true);
+        }}
+      />
+
+      {/* Bank Statement Reconciliation Modal */}
+      <ReconcileModal
+        isOpen={isReconcileModalOpen}
+        accounts={accounts}
+        initialAccountId={reconcileAccountId}
+        onClose={() => setIsReconcileModalOpen(false)}
+        onReconciliationComplete={async () => {
+          await handleTransactionRecorded();
+          showToast('Account reconciliation logged and verified', 'success');
         }}
       />
 

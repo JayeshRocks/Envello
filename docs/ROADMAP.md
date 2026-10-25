@@ -9,19 +9,19 @@ gantt
     section Phase 0
     Project Setup & Architecture   :done, p0, 2026-10-25, 1d
     section Phase 1
-    Core Foundation & Database     :active, p1, 2026-10-26, 4d
+    Core Foundation & Database     :done, p1, 2026-10-25, 1d
     section Phase 2
-    Auth & Private Beta Gating     :p2, after p1, 3d
+    Auth & Private Beta Gating     :done, p2, 2026-10-25, 1d
     section Phase 3
-    Accounting Engine & Envelopes  :p3, after p2, 5d
+    Accounting Engine & Envelopes  :done, p3, 2026-10-25, 1d
     section Phase 4
-    Transactions & Reconciliation  :p4, after p3, 5d
+    Transactions & Reconciliation  :done, p4, 2026-10-25, 1d
     section Phase 5
-    Cards, EMIs & Savings Assets   :p5, after p4, 5d
+    Cards, EMIs & Savings Assets   :done, p5, 2026-10-25, 1d
     section Phase 6
-    Visualizations & Reports       :p6, after p5, 4d
+    Visualizations & Reports       :done, p6, 2026-10-25, 1d
     section Phase 7
-    Private Beta Launch & Polish   :p7, after p6, 7d
+    Private Beta Launch & Polish   :active, p7, 2026-10-26, 3d
     section Version 2
     AI Integration (Deferred)      :p8, 2027-01-01, 30d
 ```
