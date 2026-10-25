@@ -15,10 +15,14 @@ export interface AuthContextType {
   isAllowlisted: boolean | null; // null = checking, true/false = checked
   isLoading: boolean;
   error: string | null;
+  isPasswordRecovery: boolean;
+  setIsPasswordRecovery: (value: boolean) => void;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<SignUpResult>;
   sendMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
   resendVerificationEmail: (email: string) => Promise<{ error: AuthError | null }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: AuthError | null }>;
+  updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   refreshAllowlistStatus: () => Promise<void>;
@@ -33,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAllowlisted, setIsAllowlisted] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // Check if current authenticated user's email is on the server allowlist
   const checkAllowlist = useCallback(async (userEmail?: string) => {
@@ -84,7 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 2. Real-time auth state listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user?.email) {
@@ -202,6 +210,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPasswordForEmail = async (email: string) => {
+    setError(null);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin,
+    });
+    if (resetError) {
+      setError(resetError.message);
+      return { error: resetError };
+    }
+    return { error: null };
+  };
+
+  const updatePassword = async (password: string) => {
+    setError(null);
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    });
+    if (updateError) {
+      setError(updateError.message);
+      return { error: updateError };
+    }
+    setIsPasswordRecovery(false);
+    return { error: null };
+  };
+
   const clearError = () => setError(null);
 
   return (
@@ -212,10 +245,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAllowlisted,
         isLoading,
         error,
+        isPasswordRecovery,
+        setIsPasswordRecovery,
         signInWithEmail,
         signUpWithEmail,
         sendMagicLink,
         resendVerificationEmail,
+        resetPasswordForEmail,
+        updatePassword,
         signInWithGoogle,
         signOut,
         refreshAllowlistStatus,

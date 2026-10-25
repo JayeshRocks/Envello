@@ -39,7 +39,7 @@ import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { ExportDataModal } from '@/components/export/ExportDataModal';
 
 export const App: React.FC = () => {
-  const { user, isAllowlisted, isLoading: isAuthLoading } = useAuth();
+  const { user, isAllowlisted, isLoading: isAuthLoading, isPasswordRecovery } = useAuth();
   const { showToast } = useToast();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
@@ -48,6 +48,13 @@ export const App: React.FC = () => {
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [reconcileAccountId, setReconcileAccountId] = useState<string | undefined>(undefined);
+
+  // Auto-open auth modal if user arrives from a password recovery email
+  useEffect(() => {
+    if (isPasswordRecovery) {
+      setIsAuthModalOpen(true);
+    }
+  }, [isPasswordRecovery]);
 
   // Live hooks
   const {

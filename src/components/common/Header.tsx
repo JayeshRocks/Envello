@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Mail,
   Database,
@@ -10,9 +10,11 @@ import {
   ShieldCheck,
   ShieldAlert,
   Landmark,
+  KeyRound,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
 
 interface HeaderProps {
   onOpenAuthModal: () => void;
@@ -26,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAccountsModal,
 }) => {
   const { user, isAllowlisted, signOut } = useAuth();
+  const [isSetPasswordOpen, setIsSetPasswordOpen] = useState(false);
 
   return (
     <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-40">
@@ -83,6 +86,15 @@ export const Header: React.FC<HeaderProps> = ({
                 {user.email}
               </div>
 
+              {/* Set/Change Password Button */}
+              <button
+                onClick={() => setIsSetPasswordOpen(true)}
+                title="Set or Change Password"
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-sky-400 hover:bg-white/5 active:scale-90 transition-all duration-200"
+              >
+                <KeyRound className="w-4 h-4" />
+              </button>
+
               {/* Sign Out Button */}
               <button
                 onClick={() => signOut()}
@@ -127,6 +139,12 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Set/Update Password Modal */}
+      <SetPasswordModal
+        isOpen={isSetPasswordOpen}
+        onClose={() => setIsSetPasswordOpen(false)}
+      />
     </header>
   );
 };
