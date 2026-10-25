@@ -37,6 +37,9 @@ import { EnvelopeGrid } from '@/components/envelopes/EnvelopeGrid';
 import { RecordTransactionModal } from '@/components/transactions/RecordTransactionModal';
 import { AccountListModal } from '@/components/accounts/AccountListModal';
 import { ReconcileModal } from '@/components/accounts/ReconcileModal';
+import { RecurringAlertBanner } from '@/components/recurring/RecurringAlertBanner';
+import { RecurringRulesModal } from '@/components/recurring/RecurringRulesModal';
+import { useRecurringRules } from '@/hooks/useRecurringRules';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { LiabilitiesAndAssetsContainer } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
@@ -51,6 +54,7 @@ export const App: React.FC = () => {
   const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [reconcileAccountId, setReconcileAccountId] = useState<string | undefined>(undefined);
 
   // Live hooks
@@ -139,6 +143,19 @@ export const App: React.FC = () => {
     refreshTargets,
   } = useMonthlyTargets();
 
+  const {
+    rules: recurringRules,
+    dueRules: dueRecurringRules,
+    totalDuePaise: totalRecurringDuePaise,
+    currentYearMonth,
+    addRule: addRecurringRule,
+    toggleRuleActive: toggleRecurringRuleActive,
+    removeRule: removeRecurringRule,
+    logSingleRule: logSingleRecurringRule,
+    logAllDueRules: logAllDueRecurringRules,
+    refreshRules: refreshRecurringRules,
+  } = useRecurringRules();
+
   // Baseline demo state (used as fallback for locked assets or unauthenticated preview)
   const [demoPillars] = useState<FinancialOverviewPillars>({
     spendableCashPaise: 12540050n,       // ₹1,25,400.50
@@ -183,6 +200,7 @@ export const App: React.FC = () => {
       refreshSelfEmis(),
       refreshDebts(),
       refreshTargets(),
+      refreshRecurringRules(),
     ]);
   };
 
@@ -195,6 +213,7 @@ export const App: React.FC = () => {
         setIsAccountsModalOpen(false);
         setIsExportModalOpen(false);
         setIsReconcileModalOpen(false);
+        setIsRecurringModalOpen(false);
       }
       if (
         (e.key === 't' || e.key === 'T') &&
@@ -305,6 +324,17 @@ export const App: React.FC = () => {
                 >
                   <Scale className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="hidden sm:inline">Reconcile</span>
+                </button>
+                <button
+                  onClick={() => setIsRecurringModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition relative"
+                  title="Standing Recurring Schedules"
+                >
+                  <CalendarClock className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="hidden sm:inline">Recurring</span>
+                  {dueRecurringRules.length > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse absolute -top-0.5 -right-0.5" />
+                  )}
                 </button>
                 <button
                   onClick={() => setIsAccountsModalOpen(true)}
@@ -457,6 +487,22 @@ export const App: React.FC = () => {
             creditCardLiabilitiesPaise={effectiveCreditCardLiabilitiesPaise}
             actualDebtsPaise={effectiveActualDebtsPaise}
             onOpenExportModal={() => setIsExportModalOpen(true)}
+          />
+        )}
+
+        {/* Section: Recurring Alert Banner (when standing expenses are due) */}
+        {user && (
+          <RecurringAlertBanner
+            dueRules={dueRecurringRules}
+            totalDuePaise={totalRecurringDuePaise}
+            onLogAll={async () => {
+              const count = await logAllDueRecurringRules(async (params) => {
+                await addExpense(params);
+              });
+              await handleTransactionRecorded();
+              showToast(`Logged ${count} recurring expenses into ledger`, 'success');
+            }}
+            onOpenManageModal={() => setIsRecurringModalOpen(true)}
           />
         )}
 
@@ -701,6 +747,35 @@ export const App: React.FC = () => {
         onReconciliationComplete={async () => {
           await handleTransactionRecorded();
           showToast('Account reconciliation logged and verified', 'success');
+        }}
+      />
+
+      {/* Standing Recurring Schedules Modal */}
+      <RecurringRulesModal
+        isOpen={isRecurringModalOpen}
+        onClose={() => setIsRecurringModalOpen(false)}
+        rules={recurringRules}
+        accounts={accounts}
+        envelopes={envelopes}
+        currentYearMonth={currentYearMonth}
+        onAddRule={async (params) => {
+          await addRecurringRule(params);
+          showToast('Standing recurring rule added', 'success');
+        }}
+        onToggleActive={async (ruleId) => {
+          await toggleRecurringRuleActive(ruleId);
+          showToast('Rule status updated', 'info');
+        }}
+        onDeleteRule={async (ruleId) => {
+          await removeRecurringRule(ruleId);
+          showToast('Standing rule deleted', 'info');
+        }}
+        onLogSingleRule={async (rule) => {
+          await logSingleRecurringRule(rule, async (params) => {
+            await addExpense(params);
+          });
+          await handleTransactionRecorded();
+          showToast(`Recorded ${rule.title} into ledger`, 'success');
         }}
       />
 
