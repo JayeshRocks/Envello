@@ -107,7 +107,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <button
                 key={tab.id}
                 onClick={() => onTypeFilterChange(tab.id)}
-                className={`px-2.5 py-1 rounded-lg transition ${
+                className={`px-2.5 py-1 rounded-lg transition-all duration-200 active:scale-95 ${
                   typeFilter === tab.id
                     ? 'bg-neutral-800 text-white shadow-sm font-semibold'
                     : 'text-neutral-400 hover:text-neutral-200'

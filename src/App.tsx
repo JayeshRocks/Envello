@@ -300,7 +300,7 @@ export const App: React.FC = () => {
               {/* The 6 Pillars Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* 1. Spendable Cash */}
-                <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                       1. Spendable Cash
@@ -318,7 +318,7 @@ export const App: React.FC = () => {
                 </div>
 
                 {/* 2. Envelope Allocations */}
-                <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                       2. Envelope Allocations
@@ -336,7 +336,7 @@ export const App: React.FC = () => {
                 </div>
 
                 {/* 3. Savings & Fixed Deposits */}
-                <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                       3. Savings & FDs
@@ -354,7 +354,7 @@ export const App: React.FC = () => {
                 </div>
 
                 {/* 4. Credit Card Liabilities */}
-                <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                       4. Card Liabilities
@@ -385,7 +385,7 @@ export const App: React.FC = () => {
                 </div>
 
                 {/* 5. Actual Debts */}
-                <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                       5. Actual Debts
@@ -403,7 +403,7 @@ export const App: React.FC = () => {
                 </div>
 
                 {/* 6. Monthly Targets */}
-                <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                       6. Monthly Targets

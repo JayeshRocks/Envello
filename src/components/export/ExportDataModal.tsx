@@ -62,8 +62,8 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="glass-card w-full max-w-md rounded-2xl border border-white/10 p-6 space-y-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+      <div className="glass-card w-full max-w-md rounded-2xl border border-white/10 p-6 space-y-5 shadow-2xl modal-panel">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
@@ -76,7 +76,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
           >
             <X className="w-5 h-5" />
           </button>

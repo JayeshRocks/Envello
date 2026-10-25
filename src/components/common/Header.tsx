@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => signOut()}
                 title="Sign Out"
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 active:scale-90 transition-all duration-200"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -95,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onOpenAuthModal}
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-md shadow-sky-500/20 transition"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-md shadow-sky-500/20 active:scale-95 hover:shadow-sky-500/30 transition-all duration-200"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Sign In</span>
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
           {user && onOpenAccountsModal && (
             <button
               onClick={onOpenAccountsModal}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 transition"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200"
               title="Manage Liquid Accounts"
             >
               <Landmark className="w-3.5 h-3.5 text-sky-400" />
@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
           {user && (
             <button
               onClick={onRecordTransactionClick}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition shadow-sm shadow-sky-500/30"
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm shadow-sky-500/30 active:scale-95 hover:shadow-sky-500/40"
             >
               <PlusCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Record Transaction</span>

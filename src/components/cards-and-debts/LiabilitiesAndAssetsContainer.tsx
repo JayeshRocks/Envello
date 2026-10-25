@@ -169,7 +169,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-medium flex items-center space-x-2 transition ${
+              className={`px-4 py-2 rounded-xl text-xs font-medium flex items-center space-x-2 transition-all duration-200 active:scale-95 ${
                 isActive
                   ? 'bg-neutral-800 text-white shadow-lg border border-white/10'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'
@@ -190,7 +190,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
       </div>
 
       {/* Active Tab Content */}
-      <div>
+      <div key={activeTab} className="animate-fade-in">
         {activeTab === 'cards' && (
           <CreditCardSection
             cards={props.cards}

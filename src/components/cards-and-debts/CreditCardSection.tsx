@@ -147,7 +147,7 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
             return (
               <div
                 key={card.id}
-                className="glass-card rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-purple-500/30 transition group"
+                className="glass-card glass-card-interactive rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-purple-500/30 group"
               >
                 {/* Visual Top Bar */}
                 <div className="flex items-start justify-between">

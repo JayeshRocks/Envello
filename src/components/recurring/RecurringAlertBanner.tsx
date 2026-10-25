@@ -30,7 +30,7 @@ export const RecurringAlertBanner: React.FC<RecurringAlertBannerProps> = ({
   };
 
   return (
-    <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-sky-950/40 border border-indigo-500/30 shadow-xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in">
+    <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-sky-950/40 border border-indigo-500/30 shadow-xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 animate-slide-down">
       <div className="flex items-start space-x-3.5">
         <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 flex-shrink-0 mt-0.5 border border-indigo-500/30">
           <CalendarClock className="w-5 h-5" />

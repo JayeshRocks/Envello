@@ -107,7 +107,7 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
             return (
               <div
                 key={target.id}
-                className={`glass-card rounded-2xl p-5 border relative overflow-hidden space-y-4 transition group ${
+                className={`glass-card glass-card-interactive rounded-2xl p-5 border relative overflow-hidden space-y-4 group ${
                   target.is_achieved
                     ? 'border-emerald-500/30 bg-emerald-950/10'
                     : 'border-white/10 hover:border-cyan-500/30'

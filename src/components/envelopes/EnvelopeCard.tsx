@@ -77,7 +77,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   const isOverspent = envelope.availablePaise < 0n;
 
   return (
-    <div className="glass-card rounded-2xl p-5 border border-white/5 hover:border-white/10 transition-all space-y-4 relative overflow-hidden group">
+    <div className="glass-card glass-card-interactive rounded-2xl p-5 border border-white/5 space-y-4 relative overflow-hidden group">
       {/* Top subtle glow line matching category color */}
       <div
         className="absolute top-0 left-0 right-0 h-1 opacity-70 group-hover:opacity-100 transition-opacity"
@@ -88,7 +88,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-white/90 shadow-sm"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-white/90 shadow-sm transition-transform duration-300 group-hover:scale-105"
             style={{ backgroundColor: `${envelope.color || '#38bdf8'}25`, color: envelope.color || '#38bdf8' }}
           >
             <IconComp className="w-4 h-4" />
@@ -117,21 +117,21 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
           <button
             onClick={onEdit}
             title="Edit Envelope Details"
-            className="p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+            className="p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onTransfer}
             title="Transfer / Reallocate Funds"
-            className="p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+            className="p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90"
           >
             <ArrowRightLeft className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onAllocate}
             title="Set Monthly Budget"
-            className="p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+            className="p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90"
           >
             <PlusCircle className="w-3.5 h-3.5" />
           </button>
@@ -160,7 +160,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
         </div>
         <div className="w-full h-1.5 rounded-full bg-neutral-800/80 overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-300 ${
+            className={`h-full rounded-full transition-all duration-500 ease-out ${
               isOverspent
                 ? 'bg-red-500'
                 : percentSpent > 85

@@ -106,7 +106,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
             return (
               <div
                 key={fd.id}
-                className="glass-card rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-emerald-500/30 transition group"
+                className="glass-card glass-card-interactive rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-emerald-500/30 group"
               >
                 {/* Top Info */}
                 <div className="flex items-start justify-between">

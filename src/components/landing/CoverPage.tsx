@@ -63,14 +63,14 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             onClick={onOpenAuthModal}
-            className="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-sm transition flex items-center justify-center space-x-2 shadow-xl shadow-sky-500/20 group"
+            className="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-sm transition-all duration-200 active:scale-95 flex items-center justify-center space-x-2 shadow-xl shadow-sky-500/20 hover:shadow-sky-500/30 group"
           >
             <span>Sign In to Workspace</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
           <a
             href="#pillars"
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-sm font-medium border border-white/10 transition"
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200"
           >
             Explore the 6 Pillars
           </a>
@@ -125,7 +125,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Pillar 1 */}
-          <div className="glass-card rounded-2xl p-5 space-y-3 border border-sky-500/20 relative overflow-hidden">
+          <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 border border-sky-500/20 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">
                 1. Spendable Cash
@@ -143,7 +143,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Pillar 2 */}
-          <div className="glass-card rounded-2xl p-5 space-y-3 border border-indigo-500/20 relative overflow-hidden">
+          <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 border border-indigo-500/20 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
                 2. Envelope Allocations
@@ -161,7 +161,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Pillar 3 */}
-          <div className="glass-card rounded-2xl p-5 space-y-3 border border-amber-500/20 relative overflow-hidden">
+          <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 border border-amber-500/20 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
                 3. Savings & Locked FDs
@@ -179,7 +179,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Pillar 4 */}
-          <div className="glass-card rounded-2xl p-5 space-y-3 border border-purple-500/20 relative overflow-hidden">
+          <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 border border-purple-500/20 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">
                 4. Card Liabilities
@@ -197,7 +197,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Pillar 5 */}
-          <div className="glass-card rounded-2xl p-5 space-y-3 border border-orange-500/20 relative overflow-hidden">
+          <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 border border-orange-500/20 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
                 5. Actual Debts
@@ -215,7 +215,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Pillar 6 */}
-          <div className="glass-card rounded-2xl p-5 space-y-3 border border-cyan-500/20 relative overflow-hidden">
+          <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 border border-cyan-500/20 relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
                 6. Monthly Targets
@@ -247,8 +247,8 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Subsystem 1: Envelope Rollover */}
-          <div className="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 space-y-4 hover:border-sky-500/30 transition">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
+          <div className="glass-card glass-card-interactive p-6 rounded-2xl border border-white/5 space-y-4 hover:border-sky-500/30 group">
+            <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
               <Mail className="w-5 h-5" />
             </div>
             <div className="space-y-1">
@@ -274,8 +274,8 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Subsystem 2: Bank Statement Reconciliation */}
-          <div className="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 space-y-4 hover:border-emerald-500/30 transition">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+          <div className="glass-card glass-card-interactive p-6 rounded-2xl border border-white/5 space-y-4 hover:border-emerald-500/30 group">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
               <Scale className="w-5 h-5" />
             </div>
             <div className="space-y-1">
@@ -301,8 +301,8 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Subsystem 3: Self EMIs & Credit Health */}
-          <div className="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 space-y-4 hover:border-purple-500/30 transition">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+          <div className="glass-card glass-card-interactive p-6 rounded-2xl border border-white/5 space-y-4 hover:border-purple-500/30 group">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
               <CreditCard className="w-5 h-5" />
             </div>
             <div className="space-y-1">
@@ -328,8 +328,8 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           </div>
 
           {/* Subsystem 4: Standing Schedules */}
-          <div className="p-6 rounded-2xl bg-neutral-900/60 border border-white/5 space-y-4 hover:border-indigo-500/30 transition">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+          <div className="glass-card glass-card-interactive p-6 rounded-2xl border border-white/5 space-y-4 hover:border-indigo-500/30 group">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
               <Repeat className="w-5 h-5" />
             </div>
             <div className="space-y-1">
@@ -497,7 +497,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
         <div>
           <button
             onClick={onOpenAuthModal}
-            className="px-8 py-3.5 rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 font-bold text-sm transition shadow-xl shadow-white/10 inline-flex items-center space-x-2"
+            className="px-8 py-3.5 rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 font-bold text-sm transition-all duration-200 active:scale-95 shadow-xl shadow-white/10 hover:shadow-white/20 inline-flex items-center space-x-2"
           >
             <span>Sign In to Workspace</span>
             <ArrowRight className="w-4 h-4" />

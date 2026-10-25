@@ -39,7 +39,56 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
-      }
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeOut: {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        modalIn: {
+          '0%': { opacity: '0', transform: 'scale(0.96) translateY(12px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+        modalOut: {
+          '0%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+          '100%': { opacity: '0', transform: 'scale(0.96) translateY(12px)' },
+        },
+        slideDown: {
+          '0%': { opacity: '0', transform: 'translateY(-12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.94)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.85', transform: 'scale(1.02)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-out': 'fadeOut 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'modal-in': 'modalIn 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'modal-out': 'modalOut 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-down': 'slideDown 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-up': 'slideUp 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'scale-in': 'scaleIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
+        'shimmer': 'shimmer 2.5s infinite linear',
+      },
     },
   },
   plugins: [],
