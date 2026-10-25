@@ -15,6 +15,7 @@ import { formatINR, toPaise, toRupees } from '@/lib/accounting/currency';
 import { calculateReconciliationDiscrepancy } from '@/lib/accounting/calculations';
 import { useReconciliation } from '@/hooks/useReconciliation';
 import type { AccountItem } from '@/lib/api/accounts';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface ReconcileModalProps {
   accounts: AccountItem[];
@@ -41,6 +42,8 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
   );
   const [reason, setReason] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'reconcile' | 'history'>('reconcile');
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   const {
     auditLogs,
@@ -113,7 +116,10 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="max-w-xl w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
         <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button

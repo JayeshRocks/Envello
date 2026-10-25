@@ -14,6 +14,7 @@ import { formatINR, toPaise } from '@/lib/accounting/currency';
 import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring.types';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface RecurringRulesModalProps {
   isOpen: boolean;
@@ -51,6 +52,8 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loggingRuleId, setLoggingRuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -94,7 +97,10 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="max-w-xl w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
         <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button

@@ -19,6 +19,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -57,6 +58,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [showOwnerTip, setShowOwnerTip] = useState(false);
   const [isUnconfirmed, setIsUnconfirmed] = useState(false);
   const [accountExistsFromMagicLink, setAccountExistsFromMagicLink] = useState(false);
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   // If Supabase fires a password recovery event (e.g. user clicked password reset link in email)
   useEffect(() => {
@@ -240,7 +243,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-8 space-y-4 sm:space-y-6 border-t sm:border border-white/10 shadow-2xl relative modal-panel max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
         <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         {/* Subtle decorative glow header */}

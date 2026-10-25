@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, RefreshCw, Trash2, Save, AlertCircle } from 'lucide-react';
 import type { SelfEmiRow, SelfEmiInsert } from '@/lib/api/selfEmis';
 import { toPaise } from '@/lib/accounting/currency';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface EditSelfEmiModalProps {
   emi: SelfEmiRow | null;
@@ -28,6 +29,8 @@ export const EditSelfEmiModal: React.FC<EditSelfEmiModalProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   useEffect(() => {
     if (emi) {
@@ -96,7 +99,10 @@ export const EditSelfEmiModal: React.FC<EditSelfEmiModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+    >
       <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative modal-panel max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Mobile drag handle */}
         <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />

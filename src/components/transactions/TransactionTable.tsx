@@ -7,6 +7,7 @@ import {
   Receipt,
   Plus,
   Trash2,
+  X,
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import { formatINR } from '@/lib/accounting/currency';
@@ -92,8 +93,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search payee..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 xs:w-36 sm:w-44"
+              className="w-full pl-8 pr-7 py-1.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 xs:w-36 sm:w-44"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchChange('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-neutral-400 hover:text-white transition"
+                title="Clear search"
+                aria-label="Clear search"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
           {/* Type Filter Pills */}

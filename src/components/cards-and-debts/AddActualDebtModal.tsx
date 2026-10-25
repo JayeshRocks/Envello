@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, CalendarClock, ShieldAlert } from 'lucide-react';
 import { toPaise } from '@/lib/accounting/currency';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface AddActualDebtModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export const AddActualDebtModal: React.FC<AddActualDebtModalProps> = ({
   const [dueDate, setDueDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -70,7 +73,10 @@ export const AddActualDebtModal: React.FC<AddActualDebtModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+    >
       <div className="glass-card w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-white/10 p-6 space-y-5 shadow-2xl modal-panel max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Mobile drag handle */}
         <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />

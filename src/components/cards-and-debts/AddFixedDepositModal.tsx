@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Landmark, ShieldAlert, Sparkles } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface AddFixedDepositModalProps {
   isOpen: boolean;
@@ -33,6 +34,8 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
   const [fundingAccountId, setFundingAccountId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -109,7 +112,10 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="glass-card w-full max-w-md rounded-t-3xl sm:rounded-2xl border-t sm:border border-white/10 p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
         <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <div className="flex items-center justify-between">

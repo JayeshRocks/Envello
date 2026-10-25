@@ -11,6 +11,7 @@ import {
 import type { AccountItem } from '@/lib/api/accounts';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface RecordTransactionModalProps {
   isOpen: boolean;
@@ -62,6 +63,8 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   // Initialize selected dropdowns when modal opens or lists load
   useEffect(() => {
@@ -145,7 +148,10 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="max-w-lg w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
         <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button
@@ -252,6 +258,32 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 autoFocus
                 className="w-full pl-8 pr-3.5 py-2.5 rounded-xl glass-input text-base font-mono text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500 tabular-nums"
               />
+            </div>
+
+            {/* Quick Amount Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">
+              {[100, 200, 500, 1000, 2000, 5000].map((quick) => (
+                <button
+                  key={quick}
+                  type="button"
+                  onClick={() => {
+                    const current = parseFloat(amountRupees) || 0;
+                    setAmountRupees((current + quick).toString());
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-[11px] font-mono font-medium text-neutral-300 hover:text-white border border-white/5 active:scale-95 transition flex-shrink-0"
+                >
+                  +₹{quick}
+                </button>
+              ))}
+              {amountRupees && (
+                <button
+                  type="button"
+                  onClick={() => setAmountRupees('')}
+                  className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-[10px] text-red-400 font-medium border border-red-500/20 active:scale-95 transition flex-shrink-0"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 

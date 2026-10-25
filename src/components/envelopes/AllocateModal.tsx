@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { toPaise, toRupees, formatINR } from '@/lib/accounting/currency';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 interface AllocateModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
   const [rupeesInput, setRupeesInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   useEffect(() => {
     if (envelope) {
@@ -57,7 +60,10 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    >
       <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
         <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button
