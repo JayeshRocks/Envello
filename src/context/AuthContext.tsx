@@ -39,6 +39,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+
+  // Check if current user has an actual password in the authoritative database
+  const checkHasPassword = useCallback(async (currentUser?: User | null) => {
+    if (!currentUser) {
+      setHasPassword(null);
+      return;
+    }
+
+    if (currentUser.user_metadata?.has_set_password === true) {
+      setHasPassword(true);
+      return;
+    }
+
+    try {
+      // Cast as any because custom RPC is added via migration
+      const { data, error: rpcError } = await (supabase.rpc as any)('user_has_password');
+      if (!rpcError && typeof data === 'boolean') {
+        setHasPassword(data);
+        return;
+      }
+    } catch {
+      // Ignore if RPC is not present
+    }
+
+    setHasPassword(currentUser.user_metadata?.has_set_password === true);
+  }, []);
 
   // Check if current authenticated user's email is on the server allowlist
   const checkAllowlist = useCallback(async (userEmail?: string) => {
@@ -80,6 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
+      if (initialSession?.user) {
+        checkHasPassword(initialSession.user);
+      }
       if (initialSession?.user?.email) {
         checkAllowlist(initialSession.user.email).finally(() => setIsLoading(false));
       } else {
@@ -96,6 +126,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      if (newSession?.user) {
+        checkHasPassword(newSession.user);
+      }
       if (newSession?.user?.email) {
         await checkAllowlist(newSession.user.email);
       } else {
@@ -107,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, [checkAllowlist]);
+  }, [checkAllowlist, checkHasPassword]);
 
   const signInWithEmail = async (email: string, password: string) => {
     setError(null);
@@ -241,15 +274,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (data.user) {
       setUser(data.user);
     }
+    setHasPassword(true);
     setIsPasswordRecovery(false);
     return { error: null };
   };
 
   const clearError = () => setError(null);
 
-  const needsPasswordSetup = Boolean(
-    user && user.user_metadata?.has_set_password !== true
-  );
+  const needsPasswordSetup = hasPassword === false;
 
   return (
     <AuthContext.Provider

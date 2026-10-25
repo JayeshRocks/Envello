@@ -58,10 +58,15 @@ export const App: React.FC = () => {
     }
   }, [isPasswordRecovery]);
 
-  // If user signed in via Magic Link without a password, prompt them to set one on first login
+  // If user signed in without a password, prompt them to set one on first login
   useEffect(() => {
     if (user && isAllowlisted && needsPasswordSetup) {
-      setIsFirstLoginPasswordModalOpen(true);
+      const dismissed = localStorage.getItem(`envello_dismissed_password_prompt_${user.id}`);
+      if (!dismissed) {
+        setIsFirstLoginPasswordModalOpen(true);
+      }
+    } else {
+      setIsFirstLoginPasswordModalOpen(false);
     }
   }, [user, isAllowlisted, needsPasswordSetup]);
 

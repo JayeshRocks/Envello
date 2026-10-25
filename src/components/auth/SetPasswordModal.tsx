@@ -19,6 +19,13 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
+  const handleDismiss = () => {
+    if (user?.id) {
+      localStorage.setItem(`envello_dismissed_password_prompt_${user.id}`, 'true');
+    }
+    onClose();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -40,6 +47,9 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
       if (err) {
         setError(err.message || 'Failed to set password.');
       } else {
+        if (user?.id) {
+          localStorage.removeItem(`envello_dismissed_password_prompt_${user.id}`);
+        }
         setSuccess('Password created successfully! You can now log in using your password anytime.');
         setTimeout(() => {
           onClose();
@@ -60,7 +70,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
 
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={handleDismiss}
           aria-label="Close dialog"
           className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
         >
@@ -170,7 +180,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
           <div className="text-center pt-1">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleDismiss}
               className="text-xs text-neutral-500 hover:text-neutral-400 transition underline"
             >
               Skip for now
