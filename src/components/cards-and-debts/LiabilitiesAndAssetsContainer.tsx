@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { CreditCard, Landmark, RefreshCw, CalendarClock } from 'lucide-react';
+import { CreditCard, Landmark, RefreshCw, CalendarClock, Target } from 'lucide-react';
 import type { CreditCardWithDetails } from '@/lib/api/creditCards';
 import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
 import type { SelfEmiWithProgress } from '@/hooks/useSelfEmis';
 import type { ActualDebtRow } from '@/lib/api/actualDebts';
 import type { AccountItem } from '@/lib/api/accounts';
+import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
 import { CreditCardSection } from './CreditCardSection';
 import { FixedDepositSection } from './FixedDepositSection';
 import { SelfEmiSection } from './SelfEmiSection';
 import { ActualDebtsSection } from './ActualDebtsSection';
+import { MonthlyTargetsSection } from '@/components/targets/MonthlyTargetsSection';
 
 interface LiabilitiesAndAssetsContainerProps {
   // Cards
@@ -88,10 +90,24 @@ interface LiabilitiesAndAssetsContainerProps {
     notes?: string;
   }) => Promise<void>;
 
+  // Monthly Targets (Pillar 6)
+  targets: MonthlyTargetWithProgress[];
+  totalTargetAmountPaise: bigint;
+  totalContributedPaise: bigint;
+  isTargetsLoading: boolean;
+  onAddTarget: (params: {
+    title: string;
+    target_amount_paise: number;
+    target_date: string;
+    current_contributed_paise?: number;
+  }) => Promise<void>;
+  onContributeTarget: (targetId: string, amountPaise: number) => Promise<void>;
+  onRemoveTarget: (targetId: string) => Promise<void>;
+
   accounts: AccountItem[];
 }
 
-export type SubTabType = 'cards' | 'fds' | 'self_emis' | 'debts';
+export type SubTabType = 'cards' | 'fds' | 'self_emis' | 'debts' | 'targets';
 
 export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContainerProps> = (props) => {
   const [activeTab, setActiveTab] = useState<SubTabType>('cards');
@@ -124,6 +140,13 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
       icon: CalendarClock,
       count: props.actualDebts.filter((d) => !d.is_settled).length,
       badgeColor: 'text-orange-400',
+    },
+    {
+      id: 'targets' as const,
+      name: 'Monthly Targets',
+      icon: Target,
+      count: props.targets.filter((t) => !t.is_achieved).length,
+      badgeColor: 'text-cyan-400',
     },
   ];
 
@@ -204,6 +227,18 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             isLoading={props.isDebtsLoading}
             onAddDebt={props.onAddDebt}
             onPayDebt={props.onPayDebt}
+          />
+        )}
+
+        {activeTab === 'targets' && (
+          <MonthlyTargetsSection
+            targets={props.targets}
+            totalTargetAmountPaise={props.totalTargetAmountPaise}
+            totalContributedPaise={props.totalContributedPaise}
+            isLoading={props.isTargetsLoading}
+            onAddTarget={props.onAddTarget}
+            onContribute={props.onContributeTarget}
+            onRemoveTarget={props.onRemoveTarget}
           />
         )}
       </div>

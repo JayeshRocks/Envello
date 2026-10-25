@@ -34,6 +34,8 @@ export interface TransactionRecord {
   entries: TransactionEntryRecord[];
 }
 
+export type TransactionWithEntries = TransactionRecord;
+
 /**
  * Records an Expense transaction:
  * - Inserts master transaction (type: 'expense')

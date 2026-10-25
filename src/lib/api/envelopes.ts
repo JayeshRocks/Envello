@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase/client';
 import type { EnvelopeWithAllocation, EnvelopeRolloverPolicy } from '@/types/accounting.types';
 import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
 
+export type EnvelopeWithDetails = EnvelopeWithAllocation;
+
 export const DEFAULT_ENVELOPES_CONFIG = [
   {
     name: 'Regular / Balance',

@@ -11,6 +11,7 @@ import {
   Sparkles,
   ArrowRight,
   Landmark,
+  Download,
 } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import {
@@ -26,6 +27,7 @@ import { useCreditCards } from '@/hooks/useCreditCards';
 import { useFixedDeposits } from '@/hooks/useFixedDeposits';
 import { useSelfEmis } from '@/hooks/useSelfEmis';
 import { useActualDebts } from '@/hooks/useActualDebts';
+import { useMonthlyTargets } from '@/hooks/useMonthlyTargets';
 import { Header } from '@/components/common/Header';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { AccessRestricted } from '@/components/auth/AccessRestricted';
@@ -34,6 +36,8 @@ import { RecordTransactionModal } from '@/components/transactions/RecordTransact
 import { AccountListModal } from '@/components/accounts/AccountListModal';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { LiabilitiesAndAssetsContainer } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { ExportDataModal } from '@/components/export/ExportDataModal';
 import type { FinancialOverviewPillars } from '@/types/accounting.types';
 
 export const App: React.FC = () => {
@@ -41,6 +45,7 @@ export const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
   const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Live hooks
   const {
@@ -108,6 +113,17 @@ export const App: React.FC = () => {
     refreshDebts,
   } = useActualDebts();
 
+  const {
+    targets,
+    totalTargetAmountPaise,
+    totalContributedPaise,
+    isLoading: isTargetsLoading,
+    addTarget,
+    contributeToTarget,
+    removeTarget,
+    refreshTargets,
+  } = useMonthlyTargets();
+
   // Baseline demo state (used as fallback for locked assets or unauthenticated preview)
   const [demoPillars] = useState<FinancialOverviewPillars>({
     spendableCashPaise: 12540050n,       // ₹1,25,400.50
@@ -119,12 +135,13 @@ export const App: React.FC = () => {
   });
 
   // Effective authoritative pillars:
-  // All pillars driven dynamically from live Supabase data when authenticated
+  // All 6 pillars driven dynamically from live Supabase data when authenticated
   const effectiveSpendableCashPaise = user ? totalSpendableCashPaise : demoPillars.spendableCashPaise;
   const effectiveEnvelopeAllocationsPaise = user ? totalAllocatedPaise : demoPillars.envelopeAllocationsPaise;
   const effectiveSavingsAndFDsPaise = user ? totalPrincipalPaise : demoPillars.savingsAndFDsPaise;
   const effectiveCreditCardLiabilitiesPaise = user ? totalCardOutstandingPaise : demoPillars.creditCardLiabilitiesPaise;
   const effectiveActualDebtsPaise = user ? totalRemainingDebtPaise : demoPillars.actualDebtsPaise;
+  const effectiveMonthlyTargetsPaise = user ? totalTargetAmountPaise : demoPillars.monthlyTargetsPaise;
 
   // Credit card utilization calculation
   const effectiveCardUtilization = user
@@ -150,6 +167,7 @@ export const App: React.FC = () => {
       refreshFDs(),
       refreshSelfEmis(),
       refreshDebts(),
+      refreshTargets(),
     ]);
   };
 
@@ -228,6 +246,14 @@ export const App: React.FC = () => {
 
             {user && (
               <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition"
+                  title="Export Data"
+                >
+                  <Download className="w-3.5 h-3.5 text-sky-400" />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
                 <button
                   onClick={() => setIsAccountsModalOpen(true)}
                   className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition"
@@ -361,13 +387,26 @@ export const App: React.FC = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-cyan-300 tabular-nums">
-                  {formatINR(demoPillars.monthlyTargetsPaise)}
+                  {formatINR(effectiveMonthlyTargetsPaise)}
                 </div>
                 <div className="text-xs text-neutral-400 mt-1">Planned Goals (Not Yet Deducted)</div>
               </div>
             </div>
           </div>
         </section>
+
+        {/* Section: Analytics & Interactive Visual Insights */}
+        {user && (
+          <AnalyticsDashboard
+            transactions={transactions}
+            envelopes={envelopes}
+            spendableCashPaise={effectiveSpendableCashPaise}
+            savingsAndFDsPaise={effectiveSavingsAndFDsPaise}
+            creditCardLiabilitiesPaise={effectiveCreditCardLiabilitiesPaise}
+            actualDebtsPaise={effectiveActualDebtsPaise}
+            onOpenExportModal={() => setIsExportModalOpen(true)}
+          />
+        )}
 
         {/* Section: Envelope Budgeting */}
         {user ? (
@@ -400,7 +439,7 @@ export const App: React.FC = () => {
           </section>
         )}
 
-        {/* Section: Liabilities & Locked Assets (Credit Cards, Super.Money FDs, Self EMIs, Debts) */}
+        {/* Section: Liabilities, Locked Assets & Goals (Cards, FDs, Self EMIs, Debts, Targets) */}
         {user && (
           <LiabilitiesAndAssetsContainer
             cards={cards}
@@ -451,6 +490,20 @@ export const App: React.FC = () => {
               await handleTransactionRecorded();
             }}
 
+            targets={targets}
+            totalTargetAmountPaise={totalTargetAmountPaise}
+            totalContributedPaise={totalContributedPaise}
+            isTargetsLoading={isTargetsLoading}
+            onAddTarget={async (params) => {
+              await addTarget(params);
+            }}
+            onContributeTarget={async (targetId, amount) => {
+              await contributeToTarget(targetId, amount);
+            }}
+            onRemoveTarget={async (targetId) => {
+              await removeTarget(targetId);
+            }}
+
             accounts={accounts}
           />
         )}
@@ -472,7 +525,7 @@ export const App: React.FC = () => {
         <section className="p-6 rounded-2xl bg-neutral-900/50 border border-white/5 space-y-3">
           <h3 className="text-sm font-semibold text-neutral-200">System Architecture & Invariants</h3>
           <p className="text-xs text-neutral-400">
-            Phase 5 Complete: All six financial pillars are live and authoritative. Credit card debt settlements and FD movements preserve double-entry integrity.
+            Phase 6 Complete: Interactive Cashflow Analytics, Envelope Distributions, Net Worth Solvency, and Full CSV/JSON Data Export are active.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
             <a
@@ -529,6 +582,19 @@ export const App: React.FC = () => {
         onAddAccount={async (params) => {
           await addAccount(params);
         }}
+      />
+
+      {/* Export Data Modal */}
+      <ExportDataModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        accounts={accounts}
+        envelopes={envelopes}
+        transactions={transactions}
+        creditCards={cards}
+        fixedDeposits={fixedDeposits}
+        actualDebts={actualDebts}
+        monthlyTargets={targets}
       />
 
       {/* Auth Modal */}
