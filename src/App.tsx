@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Header } from '@/components/common/Header';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { AccessRestricted } from '@/components/auth/AccessRestricted';
+import { EnvelopeGrid } from '@/components/envelopes/EnvelopeGrid';
 import type { FinancialOverviewPillars } from '@/types/accounting.types';
 
 export const App: React.FC = () => {
@@ -255,32 +256,36 @@ export const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Section: Envelope Budgeting Demonstration */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight text-white">Active Envelopes</h2>
-              <p className="text-xs text-neutral-400">Configured according to your personal spending taxonomy.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {envelopeCategories.map((env, idx) => (
-              <div
-                key={idx}
-                className={`glass-card rounded-xl p-4 border ${env.border} flex items-center justify-between`}
-              >
-                <div>
-                  <div className="text-sm font-medium text-neutral-200">{env.name}</div>
-                  <div className="text-xs text-neutral-400 mt-0.5">{env.note || 'Available to spend'}</div>
-                </div>
-                <div className={`text-base font-bold font-mono tabular-nums ${env.color}`}>
-                  {formatINR(env.amount)}
-                </div>
+        {/* Section: Envelope Budgeting */}
+        {user ? (
+          <EnvelopeGrid />
+        ) : (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight text-white">Active Envelopes (Preview)</h2>
+                <p className="text-xs text-neutral-400">Sample categories. Sign in to customize and allocate your own budgets.</p>
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {envelopeCategories.map((env, idx) => (
+                <div
+                  key={idx}
+                  className={`glass-card rounded-xl p-4 border ${env.border} flex items-center justify-between`}
+                >
+                  <div>
+                    <div className="text-sm font-medium text-neutral-200">{env.name}</div>
+                    <div className="text-xs text-neutral-400 mt-0.5">{env.note || 'Available to spend'}</div>
+                  </div>
+                  <div className={`text-base font-bold font-mono tabular-nums ${env.color}`}>
+                    {formatINR(env.amount)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Guide Links */}
         <section className="p-6 rounded-2xl bg-neutral-900/50 border border-white/5 space-y-3">

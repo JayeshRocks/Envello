@@ -8,6 +8,7 @@ import {
   calculateRollover,
   calculateSelfEmiProgress,
 } from './calculations';
+import { shiftYearMonth } from '@/hooks/useEnvelopes';
 
 describe('Accounting Engine — Invariants & Precision', () => {
   describe('Zero Floating-Point Error Arithmetic', () => {
@@ -95,6 +96,18 @@ describe('Accounting Engine — Invariants & Precision', () => {
       expect(remainingPaise).toBe(3000000n);
       expect(progressPercent).toBe(40);
       expect(isFullyReimbursed).toBe(false);
+    });
+  });
+
+  describe('Budget Period Navigation', () => {
+    it('shifts months correctly within the same calendar year', () => {
+      expect(shiftYearMonth('2026-10', 1)).toBe('2026-11');
+      expect(shiftYearMonth('2026-10', -1)).toBe('2026-09');
+    });
+
+    it('crosses year boundaries cleanly forward and backward', () => {
+      expect(shiftYearMonth('2026-12', 1)).toBe('2027-01');
+      expect(shiftYearMonth('2026-01', -1)).toBe('2025-12');
     });
   });
 });

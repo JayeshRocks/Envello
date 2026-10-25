@@ -64,7 +64,11 @@ export interface EnvelopeSummary {
   availablePaise: bigint;
   isSystemReserved: boolean;
   rolloverPolicy: EnvelopeRolloverPolicy;
+  sortOrder?: number;
+  allocationId?: string;
 }
+
+export type EnvelopeWithAllocation = EnvelopeSummary;
 
 export interface CreditCardSummary {
   id: string;
