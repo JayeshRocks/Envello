@@ -95,14 +95,14 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onOpenAuthModal}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs font-medium border border-white/10 transition"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-md shadow-sky-500/20 transition"
             >
-              <LogIn className="w-3.5 h-3.5 text-sky-400" />
+              <LogIn className="w-3.5 h-3.5" />
               <span>Sign In</span>
             </button>
           )}
 
-          {/* Accounts Button */}
+          {/* Accounts Button (Authenticated only) */}
           {user && onOpenAccountsModal && (
             <button
               onClick={onOpenAccountsModal}
@@ -114,15 +114,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Record Transaction Button */}
-          <button
-            onClick={onRecordTransactionClick}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition shadow-sm shadow-sky-500/30"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">Record Transaction</span>
-            <span className="sm:hidden">Add</span>
-          </button>
+          {/* Record Transaction Button (Authenticated only) */}
+          {user && (
+            <button
+              onClick={onRecordTransactionClick}
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition shadow-sm shadow-sky-500/30"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Record Transaction</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
