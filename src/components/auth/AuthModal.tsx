@@ -95,6 +95,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const formatAuthError = (msg?: string | null): string => {
+    if (!msg) return 'An error occurred during authentication.';
+    if (msg.toLowerCase().includes('rate limit')) {
+      return 'Email rate limit exceeded by Supabase (~3-4 emails/hour on free tier). Tip: Turn off "Confirm email" in Supabase Dashboard → Authentication → Providers → Email to sign up instantly without needing email verification!';
+    }
+    return msg;
+  };
+
   const handleResendVerification = async () => {
     const cleanEmail = email.trim();
     if (!cleanEmail || !cleanEmail.includes('@')) {
@@ -108,12 +116,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       const { error: resendErr } = await resendVerificationEmail(cleanEmail);
       if (resendErr) {
-        setValidationError(resendErr.message);
+        setValidationError(formatAuthError(resendErr.message));
       } else {
         setResendSuccess(`Verification email sent to ${cleanEmail}! Please check your Inbox and Spam/Junk folder.`);
       }
     } catch (err: unknown) {
-      setValidationError(err instanceof Error ? err.message : 'Failed to resend verification email.');
+      setValidationError(formatAuthError(err instanceof Error ? err.message : null));
     } finally {
       setIsResending(false);
     }
@@ -194,7 +202,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       } else if (mode === 'signUp') {
         const result = await signUpWithEmail(cleanEmail, password);
         if (result.error) {
-          setValidationError(result.error.message);
+          setValidationError(formatAuthError(result.error.message));
         } else if (result.alreadyRegistered) {
           // Supabase anti-enumeration detection: user already exists (likely created via Magic Link or Google)
           setAccountExistsFromMagicLink(true);
@@ -211,13 +219,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         }
       } else if (mode === 'magicLink') {
         const { error: err } = await sendMagicLink(cleanEmail);
-        if (!err) {
+        if (err) {
+          setValidationError(formatAuthError(err.message));
+        } else {
           setSuccessMessage('Magic link sent! Check your inbox to sign in instantly.');
         }
       } else if (mode === 'resetPassword') {
         const { error: err } = await resetPasswordForEmail(cleanEmail);
         if (err) {
-          setValidationError(err.message);
+          setValidationError(formatAuthError(err.message));
         } else {
           setSuccessMessage(
             `Password setup link sent to ${cleanEmail}! Click the link in your email to choose your password.`
