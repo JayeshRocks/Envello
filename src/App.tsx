@@ -11,6 +11,7 @@ import {
   Sparkles,
   Lock,
   ArrowRight,
+  Landmark,
 } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import {
@@ -19,18 +20,53 @@ import {
 } from '@/lib/accounting/calculations';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAccounts } from '@/hooks/useAccounts';
+import { useEnvelopes } from '@/hooks/useEnvelopes';
+import { useTransactions } from '@/hooks/useTransactions';
 import { Header } from '@/components/common/Header';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { AccessRestricted } from '@/components/auth/AccessRestricted';
 import { EnvelopeGrid } from '@/components/envelopes/EnvelopeGrid';
+import { RecordTransactionModal } from '@/components/transactions/RecordTransactionModal';
+import { AccountListModal } from '@/components/accounts/AccountListModal';
+import { TransactionTable } from '@/components/transactions/TransactionTable';
 import type { FinancialOverviewPillars } from '@/types/accounting.types';
 
 export const App: React.FC = () => {
-  const { user, isAllowlisted, isLoading } = useAuth();
+  const { user, isAllowlisted, isLoading: isAuthLoading } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
+  const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
 
-  // Authoritative 6 balance pillars (demo baseline for preview)
-  const [pillars] = useState<FinancialOverviewPillars>({
+  // Live hooks
+  const {
+    accounts,
+    totalSpendableCashPaise,
+    addAccount,
+    refreshAccounts,
+  } = useAccounts();
+
+  const {
+    envelopes,
+    totalAllocatedPaise,
+    refresh: refreshEnvelopes,
+  } = useEnvelopes();
+
+  const {
+    transactions,
+    isLoading: isTxLoading,
+    typeFilter,
+    setTypeFilter,
+    searchQuery,
+    setSearchQuery,
+    addExpense,
+    addIncome,
+    addTransfer,
+    refreshTransactions,
+  } = useTransactions();
+
+  // Baseline demo state (used as fallback for locked assets or unauthenticated preview)
+  const [demoPillars] = useState<FinancialOverviewPillars>({
     spendableCashPaise: 12540050n,       // ₹1,25,400.50
     envelopeAllocationsPaise: 4200000n,  // ₹42,000.00
     savingsAndFDsPaise: 25000000n,       // ₹2,50,000.00 (Super.Money FDs)
@@ -39,10 +75,15 @@ export const App: React.FC = () => {
     monthlyTargetsPaise: 3000000n,       // ₹30,000.00 (Forward planning)
   });
 
+  // Effective authoritative pillars:
+  // Spendable cash & envelope allocations are driven dynamically from live Supabase data
+  const effectiveSpendableCashPaise = user ? totalSpendableCashPaise : demoPillars.spendableCashPaise;
+  const effectiveEnvelopeAllocationsPaise = user ? totalAllocatedPaise : demoPillars.envelopeAllocationsPaise;
+
   // Credit card demonstration calculation
   const demoCardLimit = 10000000n; // ₹1,00,000.00
   const cardUtilization = calculateCreditCardUtilization(
-    pillars.creditCardLiabilitiesPaise,
+    demoPillars.creditCardLiabilitiesPaise,
     demoCardLimit
   );
   const cardStatus = getCreditCardUtilizationStatus(cardUtilization);
@@ -56,8 +97,16 @@ export const App: React.FC = () => {
     { name: 'Birthdays', amount: 500000n, color: 'text-pink-400', border: 'border-pink-500/20' },
   ];
 
+  const handleTransactionRecorded = async () => {
+    await Promise.all([
+      refreshAccounts(),
+      refreshEnvelopes(),
+      refreshTransactions(),
+    ]);
+  };
+
   // 1. Loading session state
-  if (isLoading) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center space-y-4">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 animate-pulse">
@@ -85,7 +134,7 @@ export const App: React.FC = () => {
           if (!user) {
             setIsAuthModalOpen(true);
           } else {
-            alert('Add Transaction modal will open here once Phase 4 is integrated.');
+            setIsRecordTxModalOpen(true);
           }
         }}
       />
@@ -124,7 +173,7 @@ export const App: React.FC = () => {
             <div className="space-y-1">
               <div className="font-semibold text-amber-300">Welcome to Envello! Database Connection Setup Needed</div>
               <p className="text-xs text-amber-200/80">
-                To connect your local workspace to Supabase, create a free project at supabase.com, copy your Project URL and anon public key into <code className="px-1.5 py-0.5 rounded bg-black/40 font-mono text-amber-300">.env</code>, and run the migration in <code className="px-1.5 py-0.5 rounded bg-black/40 font-mono text-amber-300">supabase/migrations/</code>.
+                To connect your local workspace to Supabase, copy your Project URL and anon key into <code className="px-1.5 py-0.5 rounded bg-black/40 font-mono text-amber-300">.env</code>.
               </p>
             </div>
           </div>
@@ -142,36 +191,59 @@ export const App: React.FC = () => {
                 Balances are strictly categorized into liquid cash, allocations, locked savings, and debts.
               </p>
             </div>
+            {user && (
+              <button
+                onClick={() => setIsAccountsModalOpen(true)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/5 text-neutral-300 hover:text-white text-xs font-medium transition"
+              >
+                <Landmark className="w-3.5 h-3.5 text-sky-400" />
+                <span>Manage Accounts ({accounts.length})</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 1. Spendable Cash */}
-            <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
+            <div
+              onClick={() => {
+                if (user) setIsAccountsModalOpen(true);
+              }}
+              className={`glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden transition ${
+                user ? 'cursor-pointer hover:border-sky-500/30' : ''
+              }`}
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">1. Spendable Cash</span>
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  1. Spendable Cash
+                </span>
                 <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
                   <Wallet className="w-5 h-5" />
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-white tabular-nums">
-                  {formatINR(pillars.spendableCashPaise)}
+                  {formatINR(effectiveSpendableCashPaise)}
                 </div>
-                <div className="text-xs text-neutral-400 mt-1">Liquid Bank Accounts & Cash in Hand</div>
+                <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                  <span>Liquid Bank Accounts & Cash</span>
+                  {user && <span className="text-sky-400 text-[11px]">Manage →</span>}
+                </div>
               </div>
             </div>
 
             {/* 2. Envelope Allocations */}
             <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">2. Envelope Budget</span>
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  2. Envelope Budget
+                </span>
                 <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
                   <Mail className="w-5 h-5" />
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-indigo-300 tabular-nums">
-                  {formatINR(pillars.envelopeAllocationsPaise)}
+                  {formatINR(effectiveEnvelopeAllocationsPaise)}
                 </div>
                 <div className="text-xs text-neutral-400 mt-1">Allocated for Current Month Spending</div>
               </div>
@@ -180,14 +252,16 @@ export const App: React.FC = () => {
             {/* 3. Savings & Fixed Deposits */}
             <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">3. Savings & FDs</span>
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  3. Savings & FDs
+                </span>
                 <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
                   <PiggyBank className="w-5 h-5" />
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums">
-                  {formatINR(pillars.savingsAndFDsPaise)}
+                  {formatINR(demoPillars.savingsAndFDsPaise)}
                 </div>
                 <div className="text-xs text-neutral-400 mt-1">Super.Money FDs & Locked Reserves</div>
               </div>
@@ -196,14 +270,16 @@ export const App: React.FC = () => {
             {/* 4. Credit Card Liabilities */}
             <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">4. Card Liabilities</span>
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  4. Card Liabilities
+                </span>
                 <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
                   <CreditCard className="w-5 h-5" />
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-red-400 tabular-nums">
-                  {formatINR(pillars.creditCardLiabilitiesPaise)}
+                  {formatINR(demoPillars.creditCardLiabilitiesPaise)}
                 </div>
                 <div className="flex items-center space-x-2 text-xs mt-1">
                   <span className="text-neutral-400">Utilization:</span>
@@ -225,14 +301,16 @@ export const App: React.FC = () => {
             {/* 5. Actual Debts */}
             <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">5. Actual Debts</span>
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  5. Actual Debts
+                </span>
                 <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
                   <CalendarClock className="w-5 h-5" />
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums">
-                  {formatINR(pillars.actualDebtsPaise)}
+                  {formatINR(demoPillars.actualDebtsPaise)}
                 </div>
                 <div className="text-xs text-neutral-400 mt-1">External Loans & Debts Owed</div>
               </div>
@@ -241,14 +319,16 @@ export const App: React.FC = () => {
             {/* 6. Monthly Targets */}
             <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">6. Monthly Targets</span>
+                <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  6. Monthly Targets
+                </span>
                 <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
                   <Target className="w-5 h-5" />
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-cyan-300 tabular-nums">
-                  {formatINR(pillars.monthlyTargetsPaise)}
+                  {formatINR(demoPillars.monthlyTargetsPaise)}
                 </div>
                 <div className="text-xs text-neutral-400 mt-1">Planned Goals (Not Yet Deducted)</div>
               </div>
@@ -287,11 +367,24 @@ export const App: React.FC = () => {
           </section>
         )}
 
+        {/* Section: Transaction Ledger */}
+        {user && (
+          <TransactionTable
+            transactions={transactions}
+            isLoading={isTxLoading}
+            typeFilter={typeFilter}
+            onTypeFilterChange={setTypeFilter}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
+          />
+        )}
+
         {/* Quick Guide Links */}
         <section className="p-6 rounded-2xl bg-neutral-900/50 border border-white/5 space-y-3">
-          <h3 className="text-sm font-semibold text-neutral-200">Next Steps & Setup Documentation</h3>
+          <h3 className="text-sm font-semibold text-neutral-200">Next Steps & Documentation</h3>
           <p className="text-xs text-neutral-400">
-            Phase 2 Authentication is active. You can sign in using your allowlisted email address.
+            Phase 4 Transaction Ledger is active. Record expenses, income, and account transfers in integer paise.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
             <a
@@ -304,7 +397,7 @@ export const App: React.FC = () => {
               <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
             </a>
             <div className="p-3 rounded-xl bg-neutral-800/60 border border-white/5 text-neutral-300">
-              <span>2. Check <code className="text-sky-400 font-mono">public.allowed_users</code></span>
+              <span>2. Check <code className="text-sky-400 font-mono">public.transactions</code></span>
             </div>
             <a
               href="https://vercel.com"
@@ -318,6 +411,36 @@ export const App: React.FC = () => {
           </div>
         </section>
       </main>
+
+      {/* Record Transaction Modal */}
+      <RecordTransactionModal
+        isOpen={isRecordTxModalOpen}
+        accounts={accounts}
+        envelopes={envelopes}
+        onClose={() => setIsRecordTxModalOpen(false)}
+        onRecordExpense={async (params) => {
+          await addExpense(params);
+          await handleTransactionRecorded();
+        }}
+        onRecordIncome={async (params) => {
+          await addIncome(params);
+          await handleTransactionRecorded();
+        }}
+        onRecordTransfer={async (params) => {
+          await addTransfer(params);
+          await handleTransactionRecorded();
+        }}
+      />
+
+      {/* Accounts Management Modal */}
+      <AccountListModal
+        isOpen={isAccountsModalOpen}
+        accounts={accounts}
+        onClose={() => setIsAccountsModalOpen(false)}
+        onAddAccount={async (params) => {
+          await addAccount(params);
+        }}
+      />
 
       {/* Auth Modal */}
       <AuthModal
