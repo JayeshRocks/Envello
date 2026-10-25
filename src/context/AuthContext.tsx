@@ -2,6 +2,13 @@ import React, { createContext, useEffect, useState, useCallback } from 'react';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
+export interface SignUpResult {
+  error: AuthError | null;
+  session: Session | null;
+  user: User | null;
+  alreadyRegistered: boolean;
+}
+
 export interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -9,8 +16,9 @@ export interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<SignUpResult>;
   sendMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
+  resendVerificationEmail: (email: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   refreshAllowlistStatus: () => Promise<void>;
@@ -105,15 +113,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: null };
   };
 
-  const signUpWithEmail = async (email: string, password: string) => {
+  const signUpWithEmail = async (email: string, password: string): Promise<SignUpResult> => {
     setError(null);
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
     });
     if (signUpError) {
       setError(signUpError.message);
-      return { error: signUpError };
+      return { error: signUpError, session: null, user: null, alreadyRegistered: false };
+    }
+    const alreadyRegistered = Boolean(
+      data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0
+    );
+    return {
+      error: null,
+      session: data.session,
+      user: data.user,
+      alreadyRegistered,
+    };
+  };
+
+  const resendVerificationEmail = async (email: string) => {
+    setError(null);
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    if (resendError) {
+      setError(resendError.message);
+      return { error: resendError };
     }
     return { error: null };
   };
@@ -180,6 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithEmail,
         signUpWithEmail,
         sendMagicLink,
+        resendVerificationEmail,
         signInWithGoogle,
         signOut,
         refreshAllowlistStatus,

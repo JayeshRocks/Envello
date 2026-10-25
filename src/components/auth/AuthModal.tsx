@@ -12,6 +12,10 @@ import {
   Loader2,
   LogIn,
   UserPlus,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -27,6 +31,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     signInWithEmail,
     signUpWithEmail,
     sendMagicLink,
+    resendVerificationEmail,
     signInWithGoogle,
     error,
     clearError,
@@ -42,6 +47,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+  const [showOwnerTip, setShowOwnerTip] = useState(false);
+  const [isUnconfirmed, setIsUnconfirmed] = useState(false);
 
   if (!isOpen) return null;
 
@@ -50,6 +59,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     clearError();
     setValidationError(null);
     setSuccessMessage(null);
+    setResendSuccess(null);
+    setIsUnconfirmed(false);
   };
 
   const handleGoogleSignIn = async () => {
@@ -68,11 +79,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleResendVerification = async () => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setValidationError('Please enter a valid email address first.');
+      return;
+    }
+
+    setIsResending(true);
+    setResendSuccess(null);
+    clearError();
+    try {
+      const { error: resendErr } = await resendVerificationEmail(cleanEmail);
+      if (resendErr) {
+        setValidationError(resendErr.message);
+      } else {
+        setResendSuccess(`Verification email sent to ${cleanEmail}! Please check your Inbox and Spam/Junk folder.`);
+      }
+    } catch (err: unknown) {
+      setValidationError(err instanceof Error ? err.message : 'Failed to resend verification email.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
     setValidationError(null);
     setSuccessMessage(null);
+    setResendSuccess(null);
 
     const cleanEmail = email.trim();
     if (!cleanEmail || !cleanEmail.includes('@')) {
@@ -101,11 +137,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         const { error: err } = await signInWithEmail(cleanEmail, password);
         if (!err) {
           onClose();
+        } else if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
+          setIsUnconfirmed(true);
+          setValidationError('Your email has not been confirmed yet.');
         }
       } else if (mode === 'signUp') {
-        const { error: err } = await signUpWithEmail(cleanEmail, password);
-        if (!err) {
-          setSuccessMessage('Account created! Please check your email to confirm registration.');
+        const result = await signUpWithEmail(cleanEmail, password);
+        if (result.error) {
+          setValidationError(result.error.message);
+        } else if (result.alreadyRegistered) {
+          // Supabase anti-enumeration detection: user already exists
+          setMode('signIn');
+          setValidationError(
+            `An account with ${cleanEmail} already exists. Switched to Sign In — please enter your password.`
+          );
+        } else if (result.session) {
+          // Direct session granted (auto-confirm enabled on Supabase)
+          onClose();
+        } else {
+          // Genuine new signup awaiting email verification
+          setIsUnconfirmed(true);
+          setSuccessMessage(`Account created for ${cleanEmail}! Supabase sent a verification link.`);
         }
       } else if (mode === 'magicLink') {
         const { error: err } = await sendMagicLink(cleanEmail);
@@ -243,6 +295,70 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-start space-x-2.5 animate-slide-down">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
             <span className="leading-relaxed">{successMessage}</span>
+          </div>
+        )}
+
+        {resendSuccess && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-start space-x-2.5 animate-slide-down">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
+            <span className="leading-relaxed">{resendSuccess}</span>
+          </div>
+        )}
+
+        {/* Verification assistance card for unconfirmed / new signups */}
+        {(isUnconfirmed || (error && error.toLowerCase().includes('email not confirmed'))) && (
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs space-y-2.5 animate-slide-down">
+            <div className="flex items-start space-x-2 text-amber-200">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400" />
+              <div className="space-y-1 text-left">
+                <p className="font-semibold text-amber-300">Didn&apos;t receive the confirmation email?</p>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  Supabase emails may land in your <strong>Spam/Junk</strong> or <strong>Promotions</strong> folder.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold border border-amber-500/30 transition disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
+                <span>{isResending ? 'Sending email...' : 'Resend Verification Email'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowOwnerTip(!showOwnerTip)}
+                className="text-[11px] text-amber-400/90 hover:text-amber-300 underline flex items-center space-x-1"
+              >
+                <span>Owner Setup Tip</span>
+                {showOwnerTip ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+            </div>
+
+            {showOwnerTip && (
+              <div className="pt-2 border-t border-amber-500/20 text-[11px] text-neutral-300 space-y-1.5 leading-relaxed bg-black/40 p-2.5 rounded-lg text-left">
+                <p className="font-semibold text-white">🔧 Why isn&apos;t the email arriving?</p>
+                <p>
+                  Supabase&apos;s free tier uses a shared sender with strict hourly rate limits (~3/hr) and often gets spam-filtered by Google.
+                </p>
+                <p className="font-medium text-amber-300">To fix this in 10 seconds in Supabase:</p>
+                <ol className="list-decimal list-inside space-y-1 text-neutral-400 pl-1">
+                  <li>
+                    Go to <strong>Authentication &rarr; Providers &rarr; Email</strong>
+                  </li>
+                  <li>
+                    Toggle off <strong>&quot;Confirm email&quot;</strong> &rarr; Save (allows instant login)
+                  </li>
+                  <li>
+                    Or go to <strong>Authentication &rarr; Users</strong> &rarr; click <strong>...</strong> on the user &rarr; <strong>&quot;Confirm user&quot;</strong>
+                  </li>
+                </ol>
+              </div>
+            )}
           </div>
         )}
 
