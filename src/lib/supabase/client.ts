@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database.types';
 
 const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
@@ -23,7 +24,7 @@ export const isSupabaseConfigured = Boolean(
   supabaseUrl !== 'https://your-project-ref.supabase.co'
 );
 
-export const supabase = createClient(
+export const supabase = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
   {
