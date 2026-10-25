@@ -37,9 +37,10 @@ import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { LiabilitiesAndAssetsContainer } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { ExportDataModal } from '@/components/export/ExportDataModal';
+import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
 
 export const App: React.FC = () => {
-  const { user, isAllowlisted, isLoading: isAuthLoading, isPasswordRecovery } = useAuth();
+  const { user, isAllowlisted, isLoading: isAuthLoading, isPasswordRecovery, needsPasswordSetup } = useAuth();
   const { showToast } = useToast();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [reconcileAccountId, setReconcileAccountId] = useState<string | undefined>(undefined);
+  const [isFirstLoginPasswordModalOpen, setIsFirstLoginPasswordModalOpen] = useState(false);
 
   // Auto-open auth modal if user arrives from a password recovery email
   useEffect(() => {
@@ -55,6 +57,13 @@ export const App: React.FC = () => {
       setIsAuthModalOpen(true);
     }
   }, [isPasswordRecovery]);
+
+  // If user signed in via Magic Link without a password, prompt them to set one on first login
+  useEffect(() => {
+    if (user && isAllowlisted && needsPasswordSetup) {
+      setIsFirstLoginPasswordModalOpen(true);
+    }
+  }, [user, isAllowlisted, needsPasswordSetup]);
 
   // Live hooks
   const {
@@ -683,6 +692,12 @@ export const App: React.FC = () => {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* First-Login Set Password Modal for Magic Link Users */}
+      <SetPasswordModal
+        isOpen={isFirstLoginPasswordModalOpen}
+        onClose={() => setIsFirstLoginPasswordModalOpen(false)}
       />
 
       {/* Footer */}

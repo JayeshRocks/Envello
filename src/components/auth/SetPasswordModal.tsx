@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyRound, Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { KeyRound, Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface SetPasswordModalProps {
@@ -38,22 +38,22 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
     try {
       const { error: err } = await updatePassword(password);
       if (err) {
-        setError(err.message || 'Failed to update password.');
+        setError(err.message || 'Failed to set password.');
       } else {
-        setSuccess('Password updated successfully! You can now log in using your password anytime.');
+        setSuccess('Password created successfully! You can now log in using your password anytime.');
         setTimeout(() => {
           onClose();
-        }, 2000);
+        }, 1800);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unexpected error updating password.');
+      setError(err instanceof Error ? err.message : 'Unexpected error saving password.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-8 space-y-6 border border-white/10 shadow-2xl relative modal-panel overflow-hidden">
         {/* Subtle decorative glow header */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500" />
@@ -70,12 +70,12 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
         {/* Modal Header */}
         <div className="space-y-1.5 text-left">
           <div className="inline-flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Account Security</span>
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>First-Time Account Setup</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Set Account Password</h2>
-          <p className="text-xs text-neutral-400">
-            Add or update the password for <span className="font-mono text-sky-300">{user?.email}</span> to sign in with credentials on any device.
+          <h2 className="text-xl font-bold tracking-tight text-white">Create Account Password</h2>
+          <p className="text-xs text-neutral-400 leading-relaxed">
+            You signed in via Magic Link. Set a password for <span className="font-mono text-sky-300">{user?.email}</span> so you can log in directly with your email and password next time.
           </p>
         </div>
 
@@ -123,8 +123,8 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
 
           <div className="space-y-1.5 text-left">
             <label className="text-xs font-medium text-neutral-300 flex items-center space-x-1.5">
-              <Lock className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Confirm New Password</span>
+              <KeyRound className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Confirm Password</span>
             </label>
             <div className="relative">
               <input
@@ -154,12 +154,22 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-neutral-950" />
-                <span>Updating Password...</span>
+                <span>Saving Password...</span>
               </>
             ) : (
               <span>Save Account Password</span>
             )}
           </button>
+
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs text-neutral-500 hover:text-neutral-400 transition underline"
+            >
+              Skip for now (I will use Magic Links)
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -17,6 +17,7 @@ export interface AuthContextType {
   error: string | null;
   isPasswordRecovery: boolean;
   setIsPasswordRecovery: (value: boolean) => void;
+  needsPasswordSetup: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<SignUpResult>;
   sendMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
@@ -128,6 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password,
       options: {
         emailRedirectTo: window.location.origin,
+        data: {
+          has_set_password: true,
+        },
       },
     });
     if (signUpError) {
@@ -224,18 +228,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updatePassword = async (password: string) => {
     setError(null);
-    const { error: updateError } = await supabase.auth.updateUser({
+    const { data, error: updateError } = await supabase.auth.updateUser({
       password,
+      data: {
+        has_set_password: true,
+      },
     });
     if (updateError) {
       setError(updateError.message);
       return { error: updateError };
+    }
+    if (data.user) {
+      setUser(data.user);
     }
     setIsPasswordRecovery(false);
     return { error: null };
   };
 
   const clearError = () => setError(null);
+
+  const needsPasswordSetup = Boolean(
+    user &&
+    (user.app_metadata?.provider === 'email' || user.app_metadata?.providers?.includes('email')) &&
+    user.app_metadata?.provider !== 'google' &&
+    !user.app_metadata?.providers?.includes('google') &&
+    user.user_metadata?.has_set_password !== true
+  );
 
   return (
     <AuthContext.Provider
@@ -247,6 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         isPasswordRecovery,
         setIsPasswordRecovery,
+        needsPasswordSetup,
         signInWithEmail,
         signUpWithEmail,
         sendMagicLink,
