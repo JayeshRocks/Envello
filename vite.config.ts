@@ -14,5 +14,17 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
   envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
 });

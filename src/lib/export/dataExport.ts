@@ -5,6 +5,7 @@ import type { CreditCardWithDetails } from '@/lib/api/creditCards';
 import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
 import type { ActualDebtRow } from '@/lib/api/actualDebts';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
+import type { RecurringRule } from '@/types/recurring.types';
 
 /**
  * Trigger browser file download
@@ -68,6 +69,7 @@ export function exportFullBackupToJSON(data: {
   fixedDeposits: FixedDepositRow[];
   actualDebts: ActualDebtRow[];
   monthlyTargets: MonthlyTargetWithProgress[];
+  recurringRules?: RecurringRule[];
 }): void {
   // Convert BigInts to strings for JSON safety
   const safeData = JSON.parse(

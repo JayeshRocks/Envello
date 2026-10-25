@@ -7,6 +7,7 @@ import type { CreditCardWithDetails } from '@/lib/api/creditCards';
 import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
 import type { ActualDebtRow } from '@/lib/api/actualDebts';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
+import type { RecurringRule } from '@/types/recurring.types';
 import { exportTransactionsToCSV, exportFullBackupToJSON } from '@/lib/export/dataExport';
 
 interface ExportDataModalProps {
@@ -19,6 +20,7 @@ interface ExportDataModalProps {
   fixedDeposits: FixedDepositRow[];
   actualDebts: ActualDebtRow[];
   monthlyTargets: MonthlyTargetWithProgress[];
+  recurringRules?: RecurringRule[];
 }
 
 export const ExportDataModal: React.FC<ExportDataModalProps> = ({
@@ -31,6 +33,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
   fixedDeposits,
   actualDebts,
   monthlyTargets,
+  recurringRules,
 }) => {
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
@@ -52,6 +55,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
       fixedDeposits,
       actualDebts,
       monthlyTargets,
+      recurringRules,
     });
     setDownloadSuccess('Complete workspace JSON backup exported successfully!');
     setTimeout(() => setDownloadSuccess(null), 3500);

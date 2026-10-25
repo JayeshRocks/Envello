@@ -790,6 +790,7 @@ export const App: React.FC = () => {
         fixedDeposits={fixedDeposits}
         actualDebts={actualDebts}
         monthlyTargets={targets}
+        recurringRules={recurringRules}
       />
 
       {/* Auth Modal */}
