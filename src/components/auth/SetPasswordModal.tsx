@@ -75,7 +75,13 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
           </div>
           <h2 className="text-xl font-bold tracking-tight text-white">Create Account Password</h2>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            You signed in via Magic Link. Set a password for <span className="font-mono text-sky-300">{user?.email}</span> so you can log in directly with your email and password next time.
+            You signed in using{' '}
+            <span className="text-neutral-200 font-medium">
+              {user?.app_metadata?.provider === 'google' || user?.app_metadata?.providers?.includes('google')
+                ? 'Google'
+                : 'a Magic Link'}
+            </span>
+            . Create a password for <span className="font-mono text-sky-300">{user?.email}</span> so you can also log in directly with your email and password on any browser.
           </p>
         </div>
 
@@ -167,7 +173,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
               onClick={onClose}
               className="text-xs text-neutral-500 hover:text-neutral-400 transition underline"
             >
-              Skip for now (I will use Magic Links)
+              Skip for now
             </button>
           </div>
         </form>

@@ -248,11 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearError = () => setError(null);
 
   const needsPasswordSetup = Boolean(
-    user &&
-    (user.app_metadata?.provider === 'email' || user.app_metadata?.providers?.includes('email')) &&
-    user.app_metadata?.provider !== 'google' &&
-    !user.app_metadata?.providers?.includes('google') &&
-    user.user_metadata?.has_set_password !== true
+    user && user.user_metadata?.has_set_password !== true
   );
 
   return (
