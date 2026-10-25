@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Antigravity agent alias junction (track canonical .agents/ only)
+/.agent/
+
+# Testing and coverage
+coverage/
+
+# Production build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment files and credentials (CRITICAL: NEVER COMMIT SECRETS)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Supabase local generated files & secrets
+.supabase/
+supabase/.temp/
+supabase/seed.private.sql
+*.dump
+*.sql.tar.gz
+
+# Financial data exports & user records
+/exports/
+/backups/
+*.csv
+*.xlsx
+*.ofx
+*.qif
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Editor & IDE directories
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini

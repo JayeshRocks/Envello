@@ -1,0 +1,53 @@
+# Security & Privacy Rules
+
+## Purpose
+Enforce zero-trust architecture, strict Row Level Security (RLS), private beta gating, and credential isolation in Envello.
+
+---
+
+## 1. Zero-Trust Database Authorization (RLS)
+
+- **RLS Enabled Universally**: Every table, view, and storage bucket created in Supabase MUST have `ENABLE ROW LEVEL SECURITY;` activated.
+- **Never Trust Client `user_id`**:
+  - Never allow client code to supply a `user_id` in request payloads to prove ownership.
+  - In all PostgreSQL RLS policies, use `auth.uid() = user_id`.
+  - For insert policies, enforce `WITH CHECK (auth.uid() = user_id)`.
+  - In update/delete policies, enforce `USING (auth.uid() = user_id)`.
+- **Foreign Key Isolation**: When fetching related records (e.g. transactions under an account), ensure all joined tables also enforce user isolation so ID tampering cannot leak cross-user data.
+
+---
+
+## 2. Google OAuth & Session Management
+
+- **Official OAuth Flow**: Use Supabase Auth with Google provider.
+- **Redirect URI Whitelist**: All OAuth redirect URLs must be strictly registered in the Supabase Dashboard and Google Cloud Console.
+- **Session Handling**: Rely on the Supabase client library session storage. Do not invent custom cookie or session tokens.
+- **Token Freshness**: Handle expired sessions gracefully with automatic token refresh or clean redirect to the login screen without leaking cached financial figures.
+
+---
+
+## 3. Private Beta Access Gating
+
+- **Server-Enforced Allowlist**:
+  - The application is in private beta for the single owner.
+  - New Google OAuth accounts must NOT automatically receive a financial workspace or read access.
+  - Access gating must be checked at the database/edge level (e.g. an `allowed_users` table with RLS or an Edge Function check).
+  - NEVER implement gating via client-side email comparisons in JavaScript, as client code can be easily manipulated.
+
+---
+
+## 4. Secret & Credential Isolation
+
+- **No Secrets in Git**: Never commit `.env`, `.env.local`, `.pem`, `.key`, or database dumps.
+- **Client Key Boundaries**:
+  - `VITE_SUPABASE_ANON_KEY` and `VITE_SUPABASE_URL` are public. Treat them as unprivileged entry points protected solely by RLS.
+  - `SUPABASE_SERVICE_ROLE_KEY` is a root secret. NEVER prefix it with `VITE_` and NEVER import or reference it in frontend code.
+- **Zero Log Leakage**: Never log user credentials, auth tokens, bank account numbers, or sensitive financial data in browser console logs or error trackers.
+
+---
+
+## 5. Input Validation & Defense in Depth
+
+- **Strict Schema Validation**: Validate all client inputs (amounts, account IDs, envelope types, dates) using a runtime schema validator (such as Zod) before sending queries to Supabase.
+- **Parameterized SQL**: Always use Supabase PostgREST client methods or parameterized SQL queries in migrations/RPCs. Never construct dynamic raw SQL strings from user inputs.
+- **Sanitized Presentation**: Escape or sanitize all user-supplied descriptions and notes to prevent Cross-Site Scripting (XSS).
