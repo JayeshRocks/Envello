@@ -6,12 +6,11 @@ import {
   CreditCard,
   CalendarClock,
   Target,
-  PlusCircle,
-  Database,
   ExternalLink,
   ShieldCheck,
-  CheckCircle2,
-  AlertTriangle,
+  Sparkles,
+  Lock,
+  ArrowRight,
 } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import {
@@ -19,20 +18,27 @@ import {
   getCreditCardUtilizationStatus,
 } from '@/lib/accounting/calculations';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Header } from '@/components/common/Header';
+import { AuthModal } from '@/components/auth/AuthModal';
+import { AccessRestricted } from '@/components/auth/AccessRestricted';
 import type { FinancialOverviewPillars } from '@/types/accounting.types';
 
 export const App: React.FC = () => {
-  // Demo state representing the authoritative 6 balance pillars
+  const { user, isAllowlisted, isLoading } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Authoritative 6 balance pillars (demo baseline for preview)
   const [pillars] = useState<FinancialOverviewPillars>({
-    spendableCashPaise: 12540050n,      // ₹1,25,400.50
-    envelopeAllocationsPaise: 4200000n, // ₹42,000.00
-    savingsAndFDsPaise: 25000000n,      // ₹2,50,000.00 (Super.Money FDs)
-    creditCardLiabilitiesPaise: 1850000n,// ₹18,500.00
-    actualDebtsPaise: 5000000n,          // ₹50,000.00 (External loan/EMI)
-    monthlyTargetsPaise: 3000000n,      // ₹30,000.00 (Forward planning)
+    spendableCashPaise: 12540050n,       // ₹1,25,400.50
+    envelopeAllocationsPaise: 4200000n,  // ₹42,000.00
+    savingsAndFDsPaise: 25000000n,       // ₹2,50,000.00 (Super.Money FDs)
+    creditCardLiabilitiesPaise: 1850000n, // ₹18,500.00
+    actualDebtsPaise: 5000000n,           // ₹50,000.00 (External loan/EMI)
+    monthlyTargetsPaise: 3000000n,       // ₹30,000.00 (Forward planning)
   });
 
-  // Example credit card demonstration calculation
+  // Credit card demonstration calculation
   const demoCardLimit = 10000000n; // ₹1,00,000.00
   const cardUtilization = calculateCreditCardUtilization(
     pillars.creditCardLiabilitiesPaise,
@@ -49,54 +55,68 @@ export const App: React.FC = () => {
     { name: 'Birthdays', amount: 500000n, color: 'text-pink-400', border: 'border-pink-500/20' },
   ];
 
+  // 1. Loading session state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 animate-pulse">
+          <Mail className="w-6 h-6 text-white" />
+        </div>
+        <div className="text-sm font-medium text-neutral-400 flex items-center space-x-2">
+          <div className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+          <span>Initializing secure session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Private Beta Gating: Authenticated but email NOT on allowlist
+  if (user && isAllowlisted === false) {
+    return <AccessRestricted />;
+  }
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-              <Mail className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
-                Envello
-              </span>
-              <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
-                Phase 1 Foundation
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5">
-              <Database className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="text-neutral-400">Supabase:</span>
-              {isSupabaseConfigured ? (
-                <span className="text-emerald-400 font-medium flex items-center">
-                  <CheckCircle2 className="w-3 h-3 mr-1" /> Connected
-                </span>
-              ) : (
-                <span className="text-amber-400 font-medium flex items-center">
-                  <AlertTriangle className="w-3 h-3 mr-1" /> Setup Required
-                </span>
-              )}
-            </div>
-
-            <button
-              onClick={() => alert('Add Transaction modal will open here once Phase 4 is integrated.')}
-              className="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-sm font-medium transition shadow-sm shadow-sky-500/30"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Record Transaction</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Top Application Header */}
+      <Header
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onRecordTransactionClick={() => {
+          if (!user) {
+            setIsAuthModalOpen(true);
+          } else {
+            alert('Add Transaction modal will open here once Phase 4 is integrated.');
+          }
+        }}
+      />
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
-        {/* Setup Banner if Supabase is pending */}
+        {/* Banner: Unauthenticated Preview Mode */}
+        {!user && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-transparent border border-sky-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start space-x-3.5">
+              <div className="p-2.5 rounded-xl bg-sky-500/20 text-sky-400 flex-shrink-0 mt-0.5">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="font-semibold text-sm text-white">Previewing Envello Workspace</div>
+                <p className="text-xs text-neutral-400 max-w-xl">
+                  You are previewing sample data with the deterministic accounting engine. Sign in with your allowlisted email to connect your personal financial ledger.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold shadow-md shadow-sky-500/20 transition whitespace-nowrap"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Sign In / Register</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Setup Banner if Supabase connection is pending */}
         {!isSupabaseConfigured && (
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm flex items-start space-x-3">
             <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -266,7 +286,7 @@ export const App: React.FC = () => {
         <section className="p-6 rounded-2xl bg-neutral-900/50 border border-white/5 space-y-3">
           <h3 className="text-sm font-semibold text-neutral-200">Next Steps & Setup Documentation</h3>
           <p className="text-xs text-neutral-400">
-            Phase 1 Core Foundation is implemented. Follow the guides below to connect Supabase and deploy to Vercel:
+            Phase 2 Authentication is active. You can sign in using your allowlisted email address.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
             <a
@@ -275,11 +295,11 @@ export const App: React.FC = () => {
               rel="noreferrer"
               className="p-3 rounded-xl bg-neutral-800/60 hover:bg-neutral-800 border border-white/5 flex items-center justify-between text-neutral-300 hover:text-white transition"
             >
-              <span>1. Create Free Supabase Project</span>
+              <span>1. Supabase Dashboard</span>
               <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
             </a>
             <div className="p-3 rounded-xl bg-neutral-800/60 border border-white/5 text-neutral-300">
-              <span>2. Run SQL in <code className="text-sky-400 font-mono">supabase/migrations/</code></span>
+              <span>2. Check <code className="text-sky-400 font-mono">public.allowed_users</code></span>
             </div>
             <a
               href="https://vercel.com"
@@ -287,12 +307,18 @@ export const App: React.FC = () => {
               rel="noreferrer"
               className="p-3 rounded-xl bg-neutral-800/60 hover:bg-neutral-800 border border-white/5 flex items-center justify-between text-neutral-300 hover:text-white transition"
             >
-              <span>3. Deploy to Vercel Hobby</span>
+              <span>3. Vercel Production Deployment</span>
               <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
             </a>
           </div>
         </section>
       </main>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-4 text-center text-xs text-neutral-500">
