@@ -64,11 +64,12 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative modal-panel">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
+        <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+          className="absolute top-4 right-4 p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[38px] min-w-[38px] flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
@@ -78,7 +79,7 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
             <FolderPlus className="w-3.5 h-3.5" />
             <span>Custom Category</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Create New Envelope</h2>
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Create New Envelope</h2>
           <p className="text-xs text-neutral-400">
             Designate a new budget category tailored to your spending patterns.
           </p>
@@ -101,21 +102,21 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
               placeholder="e.g. Books, Travel, Gadgets"
               required
               autoFocus
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
+              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
             />
           </div>
 
           {/* Color Preset Palette */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-neutral-300">Category Color</label>
-            <div className="flex items-center space-x-2.5 pt-1">
+            <div className="flex items-center space-x-3 pt-1 overflow-x-auto scrollbar-none py-1">
               {COLOR_PRESETS.map((preset) => (
                 <button
                   key={preset.hex}
                   type="button"
                   onClick={() => setColor(preset.hex)}
                   style={{ backgroundColor: preset.hex }}
-                  className={`w-6 h-6 rounded-full transition-transform ${
+                  className={`w-7 h-7 sm:w-6 sm:h-6 rounded-full transition-transform flex-shrink-0 ${
                     color === preset.hex ? 'scale-125 ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-70 hover:opacity-100'
                   }`}
                   title={preset.name}
@@ -130,7 +131,7 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
             <select
               value={rolloverPolicy}
               onChange={(e) => setRolloverPolicy(e.target.value as EnvelopeRolloverPolicy)}
-              className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+              className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
             >
               <option value="carry_forward" className="bg-neutral-900 text-white">
                 Carry Forward (Keep unused funds in this envelope)

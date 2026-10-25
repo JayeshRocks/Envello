@@ -135,11 +135,12 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative modal-panel">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
+        <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+          className="absolute top-4 right-4 p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[38px] min-w-[38px] flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
@@ -149,7 +150,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
             <Settings2 className="w-3.5 h-3.5" />
             <span>Manage Envelope</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Edit Category Details</h2>
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Edit Category Details</h2>
           <p className="text-xs text-neutral-400">
             Customize icon, color palette, and rollover mechanics for this envelope.
           </p>
@@ -172,7 +173,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
               onChange={(e) => setName(e.target.value)}
               disabled={envelope.isSystemReserved}
               title={envelope.isSystemReserved ? 'System-reserved envelope name cannot be modified' : ''}
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
             />
             {envelope.isSystemReserved && (
               <p className="text-[11px] text-neutral-500">
@@ -235,7 +236,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
               value={rolloverPolicy}
               onChange={(e) => setRolloverPolicy(e.target.value as EnvelopeRolloverPolicy)}
               disabled={envelope.isSystemReserved}
-              className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
             >
               <option value="carry_forward" className="bg-neutral-900 text-white">
                 Carry Forward (Keep unused funds in this envelope)

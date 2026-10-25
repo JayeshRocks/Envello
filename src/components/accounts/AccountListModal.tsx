@@ -140,12 +140,13 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative max-h-[90vh] overflow-y-auto modal-panel">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
+        <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button
           onClick={onClose}
           aria-label="Close Accounts Modal"
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+          className="absolute top-4 right-4 p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[38px] min-w-[38px] flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
@@ -155,7 +156,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
             <Landmark className="w-3.5 h-3.5" />
             <span>Liquid Cash Accounts</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Manage Accounts & Wallets</h2>
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Manage Accounts & Wallets</h2>
           <p className="text-xs text-neutral-400">
             Checking accounts, savings accounts, and physical cash. Edit nicknames, reconcile balances, or add new accounts.
           </p>
@@ -198,7 +199,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       required
-                      className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white"
+                      className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-white/10 text-base sm:text-xs text-white"
                     />
                   </div>
 
@@ -210,7 +211,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                         value={editInstitution}
                         onChange={(e) => setEditInstitution(e.target.value)}
                         required
-                        className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white"
+                        className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-white/10 text-base sm:text-xs text-white"
                       />
                     </div>
                     <div className="space-y-1">
@@ -218,7 +219,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                       <select
                         value={editAccountType}
                         onChange={(e) => setEditAccountType(e.target.value as AccountType)}
-                        className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white capitalize"
+                        className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-white/10 text-base sm:text-xs text-white capitalize"
                       >
                         <option value="savings">Savings</option>
                         <option value="checking">Checking</option>
@@ -236,7 +237,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                       value={editBalanceRupees}
                       onChange={(e) => setEditBalanceRupees(e.target.value)}
                       required
-                      className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white font-mono"
+                      className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-white/10 text-base sm:text-xs text-white font-mono"
                     />
                     <span className="text-[10px] text-neutral-500 block">
                       Directly aligns your ledger balance with your physical bank balance.
@@ -337,7 +338,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. HDFC Salary, SBI Daily, Pocket Cash"
                 required
-                className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500"
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500"
               />
             </div>
 
@@ -350,7 +351,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                   onChange={(e) => setInstitution(e.target.value)}
                   placeholder="e.g. HDFC, ICICI, Cash"
                   required
-                  className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500"
+                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500"
                 />
               </div>
 
@@ -359,7 +360,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                 <select
                   value={accountType}
                   onChange={(e) => setAccountType(e.target.value as AccountType)}
-                  className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white capitalize"
+                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white capitalize"
                 >
                   <option value="savings">Savings</option>
                   <option value="checking">Checking</option>
@@ -377,7 +378,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                 value={initialBalanceRupees}
                 onChange={(e) => setInitialBalanceRupees(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500 font-mono"
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 font-mono"
               />
             </div>
 

@@ -96,11 +96,15 @@ export const EditCreditCardModal: React.FC<EditCreditCardModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative modal-panel">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in">
+      <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative modal-panel max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
+        {/* Mobile drag handle */}
+        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
+
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+          className="absolute top-4 right-4 p-2 sm:p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+          aria-label="Close modal"
         >
           <X className="w-5 h-5" />
         </button>
@@ -124,7 +128,7 @@ export const EditCreditCardModal: React.FC<EditCreditCardModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-neutral-300">Issuer / Bank</label>
               <input
@@ -133,7 +137,7 @@ export const EditCreditCardModal: React.FC<EditCreditCardModalProps> = ({
                 onChange={(e) => setIssuer(e.target.value)}
                 placeholder="e.g. HDFC, ICICI, SBI"
                 required
-                className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500 focus:ring-1 focus:ring-purple-500"
+                className="w-full px-3 py-2.5 sm:py-2 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 focus:ring-1 focus:ring-purple-500"
               />
             </div>
 
@@ -145,7 +149,7 @@ export const EditCreditCardModal: React.FC<EditCreditCardModalProps> = ({
                 onChange={(e) => setCardName(e.target.value)}
                 placeholder="e.g. Regalia, Amazon Pay"
                 required
-                className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500 focus:ring-1 focus:ring-purple-500"
+                className="w-full px-3 py-2.5 sm:py-2 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 focus:ring-1 focus:ring-purple-500"
               />
             </div>
           </div>
@@ -160,7 +164,7 @@ export const EditCreditCardModal: React.FC<EditCreditCardModalProps> = ({
               step="any"
               min="1"
               required
-              className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500 focus:ring-1 focus:ring-purple-500"
+              className="w-full px-3 py-2.5 sm:py-2 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 focus:ring-1 focus:ring-purple-500"
             />
           </div>
 
@@ -174,7 +178,7 @@ export const EditCreditCardModal: React.FC<EditCreditCardModalProps> = ({
                 min="1"
                 max="31"
                 required
-                className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white focus:ring-1 focus:ring-purple-500"
+                className="w-full px-3 py-2.5 sm:py-2 rounded-xl glass-input text-base sm:text-xs text-white focus:ring-1 focus:ring-purple-500"
               />
             </div>
 
@@ -187,7 +191,7 @@ export const EditCreditCardModal: React.FC<EditCreditCardModalProps> = ({
                 min="1"
                 max="31"
                 required
-                className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white focus:ring-1 focus:ring-purple-500"
+                className="w-full px-3 py-2.5 sm:py-2 rounded-xl glass-input text-base sm:text-xs text-white focus:ring-1 focus:ring-purple-500"
               />
             </div>
           </div>

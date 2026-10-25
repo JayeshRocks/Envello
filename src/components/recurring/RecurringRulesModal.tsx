@@ -94,12 +94,13 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="max-w-xl w-full glass-card rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative max-h-[90vh] overflow-y-auto modal-panel">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="max-w-xl w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
+        <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button
           onClick={onClose}
           aria-label="Close Recurring Rules Modal"
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+          className="absolute top-4 right-4 p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[38px] min-w-[38px] flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
@@ -110,7 +111,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
             <CalendarClock className="w-3.5 h-3.5" />
             <span>Standing Schedules & Recurring Rules</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Monthly Recurring Expenses</h2>
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Monthly Recurring Expenses</h2>
           <p className="text-xs text-neutral-400">
             Define recurring expenses like Rent, WiFi, and Gym. Envello tracks them monthly and provides 1-click recording into your ledger.
           </p>
@@ -243,7 +244,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Apartment Rent, WiFi"
-                  className="w-full px-3 py-1.5 rounded-lg bg-neutral-950 border border-white/10 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>
@@ -256,7 +257,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value)}
                   placeholder="e.g. 25000"
-                  className="w-full px-3 py-1.5 rounded-lg bg-neutral-950 border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>
@@ -268,7 +269,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                 <select
                   value={accountId}
                   onChange={(e) => setAccountId(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-neutral-950 border border-white/10 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-indigo-500"
                   required
                 >
                   {activeAccounts.map((a) => (
@@ -284,7 +285,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                 <select
                   value={envelopeId}
                   onChange={(e) => setEnvelopeId(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-neutral-950 border border-white/10 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-indigo-500"
                   required
                 >
                   {envelopes.map((e) => (
@@ -306,7 +307,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   max="31"
                   value={dayOfMonth}
                   onChange={(e) => setDayOfMonth(Math.min(31, Math.max(1, parseInt(e.target.value, 10) || 1)))}
-                  className="w-full px-3 py-1.5 rounded-lg bg-neutral-950 border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>

@@ -27,26 +27,26 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <Mail className="w-5 h-5 text-white" />
+        <div className="flex items-center space-x-2.5 sm:space-x-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 flex-shrink-0">
+            <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div>
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
+            <span className="font-bold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
               Envello
             </span>
-            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
+            <span className="hidden xs:inline-block ml-1.5 sm:ml-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
               Private Beta
             </span>
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
+        <div className="flex items-center space-x-1.5 sm:space-x-3">
           {/* Supabase Status Pill */}
-          <div className="hidden sm:flex items-center space-x-2 text-xs px-3 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5">
+          <div className="hidden md:flex items-center space-x-2 text-xs px-3 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5">
             <Database className="w-3.5 h-3.5 text-neutral-400" />
             <span className="text-neutral-400">DB:</span>
             {isSupabaseConfigured ? (
@@ -62,9 +62,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* User Session Area */}
           {user ? (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               {/* User Email Pill */}
-              <div className="text-xs px-3 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5 text-neutral-300 font-mono max-w-[180px] sm:max-w-[220px] truncate">
+              <div className="text-[11px] sm:text-xs px-2.5 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5 text-neutral-300 font-mono max-w-[110px] xs:max-w-[140px] sm:max-w-[220px] truncate" title={user.email}>
                 {user.email}
               </div>
 
@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => signOut()}
                 title="Sign Out"
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 active:scale-90 transition-all duration-200"
+                className="p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 active:scale-90 transition-all duration-200 min-h-[38px] min-w-[38px] flex items-center justify-center"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               onClick={onOpenAuthModal}
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-md shadow-sky-500/20 active:scale-95 hover:shadow-sky-500/30 transition-all duration-200"
+              className="flex items-center space-x-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-md shadow-sky-500/20 active:scale-95 hover:shadow-sky-500/30 transition-all duration-200 min-h-[38px]"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Sign In</span>
@@ -91,11 +91,11 @@ export const Header: React.FC<HeaderProps> = ({
           {user && onOpenAccountsModal && (
             <button
               onClick={onOpenAccountsModal}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200"
+              className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200 min-h-[38px]"
               title="Manage Liquid Accounts"
             >
               <Landmark className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden sm:inline">Accounts</span>
+              <span>Accounts</span>
             </button>
           )}
 
@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
           {user && (
             <button
               onClick={onRecordTransactionClick}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm shadow-sky-500/30 active:scale-95 hover:shadow-sky-500/40"
+              className="flex items-center space-x-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm shadow-sky-500/30 active:scale-95 hover:shadow-sky-500/40 min-h-[38px]"
             >
               <PlusCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Record Transaction</span>

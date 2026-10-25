@@ -57,7 +57,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg font-semibold tracking-tight text-white flex items-center space-x-2">
+            <h2 className="text-base sm:text-lg font-semibold tracking-tight text-white flex items-center space-x-2">
               <Receipt className="w-5 h-5 text-indigo-400" />
               <span>Transaction Ledger</span>
             </h2>
@@ -70,13 +70,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col xs:flex-row flex-wrap items-stretch xs:items-center gap-2">
           {/* Period Selector */}
-          <div className="relative flex items-center">
+          <div className="relative flex items-center flex-1 xs:flex-initial">
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as 'all' | 'this_month' | 'last_month')}
-              className="px-2.5 py-1.5 rounded-xl bg-neutral-900 border border-white/10 text-xs text-neutral-300 focus:ring-1 focus:ring-sky-500 cursor-pointer"
+              className="w-full xs:w-auto px-2.5 py-1.5 rounded-xl bg-neutral-900 border border-white/10 text-xs text-neutral-300 focus:ring-1 focus:ring-sky-500 cursor-pointer"
             >
               <option value="all">All Dates</option>
               <option value="this_month">This Month</option>
@@ -85,19 +85,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </div>
 
           {/* Search Input */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative flex-1 xs:flex-initial">
+            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search payee..."
-              className="pl-8 pr-3 py-1.5 rounded-xl glass-input text-xs text-white placeholder-neutral-500 w-36 sm:w-44"
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 xs:w-36 sm:w-44"
             />
           </div>
 
           {/* Type Filter Pills */}
-          <div className="flex items-center p-0.5 rounded-xl bg-neutral-900 border border-white/10 text-xs font-medium">
+          <div className="flex items-center p-0.5 rounded-xl bg-neutral-900 border border-white/10 text-xs font-medium overflow-x-auto scrollbar-none">
             {[
               { id: 'all', label: 'All' },
               { id: 'expense', label: 'Expenses' },
@@ -107,7 +107,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <button
                 key={tab.id}
                 onClick={() => onTypeFilterChange(tab.id)}
-                className={`px-2.5 py-1 rounded-lg transition-all duration-200 active:scale-95 ${
+                className={`px-2.5 py-1 rounded-lg transition-all duration-200 active:scale-95 whitespace-nowrap ${
                   typeFilter === tab.id
                     ? 'bg-neutral-800 text-white shadow-sm font-semibold'
                     : 'text-neutral-400 hover:text-neutral-200'
@@ -120,7 +120,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
           <button
             onClick={onRecordTransactionClick}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition shadow-sm"
+            className="hidden sm:flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition shadow-sm active:scale-95 flex-shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Record</span>
@@ -128,8 +128,156 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         </div>
       </div>
 
-      {/* Table Surface */}
-      <div className="glass-card rounded-2xl border border-white/5 overflow-hidden shadow-xl">
+      {/* Mobile Card View (< md) */}
+      <div className="block md:hidden space-y-2.5">
+        {isLoading && filteredTransactions.length === 0 ? (
+          [1, 2, 3].map((i) => (
+            <div key={i} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3 animate-pulse">
+              <div className="flex justify-between items-center">
+                <div className="w-32 h-4 bg-neutral-800 rounded" />
+                <div className="w-20 h-4 bg-neutral-800 rounded" />
+              </div>
+              <div className="w-48 h-3 bg-neutral-800 rounded" />
+            </div>
+          ))
+        ) : filteredTransactions.length === 0 ? (
+          <div className="glass-card rounded-2xl p-8 text-center text-neutral-400 border border-white/5">
+            <div className="w-10 h-10 rounded-xl bg-neutral-900 mx-auto flex items-center justify-center text-neutral-500 mb-2">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div className="text-sm font-medium text-white">No Transactions Recorded</div>
+            <p className="text-xs text-neutral-500 mt-1">
+              {searchQuery || periodFilter !== 'all'
+                ? 'No transactions match your search.'
+                : 'Tap + at bottom right to record a transaction.'}
+            </p>
+          </div>
+        ) : (
+          filteredTransactions.map((tx) => {
+            const isIncome = tx.type === 'income';
+            const isExpense = tx.type === 'expense';
+            const isTransfer = tx.type === 'transfer';
+
+            const envelopeEntry = tx.entries.find((e) => e.envelopeName);
+            const accountEntry = tx.entries.find((e) => e.accountName);
+
+            return (
+              <div
+                key={tx.id}
+                className="glass-card rounded-2xl p-4 border border-white/5 space-y-2.5 active:bg-white/[0.02] transition"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-semibold text-white tracking-tight text-sm">
+                      {tx.description}
+                    </div>
+                    <div className="text-[11px] font-mono text-neutral-400 mt-0.5">
+                      {tx.transactionDate}
+                    </div>
+                  </div>
+                  <div
+                    className={`font-mono font-bold whitespace-nowrap tabular-nums text-base text-right ${
+                      isIncome
+                        ? 'text-emerald-400'
+                        : isExpense
+                        ? 'text-white'
+                        : 'text-indigo-300'
+                    }`}
+                  >
+                    {isIncome
+                      ? `+${formatINR(tx.totalAmountPaise)}`
+                      : isExpense
+                      ? `-${formatINR(tx.totalAmountPaise)}`
+                      : formatINR(tx.totalAmountPaise)}
+                  </div>
+                </div>
+
+                {tx.notes && (
+                  <p className="text-xs text-neutral-400 line-clamp-2">
+                    {tx.notes}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                  <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none flex-nowrap py-0.5">
+                    {/* Type Badge */}
+                    {isExpense && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-medium flex-shrink-0">
+                        <ArrowDownLeft className="w-2.5 h-2.5" />
+                        <span>Expense</span>
+                      </span>
+                    )}
+                    {isIncome && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium flex-shrink-0">
+                        <ArrowUpRight className="w-2.5 h-2.5" />
+                        <span>Income</span>
+                      </span>
+                    )}
+                    {isTransfer && (
+                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-medium flex-shrink-0">
+                        <ArrowRightLeft className="w-2.5 h-2.5" />
+                        <span>Transfer</span>
+                      </span>
+                    )}
+
+                    {envelopeEntry?.envelopeName && (
+                      <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[10px] flex-shrink-0">
+                        {envelopeEntry.envelopeName}
+                      </span>
+                    )}
+                    {accountEntry?.accountName && (
+                      <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 text-[10px] flex-shrink-0">
+                        {accountEntry.accountName}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Delete Action with 44px tap comfort */}
+                  {confirmDeleteId === tx.id ? (
+                    <div className="inline-flex items-center space-x-1.5 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
+                      <span className="text-[10px] text-red-300 font-medium">Revert?</span>
+                      <button
+                        onClick={async () => {
+                          if (!onDeleteTransaction) return;
+                          setIsDeleting(true);
+                          try {
+                            await onDeleteTransaction(tx.id);
+                          } finally {
+                            setIsDeleting(false);
+                            setConfirmDeleteId(null);
+                          }
+                        }}
+                        disabled={isDeleting}
+                        className="text-[11px] px-2 py-1 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition min-h-[30px]"
+                      >
+                        {isDeleting ? '...' : 'Yes'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        disabled={isDeleting}
+                        className="text-[11px] px-2 py-1 rounded bg-neutral-800 text-neutral-400 hover:text-white transition min-h-[30px]"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(tx.id)}
+                      title="Revert & Delete Transaction"
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop / Tablet Table Surface (>= md) */}
+      <div className="hidden md:block glass-card rounded-2xl border border-white/5 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-neutral-900/80 border-b border-white/5 text-[11px] font-medium text-neutral-400 uppercase tracking-wider">

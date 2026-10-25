@@ -9,6 +9,7 @@ import {
   Landmark,
   Download,
   Scale,
+  Plus,
 } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import { getCreditCardUtilizationStatus } from '@/lib/accounting/calculations';
@@ -245,17 +246,17 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-8">
         {!user ? (
           <CoverPage onOpenAuthModal={() => setIsAuthModalOpen(true)} />
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* Section: The Six Financial Pillars */}
             <section className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h2 className="text-lg font-semibold tracking-tight text-white">Financial Pillars</h2>
+                    <h2 className="text-base sm:text-lg font-semibold tracking-tight text-white">Financial Pillars</h2>
                     <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       Deterministic Math
                     </span>
@@ -265,47 +266,47 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none flex-nowrap pb-1 sm:pb-0 w-full sm:w-auto -mx-1 px-1 sm:mx-0 sm:px-0">
                   <button
                     onClick={() => setIsExportModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition"
+                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95"
                     title="Export Data"
                   >
                     <Download className="w-3.5 h-3.5 text-sky-400" />
-                    <span className="hidden sm:inline">Export</span>
+                    <span>Export</span>
                   </button>
                   <button
                     onClick={() => {
                       setReconcileAccountId(undefined);
                       setIsReconcileModalOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition"
+                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95"
                     title="Reconcile Account Balance against Bank Statement"
                   >
                     <Scale className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="hidden sm:inline">Reconcile</span>
+                    <span>Reconcile</span>
                   </button>
                   <button
                     onClick={() => setIsRecurringModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition relative"
+                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition relative flex-shrink-0 whitespace-nowrap active:scale-95"
                     title="Standing Recurring Schedules"
                   >
                     <CalendarClock className="w-3.5 h-3.5 text-indigo-400" />
-                    <span className="hidden sm:inline">Recurring</span>
+                    <span>Recurring</span>
                     {dueRecurringRules.length > 0 && (
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse absolute -top-0.5 -right-0.5" />
                     )}
                   </button>
                   <button
                     onClick={() => setIsAccountsModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition"
+                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95"
                   >
                     <Landmark className="w-3.5 h-3.5 text-sky-400" />
                     <span>{accounts.length} Accounts</span>
                   </button>
                   <button
                     onClick={() => setIsRecordTxModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-lg shadow-sky-500/20 transition"
+                    className="hidden sm:flex px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-lg shadow-sky-500/20 transition flex-shrink-0 whitespace-nowrap active:scale-95"
                   >
                     + Record Transaction
                   </button>
@@ -698,6 +699,18 @@ export const App: React.FC = () => {
         isOpen={isFirstLoginPasswordModalOpen}
         onClose={() => setIsFirstLoginPasswordModalOpen(false)}
       />
+
+      {/* Mobile Floating Action Button (FAB) */}
+      {user && (
+        <button
+          onClick={() => setIsRecordTxModalOpen(true)}
+          className="fixed bottom-5 right-5 sm:hidden z-40 p-4 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-neutral-950 font-bold shadow-2xl shadow-sky-500/50 active:scale-90 transition-all duration-200 flex items-center justify-center border border-white/20 touch-manipulation"
+          title="Record Transaction"
+          aria-label="Record Transaction"
+        >
+          <Plus className="w-6 h-6 text-white stroke-[2.5]" />
+        </button>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-4 text-center text-xs text-neutral-500">

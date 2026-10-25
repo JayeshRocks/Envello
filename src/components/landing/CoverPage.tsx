@@ -53,37 +53,37 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
 
         <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 border border-sky-500/20 text-xs font-medium text-sky-300">
           <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-          <span>Deterministic Envelope Budgeting • Single-Owner Private Beta</span>
+          <span>Deterministic Envelope Budgeting • Privacy-First Cloud</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
+        <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
           Personal Finance with{' '}
           <span className="bg-gradient-to-r from-sky-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
             Double-Entry Precision
           </span>
         </h1>
 
-        <p className="text-base sm:text-lg text-neutral-300 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-sm sm:text-lg text-neutral-300 max-w-2xl mx-auto leading-relaxed">
           Envello is a zero-cost, privacy-first personal finance platform. Zero floating-point arithmetic errors, explicit balance taxonomy, and true envelope budgeting designed for absolute accounting accuracy.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             onClick={onOpenAuthModal}
-            className="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-sm transition-all duration-200 active:scale-95 flex items-center justify-center space-x-2 shadow-xl shadow-sky-500/20 hover:shadow-sky-500/30 group"
+            className="w-full sm:w-auto px-7 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-sm transition-all duration-200 active:scale-95 flex items-center justify-center space-x-2 shadow-xl shadow-sky-500/20 hover:shadow-sky-500/30 group"
           >
             <span>Sign In to Workspace</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
           <button
             onClick={() => scrollTo('pillars')}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200"
+            className="w-full sm:w-auto px-5 py-3 min-h-[44px] rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200"
           >
             Explore the 6 Pillars
           </button>
           <button
             onClick={() => scrollTo('simulator')}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 text-sm font-medium border border-sky-500/20 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-1.5"
+            className="w-full sm:w-auto px-5 py-3 min-h-[44px] rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 text-sm font-medium border border-sky-500/20 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-1.5"
           >
             <Sliders className="w-4 h-4" />
             <span>Try Simulator</span>
@@ -91,7 +91,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
         </div>
 
         {/* Credibility badges */}
-        <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto text-left">
+        <div className="pt-6 grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto text-left">
           <div className="p-3 rounded-xl bg-neutral-900/50 border border-white/5 space-y-1">
             <div className="flex items-center space-x-1.5 text-xs font-semibold text-emerald-400">
               <Calculator className="w-3.5 h-3.5" />
@@ -111,9 +111,9 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
           <div className="p-3 rounded-xl bg-neutral-900/50 border border-white/5 space-y-1">
             <div className="flex items-center space-x-1.5 text-xs font-semibold text-indigo-400">
               <Lock className="w-3.5 h-3.5" />
-              <span>Private Beta</span>
+              <span>Privacy Focused</span>
             </div>
-            <p className="text-[11px] text-neutral-400">Server-enforced allowlist. Zero unauthorized access.</p>
+            <p className="text-[11px] text-neutral-400">Zero third-party analytics. Pure sovereign financial privacy.</p>
           </div>
 
           <div className="p-3 rounded-xl bg-neutral-900/50 border border-white/5 space-y-1">
@@ -517,7 +517,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
             <ArrowRight className="w-4 h-4" />
           </button>
           <p className="text-[11px] text-neutral-400 mt-2">
-            Private Beta Access • Server-Enforced Owner Allowlist
+            Secure Cloud • Row Level Security Guarded
           </p>
         </div>
       </section>

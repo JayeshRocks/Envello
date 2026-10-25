@@ -38,10 +38,10 @@ export const EnvelopeGrid: React.FC = () => {
   return (
     <section className="space-y-5">
       {/* Top Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg font-semibold tracking-tight text-white flex items-center space-x-2">
+            <h2 className="text-base sm:text-lg font-semibold tracking-tight text-white flex items-center space-x-2">
               <Layers className="w-5 h-5 text-sky-400" />
               <span>Envelope Budgeting</span>
             </h2>
@@ -54,7 +54,7 @@ export const EnvelopeGrid: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center space-x-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <BudgetPeriodSelector
             selectedPeriod={selectedPeriod}
             onPrev={prevPeriod}
@@ -64,14 +64,14 @@ export const EnvelopeGrid: React.FC = () => {
           <button
             onClick={() => refresh()}
             title="Refresh Envelopes"
-            className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white transition shadow-sm"
+            className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white transition shadow-sm min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-sky-400' : ''}`} />
           </button>
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-white/10 text-white text-xs font-semibold shadow-sm transition"
+            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-white/10 text-white text-xs font-semibold shadow-sm transition active:scale-95 min-h-[36px]"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Envelope</span>
