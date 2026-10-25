@@ -9,6 +9,7 @@ import {
   LogOut,
   ShieldCheck,
   ShieldAlert,
+  Landmark,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
@@ -16,11 +17,13 @@ import { isSupabaseConfigured } from '@/lib/supabase/client';
 interface HeaderProps {
   onOpenAuthModal: () => void;
   onRecordTransactionClick: () => void;
+  onOpenAccountsModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenAuthModal,
   onRecordTransactionClick,
+  onOpenAccountsModal,
 }) => {
   const { user, isAllowlisted, signOut } = useAuth();
 
@@ -99,10 +102,22 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {/* Accounts Button */}
+          {user && onOpenAccountsModal && (
+            <button
+              onClick={onOpenAccountsModal}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 transition"
+              title="Manage Liquid Accounts"
+            >
+              <Landmark className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden sm:inline">Accounts</span>
+            </button>
+          )}
+
           {/* Record Transaction Button */}
           <button
             onClick={onRecordTransactionClick}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs sm:text-sm font-medium transition shadow-sm shadow-sky-500/30"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition shadow-sm shadow-sky-500/30"
           >
             <PlusCircle className="w-4 h-4" />
             <span className="hidden sm:inline">Record Transaction</span>

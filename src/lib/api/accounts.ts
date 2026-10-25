@@ -158,3 +158,76 @@ export async function updateAccountBalance(
     throw error;
   }
 }
+
+/**
+ * Updates an account's name, institution, type, or balance.
+ */
+export async function updateAccount(
+  accountId: string,
+  userId: string,
+  data: {
+    name?: string;
+    institution?: string;
+    accountType?: AccountType;
+    balancePaise?: bigint;
+  }
+): Promise<AccountItem> {
+  const updatePayload: Database['public']['Tables']['accounts']['Update'] = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (data.name !== undefined) updatePayload.name = data.name.trim();
+  if (data.institution !== undefined) updatePayload.institution = data.institution.trim();
+  if (data.accountType !== undefined) updatePayload.account_type = data.accountType;
+  if (data.balancePaise !== undefined) updatePayload.balance_paise = Number(data.balancePaise);
+
+  const { data: updated, error } = await supabase
+    .from('accounts')
+    .update(updatePayload)
+    .eq('id', accountId)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+
+  if (error || !updated) {
+    console.error('[Envello Accounts API] Error updating account:', error?.message);
+    throw error;
+  }
+
+  return {
+    id: updated.id,
+    name: updated.name,
+    institution: updated.institution,
+    accountType: updated.account_type as AccountType,
+    balancePaise: BigInt(updated.balance_paise),
+    isActive: updated.is_active,
+    createdAt: updated.created_at,
+  };
+}
+
+/**
+ * Deletes an account (or deactivates it if it has foreign key references)
+ */
+export async function deleteAccount(accountId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('accounts')
+    .delete()
+    .eq('id', accountId)
+    .eq('user_id', userId);
+
+  if (error) {
+    // If foreign key constraint prevents deletion, mark as inactive
+    if (error.code === '23503') {
+      const { error: deactivateError } = await supabase
+        .from('accounts')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', accountId)
+        .eq('user_id', userId);
+
+      if (deactivateError) throw deactivateError;
+      return;
+    }
+    console.error('[Envello Accounts API] Error deleting account:', error.message);
+    throw error;
+  }
+}

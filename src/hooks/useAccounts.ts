@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { fetchAccounts, createAccount, type AccountItem } from '@/lib/api/accounts';
+import {
+  fetchAccounts,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  type AccountItem,
+} from '@/lib/api/accounts';
 import { calculateNetSpendable } from '@/lib/accounting/calculations';
 import type { AccountType } from '@/types/accounting.types';
 
@@ -54,6 +60,41 @@ export function useAccounts() {
     }
   };
 
+  const editAccount = async (
+    accountId: string,
+    params: {
+      name?: string;
+      institution?: string;
+      accountType?: AccountType;
+      balancePaise?: bigint;
+    }
+  ) => {
+    if (!user) throw new Error('User not authenticated');
+    setError(null);
+    try {
+      const updated = await updateAccount(accountId, user.id, params);
+      await loadAccounts();
+      return updated;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update account.';
+      setError(message);
+      throw err;
+    }
+  };
+
+  const removeAccount = async (accountId: string) => {
+    if (!user) throw new Error('User not authenticated');
+    setError(null);
+    try {
+      await deleteAccount(accountId, user.id);
+      await loadAccounts();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete account.';
+      setError(message);
+      throw err;
+    }
+  };
+
   // Authoritative calculateNetSpendable across active checking, savings, and cash accounts
   const totalSpendableCashPaise = useMemo(() => {
     return calculateNetSpendable(
@@ -71,6 +112,8 @@ export function useAccounts() {
     error,
     totalSpendableCashPaise,
     addAccount,
+    editAccount,
+    removeAccount,
     refreshAccounts: loadAccounts,
   };
 }

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import type { Database } from '@/types/database.types';
 import type { EnvelopeWithAllocation, EnvelopeRolloverPolicy } from '@/types/accounting.types';
 import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
 
@@ -347,6 +348,79 @@ export async function createCustomEnvelope(
 
   if (error) {
     console.error('[Envello API] Error creating custom envelope:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Updates an envelope's name, icon, color, or rollover policy.
+ */
+export async function updateEnvelope(
+  envelopeId: string,
+  userId: string,
+  data: {
+    name?: string;
+    icon?: string;
+    color?: string;
+    rolloverPolicy?: EnvelopeRolloverPolicy;
+  }
+): Promise<void> {
+  const updatePayload: Database['public']['Tables']['envelopes']['Update'] = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (data.name !== undefined) updatePayload.name = data.name.trim();
+  if (data.icon !== undefined) updatePayload.icon = data.icon;
+  if (data.color !== undefined) updatePayload.color = data.color;
+  if (data.rolloverPolicy !== undefined) updatePayload.rollover_policy = data.rolloverPolicy;
+
+  const { error } = await supabase
+    .from('envelopes')
+    .update(updatePayload)
+    .eq('id', envelopeId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('[Envello API] Error updating envelope:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Deletes a user envelope and cleans up its allocations.
+ * System-reserved envelopes cannot be deleted.
+ */
+export async function deleteEnvelope(envelopeId: string, userId: string): Promise<void> {
+  // Check if system reserved
+  const { data: env, error: fetchErr } = await supabase
+    .from('envelopes')
+    .select('is_system_reserved, name')
+    .eq('id', envelopeId)
+    .eq('user_id', userId)
+    .single();
+
+  if (fetchErr || !env) throw new Error('Envelope not found');
+
+  if (env.is_system_reserved) {
+    throw new Error(`The "${env.name}" envelope is system-reserved and cannot be deleted.`);
+  }
+
+  // Delete envelope allocations first
+  await supabase
+    .from('envelope_allocations')
+    .delete()
+    .eq('envelope_id', envelopeId)
+    .eq('user_id', userId);
+
+  // Delete envelope
+  const { error } = await supabase
+    .from('envelopes')
+    .delete()
+    .eq('id', envelopeId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('[Envello API] Error deleting envelope:', error.message);
     throw error;
   }
 }

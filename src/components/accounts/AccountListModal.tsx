@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Landmark, Wallet, Plus, AlertCircle, ArrowRight } from 'lucide-react';
+import { X, Landmark, Wallet, Plus, AlertCircle, Edit2, Trash2, Check, ArrowRight } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { AccountType } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
@@ -14,6 +14,16 @@ interface AccountListModalProps {
     accountType: AccountType;
     initialBalancePaise?: bigint;
   }) => Promise<void>;
+  onEditAccount?: (
+    accountId: string,
+    params: {
+      name?: string;
+      institution?: string;
+      accountType?: AccountType;
+      balancePaise?: bigint;
+    }
+  ) => Promise<void>;
+  onDeleteAccount?: (accountId: string) => Promise<void>;
 }
 
 export const AccountListModal: React.FC<AccountListModalProps> = ({
@@ -21,16 +31,81 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
   accounts,
   onClose,
   onAddAccount,
+  onEditAccount,
+  onDeleteAccount,
 }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+
+  // New account form state
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
   const [accountType, setAccountType] = useState<AccountType>('savings');
   const [initialBalanceRupees, setInitialBalanceRupees] = useState('');
+
+  // Edit account form state
+  const [editName, setEditName] = useState('');
+  const [editInstitution, setEditInstitution] = useState('');
+  const [editAccountType, setEditAccountType] = useState<AccountType>('savings');
+  const [editBalanceRupees, setEditBalanceRupees] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const handleStartEdit = (acc: AccountItem) => {
+    setEditingAccountId(acc.id);
+    setEditName(acc.name);
+    setEditInstitution(acc.institution);
+    setEditAccountType(acc.accountType);
+    setEditBalanceRupees((Number(acc.balancePaise) / 100).toFixed(2));
+    setIsAdding(false);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAccountId || !onEditAccount) return;
+    setError(null);
+
+    if (!editName.trim() || !editInstitution.trim()) {
+      setError('Please provide account name and institution.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const newBalPaise = toPaise(editBalanceRupees || '0');
+      await onEditAccount(editingAccountId, {
+        name: editName.trim(),
+        institution: editInstitution.trim(),
+        accountType: editAccountType,
+        balancePaise: newBalPaise,
+      });
+      setEditingAccountId(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update account.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (accountId: string, accountName: string) => {
+    if (!onDeleteAccount) return;
+    if (!window.confirm(`Are you sure you want to delete or deactivate "${accountName}"?`)) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onDeleteAccount(accountId);
+      if (editingAccountId === accountId) setEditingAccountId(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete account.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +142,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
       <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-7 space-y-5 border border-white/10 shadow-2xl relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
+          aria-label="Close Accounts Modal"
           className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
         >
           <X className="w-5 h-5" />
@@ -77,9 +153,9 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
             <Landmark className="w-3.5 h-3.5" />
             <span>Liquid Cash Accounts</span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Your Bank Accounts & Wallets</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white">Manage Accounts & Wallets</h2>
           <p className="text-xs text-neutral-400">
-            Checking accounts, savings accounts, and physical cash. Excludes locked assets.
+            Checking accounts, savings accounts, and physical cash. Edit nicknames, reconcile balances, or add new accounts.
           </p>
         </div>
 
@@ -91,32 +167,145 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
         )}
 
         {/* Existing Accounts List */}
-        <div className="space-y-2">
-          {accounts.map((acc) => (
-            <div
-              key={acc.id}
-              className="p-3.5 rounded-xl bg-neutral-900/80 border border-white/5 flex items-center justify-between"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-xl bg-neutral-800 flex items-center justify-center text-sky-400">
-                  {acc.accountType === 'cash' ? (
-                    <Wallet className="w-4 h-4" />
-                  ) : (
-                    <Landmark className="w-4 h-4" />
-                  )}
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-white">{acc.name}</div>
-                  <div className="text-[11px] text-neutral-400">
-                    {acc.institution} • <span className="capitalize">{acc.accountType}</span>
+        <div className="space-y-2.5">
+          {accounts.map((acc) => {
+            const isEditing = editingAccountId === acc.id;
+
+            if (isEditing) {
+              return (
+                <form
+                  key={acc.id}
+                  onSubmit={handleSaveEdit}
+                  className="p-4 rounded-xl bg-neutral-900 border border-sky-500/40 space-y-3 animate-in fade-in"
+                >
+                  <div className="flex items-center justify-between text-xs font-semibold text-sky-400">
+                    <span>Edit Account Details</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAccountId(null)}
+                      className="text-neutral-400 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-neutral-400">Account Nickname</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      required
+                      className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-neutral-400">Bank / Institution</label>
+                      <input
+                        type="text"
+                        value={editInstitution}
+                        onChange={(e) => setEditInstitution(e.target.value)}
+                        required
+                        className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-neutral-400">Account Type</label>
+                      <select
+                        value={editAccountType}
+                        onChange={(e) => setEditAccountType(e.target.value as AccountType)}
+                        className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white capitalize"
+                      >
+                        <option value="savings">Savings</option>
+                        <option value="checking">Checking</option>
+                        <option value="cash">Cash in hand</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-neutral-400">Reconciled Balance (₹)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={editBalanceRupees}
+                      onChange={(e) => setEditBalanceRupees(e.target.value)}
+                      required
+                      className="w-full px-3 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-xs text-white font-mono"
+                    />
+                    <span className="text-[10px] text-neutral-500 block">
+                      Directly aligns your ledger balance with your physical bank balance.
+                    </span>
+                  </div>
+
+                  <div className="pt-1 flex items-center justify-between">
+                    {onDeleteAccount && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(acc.id, acc.name)}
+                        className="text-xs text-red-400 hover:text-red-300 flex items-center space-x-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="ml-auto px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs text-white font-medium flex items-center space-x-1 shadow-md"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{isSubmitting ? 'Saving...' : 'Save Changes'}</span>
+                    </button>
+                  </div>
+                </form>
+              );
+            }
+
+            return (
+              <div
+                key={acc.id}
+                className="p-3.5 rounded-xl bg-neutral-900/80 border border-white/5 flex items-center justify-between group hover:border-white/15 transition"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-neutral-800 flex items-center justify-center text-sky-400">
+                    {acc.accountType === 'cash' ? (
+                      <Wallet className="w-4 h-4" />
+                    ) : (
+                      <Landmark className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-white flex items-center space-x-1.5">
+                      <span>{acc.name}</span>
+                    </div>
+                    <div className="text-[11px] text-neutral-400">
+                      {acc.institution} • <span className="capitalize">{acc.accountType}</span>
+                    </div>
                   </div>
                 </div>
+
+                <div className="flex items-center space-x-3">
+                  <div className="font-mono text-sm font-bold text-white tabular-nums">
+                    {formatINR(acc.balancePaise)}
+                  </div>
+                  {onEditAccount && (
+                    <button
+                      onClick={() => handleStartEdit(acc)}
+                      aria-label={`Edit ${acc.name}`}
+                      className="p-1.5 rounded-lg text-neutral-500 hover:text-sky-400 hover:bg-white/5 transition"
+                      title="Edit Account / Adjust Balance"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="font-mono text-sm font-bold text-white tabular-nums">
-                {formatINR(acc.balancePaise)}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Add Account Section */}
@@ -138,69 +327,72 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-neutral-400">Institution</label>
+                <label className="text-[11px] font-medium text-neutral-400">Bank / Institution</label>
                 <input
                   type="text"
                   value={institution}
                   onChange={(e) => setInstitution(e.target.value)}
-                  placeholder="e.g. HDFC, Cash"
+                  placeholder="e.g. HDFC, ICICI, Cash"
                   required
                   className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-neutral-400">Type</label>
+                <label className="text-[11px] font-medium text-neutral-400">Account Type</label>
                 <select
                   value={accountType}
                   onChange={(e) => setAccountType(e.target.value as AccountType)}
-                  className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white bg-neutral-900"
+                  className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white capitalize"
                 >
                   <option value="savings">Savings</option>
                   <option value="checking">Checking</option>
-                  <option value="cash">Cash Wallet</option>
-                  <option value="other">Other Liquid</option>
+                  <option value="cash">Cash in hand</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-neutral-400">Current Balance (₹ INR)</label>
+              <label className="text-[11px] font-medium text-neutral-400">Current Balance (₹)</label>
               <input
                 type="number"
                 step="any"
                 value={initialBalanceRupees}
                 onChange={(e) => setInitialBalanceRupees(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono text-white placeholder-neutral-500 tabular-nums"
+                className="w-full px-3 py-2 rounded-xl glass-input text-xs text-white placeholder-neutral-500 font-mono"
               />
             </div>
 
-            <div className="flex items-center space-x-2 pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1 flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-xs font-semibold transition"
-              >
-                <span>{isSubmitting ? 'Saving...' : 'Add Account'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+            <div className="pt-2 flex items-center justify-end space-x-2">
               <button
                 type="button"
                 onClick={() => setIsAdding(false)}
-                className="py-2 px-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs transition"
+                className="px-3 py-1.5 rounded-lg text-xs text-neutral-400 hover:text-white transition"
               >
                 Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-xs font-semibold text-neutral-950 flex items-center space-x-1.5 shadow-md shadow-sky-500/10 transition"
+              >
+                <span>{isSubmitting ? 'Creating...' : 'Confirm'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </form>
         ) : (
           <button
-            onClick={() => setIsAdding(true)}
-            className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/5 text-neutral-300 hover:text-white text-xs font-semibold transition"
+            onClick={() => {
+              setIsAdding(true);
+              setEditingAccountId(null);
+            }}
+            className="w-full py-2.5 rounded-xl border border-dashed border-white/10 hover:border-sky-500/40 text-neutral-400 hover:text-sky-300 text-xs font-medium flex items-center justify-center space-x-1.5 transition"
           >
-            <Plus className="w-4 h-4 text-sky-400" />
-            <span>Add Bank Account or Wallet</span>
+            <Plus className="w-4 h-4" />
+            <span>Add Another Account</span>
           </button>
         )}
       </div>

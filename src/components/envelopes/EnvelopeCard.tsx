@@ -10,6 +10,13 @@ import {
   ArrowRightLeft,
   PlusCircle,
   ShieldCheck,
+  Pencil,
+  Heart,
+  ShoppingBag,
+  Car,
+  Plane,
+  Utensils,
+  Book,
 } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { formatINR } from '@/lib/accounting/currency';
@@ -18,6 +25,7 @@ interface EnvelopeCardProps {
   envelope: EnvelopeWithAllocation;
   onAllocate: () => void;
   onTransfer: () => void;
+  onEdit: () => void;
 }
 
 function getIconComponent(iconName?: string) {
@@ -34,6 +42,18 @@ function getIconComponent(iconName?: string) {
       return Coffee;
     case 'Gift':
       return Gift;
+    case 'Heart':
+      return Heart;
+    case 'ShoppingBag':
+      return ShoppingBag;
+    case 'Car':
+      return Car;
+    case 'Plane':
+      return Plane;
+    case 'Utensils':
+      return Utensils;
+    case 'Book':
+      return Book;
     default:
       return Folder;
   }
@@ -43,6 +63,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   envelope,
   onAllocate,
   onTransfer,
+  onEdit,
 }) => {
   const IconComp = getIconComponent(envelope.icon);
   const isEmergency = envelope.slug === 'emergency';
@@ -93,6 +114,13 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
 
         {/* Quick action buttons */}
         <div className="flex items-center space-x-1 opacity-80 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={onEdit}
+            title="Edit Envelope Details"
+            className="p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={onTransfer}
             title="Transfer / Reallocate Funds"

@@ -422,3 +422,108 @@ export async function fetchTransactions(
     entries: entriesByTxId.get(tx.id) || [],
   }));
 }
+
+/**
+ * Reverses and deletes a transaction and its associated ledger entries:
+ * 1. Reverses account balances:
+ *    - Credit entry reversed: adds money back to account
+ *    - Debit entry reversed: subtracts money from account
+ * 2. Reverses envelope spent_paise if an envelope allocation was charged
+ * 3. Deletes transaction_entries and transaction
+ */
+export async function deleteTransaction(transactionId: string, userId: string): Promise<void> {
+  // 1. Fetch transaction record
+  const { data: tx, error: txError } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('id', transactionId)
+    .eq('user_id', userId)
+    .single();
+
+  if (txError || !tx) {
+    throw new Error('Transaction not found or unauthorized.');
+  }
+
+  // 2. Fetch all entries
+  const { data: entries, error: entriesError } = await supabase
+    .from('transaction_entries')
+    .select('*')
+    .eq('transaction_id', transactionId)
+    .eq('user_id', userId);
+
+  if (entriesError) {
+    throw new Error('Failed to fetch entries for transaction deletion.');
+  }
+
+  // 3. Reverse account entries
+  for (const entry of entries || []) {
+    if (entry.account_id) {
+      const { data: acc } = await supabase
+        .from('accounts')
+        .select('balance_paise')
+        .eq('id', entry.account_id)
+        .eq('user_id', userId)
+        .single();
+
+      if (acc) {
+        // If entry was credit (money went out), reverse adds it back
+        // If entry was debit (money went in), reverse deducts it
+        const adjustment = entry.direction === 'credit' ? entry.amount_paise : -entry.amount_paise;
+        const newBalance = acc.balance_paise + adjustment;
+
+        await supabase
+          .from('accounts')
+          .update({
+            balance_paise: newBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', entry.account_id)
+          .eq('user_id', userId);
+      }
+    }
+
+    // 4. Reverse envelope spent_paise if this entry was debit on an envelope
+    if (entry.envelope_id && entry.direction === 'debit') {
+      const yearMonth = tx.transaction_date.substring(0, 7);
+      const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+
+      const { data: alloc } = await supabase
+        .from('envelope_allocations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('envelope_id', entry.envelope_id)
+        .eq('period_id', periodId)
+        .maybeSingle();
+
+      if (alloc) {
+        const newSpent = Math.max(0, alloc.spent_paise - entry.amount_paise);
+        await supabase
+          .from('envelope_allocations')
+          .update({
+            spent_paise: newSpent,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', alloc.id);
+      }
+    }
+  }
+
+  // 5. Delete entries first (cascade or explicit)
+  await supabase
+    .from('transaction_entries')
+    .delete()
+    .eq('transaction_id', transactionId)
+    .eq('user_id', userId);
+
+  // 6. Delete transaction record
+  const { error: delError } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', transactionId)
+    .eq('user_id', userId);
+
+  if (delError) {
+    console.error('[Envello Transactions API] Error deleting transaction:', delError.message);
+    throw delError;
+  }
+}

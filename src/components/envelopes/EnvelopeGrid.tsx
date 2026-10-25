@@ -6,6 +6,7 @@ import { BudgetPeriodSelector } from './BudgetPeriodSelector';
 import { AllocateModal } from './AllocateModal';
 import { TransferModal } from './TransferModal';
 import { CreateEnvelopeModal } from './CreateEnvelopeModal';
+import { EditEnvelopeModal } from './EditEnvelopeModal';
 import { formatINR } from '@/lib/accounting/currency';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 
@@ -22,11 +23,14 @@ export const EnvelopeGrid: React.FC = () => {
     allocateFunds,
     transferFunds,
     createEnvelope,
+    editEnvelope,
+    removeEnvelope,
     refresh,
   } = useEnvelopes();
 
   const [allocatingEnvelope, setAllocatingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [transferringEnvelopeId, setTransferringEnvelopeId] = useState<string | null>(null);
+  const [editingEnvelope, setEditingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
@@ -144,6 +148,7 @@ export const EnvelopeGrid: React.FC = () => {
               envelope={env}
               onAllocate={() => setAllocatingEnvelope(env)}
               onTransfer={() => setTransferringEnvelopeId(env.id)}
+              onEdit={() => setEditingEnvelope(env)}
             />
           ))}
         </div>
@@ -169,6 +174,14 @@ export const EnvelopeGrid: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={createEnvelope}
+      />
+
+      <EditEnvelopeModal
+        isOpen={Boolean(editingEnvelope)}
+        envelope={editingEnvelope}
+        onClose={() => setEditingEnvelope(null)}
+        onUpdate={editEnvelope}
+        onDelete={removeEnvelope}
       />
     </section>
   );

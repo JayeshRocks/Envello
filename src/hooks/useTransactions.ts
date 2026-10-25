@@ -5,6 +5,7 @@ import {
   recordExpenseTransaction,
   recordIncomeTransaction,
   recordAccountTransfer,
+  deleteTransaction,
   type TransactionRecord,
 } from '@/lib/api/transactions';
 
@@ -106,6 +107,19 @@ export function useTransactions() {
     }
   };
 
+  const removeTransaction = async (transactionId: string) => {
+    if (!user) throw new Error('User not authenticated');
+    setError(null);
+    try {
+      await deleteTransaction(transactionId, user.id);
+      await loadTransactions();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete transaction.';
+      setError(message);
+      throw err;
+    }
+  };
+
   return {
     transactions,
     isLoading,
@@ -117,6 +131,7 @@ export function useTransactions() {
     addExpense,
     addIncome,
     addTransfer,
+    removeTransaction,
     refreshTransactions: loadTransactions,
   };
 }

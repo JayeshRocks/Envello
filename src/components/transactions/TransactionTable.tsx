@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Search,
   ArrowDownLeft,
@@ -6,6 +6,7 @@ import {
   ArrowRightLeft,
   Receipt,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import { formatINR } from '@/lib/accounting/currency';
@@ -18,6 +19,7 @@ interface TransactionTableProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onRecordTransactionClick: () => void;
+  onDeleteTransaction?: (transactionId: string) => Promise<void>;
 }
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({
@@ -28,7 +30,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   searchQuery,
   onSearchChange,
   onRecordTransactionClick,
+  onDeleteTransaction,
 }) => {
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   return (
     <section className="space-y-4">
       {/* Table Header & Controls */}
@@ -104,6 +110,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 <th className="py-3 px-4">Type</th>
                 <th className="py-3 px-4">Envelope / Account</th>
                 <th className="py-3 px-4 text-right">Amount</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-neutral-300">
@@ -115,11 +122,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     <td className="py-4 px-4"><div className="w-14 h-3 bg-neutral-800 rounded" /></td>
                     <td className="py-4 px-4"><div className="w-24 h-3 bg-neutral-800 rounded" /></td>
                     <td className="py-4 px-4 text-right"><div className="w-20 h-3 bg-neutral-800 rounded ml-auto" /></td>
+                    <td className="py-4 px-4 text-center"><div className="w-6 h-3 bg-neutral-800 rounded mx-auto" /></td>
                   </tr>
                 ))
               ) : transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-neutral-400">
+                  <td colSpan={6} className="py-12 text-center text-neutral-400">
                     <div className="w-10 h-10 rounded-xl bg-neutral-900 mx-auto flex items-center justify-center text-neutral-500 mb-2">
                       <Receipt className="w-5 h-5" />
                     </div>
@@ -208,6 +216,46 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         }`}
                       >
                         {isIncome ? `+${formatINR(tx.totalAmountPaise)}` : isExpense ? `-${formatINR(tx.totalAmountPaise)}` : formatINR(tx.totalAmountPaise)}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        {confirmDeleteId === tx.id ? (
+                          <div className="inline-flex items-center space-x-1 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
+                            <span className="text-[10px] text-red-300 font-medium">Revert?</span>
+                            <button
+                              onClick={async () => {
+                                if (!onDeleteTransaction) return;
+                                setIsDeleting(true);
+                                try {
+                                  await onDeleteTransaction(tx.id);
+                                } finally {
+                                  setIsDeleting(false);
+                                  setConfirmDeleteId(null);
+                                }
+                              }}
+                              disabled={isDeleting}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition"
+                            >
+                              {isDeleting ? '...' : 'Yes'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              disabled={isDeleting}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 hover:text-white transition"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(tx.id)}
+                            title="Revert & Delete Transaction"
+                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

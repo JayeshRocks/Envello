@@ -6,6 +6,8 @@ import {
   upsertEnvelopeAllocation,
   transferBetweenEnvelopes,
   createCustomEnvelope,
+  updateEnvelope,
+  deleteEnvelope,
 } from '@/lib/api/envelopes';
 
 /**
@@ -117,6 +119,40 @@ export function useEnvelopes() {
     }
   };
 
+  const editEnvelope = async (
+    envelopeId: string,
+    data: {
+      name?: string;
+      icon?: string;
+      color?: string;
+      rolloverPolicy?: EnvelopeRolloverPolicy;
+    }
+  ) => {
+    if (!user) throw new Error('User is not authenticated.');
+    setError(null);
+    try {
+      await updateEnvelope(envelopeId, user.id, data);
+      await loadEnvelopes();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update envelope.';
+      setError(message);
+      throw err;
+    }
+  };
+
+  const removeEnvelope = async (envelopeId: string) => {
+    if (!user) throw new Error('User is not authenticated.');
+    setError(null);
+    try {
+      await deleteEnvelope(envelopeId, user.id);
+      await loadEnvelopes();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete envelope.';
+      setError(message);
+      throw err;
+    }
+  };
+
   // Aggregated totals across all envelopes in the period
   const totalAllocatedPaise = useMemo(
     () => envelopes.reduce((sum, env) => sum + env.allocatedPaise, 0n),
@@ -147,6 +183,8 @@ export function useEnvelopes() {
     allocateFunds,
     transferFunds,
     createEnvelope,
+    editEnvelope,
+    removeEnvelope,
     refresh: loadEnvelopes,
   };
 }

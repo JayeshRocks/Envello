@@ -52,6 +52,8 @@ export const App: React.FC = () => {
     accounts,
     totalSpendableCashPaise,
     addAccount,
+    editAccount,
+    removeAccount,
     refreshAccounts,
   } = useAccounts();
 
@@ -71,6 +73,7 @@ export const App: React.FC = () => {
     addExpense,
     addIncome,
     addTransfer,
+    removeTransaction,
     refreshTransactions,
   } = useTransactions();
 
@@ -197,6 +200,7 @@ export const App: React.FC = () => {
       <Header
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
+        onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
       />
 
       {/* Main Content Dashboard */}
@@ -518,6 +522,10 @@ export const App: React.FC = () => {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
+            onDeleteTransaction={async (txId) => {
+              await removeTransaction(txId);
+              await handleTransactionRecorded();
+            }}
           />
         )}
 
@@ -581,6 +589,12 @@ export const App: React.FC = () => {
         onClose={() => setIsAccountsModalOpen(false)}
         onAddAccount={async (params) => {
           await addAccount(params);
+        }}
+        onEditAccount={async (accountId, params) => {
+          await editAccount(accountId, params);
+        }}
+        onDeleteAccount={async (accountId) => {
+          await removeAccount(accountId);
         }}
       />
 
