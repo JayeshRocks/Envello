@@ -34,6 +34,22 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<'all' | 'this_month' | 'last_month'>('all');
+
+  const filteredTransactions = transactions.filter((tx) => {
+    if (periodFilter === 'all') return true;
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    if (periodFilter === 'this_month') {
+      return tx.transactionDate.startsWith(currentYearMonth);
+    }
+    if (periodFilter === 'last_month') {
+      const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevYearMonth = `${prevDate.getFullYear()}-${(prevDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      return tx.transactionDate.startsWith(prevYearMonth);
+    }
+    return true;
+  });
 
   return (
     <section className="space-y-4">
@@ -46,7 +62,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <span>Transaction Ledger</span>
             </h2>
             <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-white/5 font-mono">
-              {transactions.length} records
+              {filteredTransactions.length} records
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-0.5">
@@ -55,6 +71,19 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Period Selector */}
+          <div className="relative flex items-center">
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value as 'all' | 'this_month' | 'last_month')}
+              className="px-2.5 py-1.5 rounded-xl bg-neutral-900 border border-white/10 text-xs text-neutral-300 focus:ring-1 focus:ring-sky-500 cursor-pointer"
+            >
+              <option value="all">All Dates</option>
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+            </select>
+          </div>
+
           {/* Search Input */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -63,7 +92,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search payee..."
-              className="pl-8 pr-3 py-1.5 rounded-xl glass-input text-xs text-white placeholder-neutral-500 w-36 sm:w-48"
+              className="pl-8 pr-3 py-1.5 rounded-xl glass-input text-xs text-white placeholder-neutral-500 w-36 sm:w-44"
             />
           </div>
 
@@ -114,7 +143,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-neutral-300">
-              {isLoading && transactions.length === 0 ? (
+              {isLoading && filteredTransactions.length === 0 ? (
                 [1, 2, 3, 4].map((i) => (
                   <tr key={i} className="animate-pulse">
                     <td className="py-4 px-4"><div className="w-16 h-3 bg-neutral-800 rounded" /></td>
@@ -125,7 +154,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     <td className="py-4 px-4 text-center"><div className="w-6 h-3 bg-neutral-800 rounded mx-auto" /></td>
                   </tr>
                 ))
-              ) : transactions.length === 0 ? (
+              ) : filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-neutral-400">
                     <div className="w-10 h-10 rounded-xl bg-neutral-900 mx-auto flex items-center justify-center text-neutral-500 mb-2">
@@ -133,14 +162,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     </div>
                     <div className="text-sm font-medium text-white">No Transactions Recorded</div>
                     <p className="text-xs text-neutral-500 mt-0.5">
-                      {searchQuery
-                        ? 'No transactions matched your search criteria.'
+                      {searchQuery || periodFilter !== 'all'
+                        ? 'No transactions matched your search or period filter.'
                         : 'Record your first expense, income, or account transfer above.'}
                     </p>
                   </td>
                 </tr>
               ) : (
-                transactions.map((tx) => {
+                filteredTransactions.map((tx) => {
                   const isIncome = tx.type === 'income';
                   const isExpense = tx.type === 'expense';
                   const isTransfer = tx.type === 'transfer';

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { CreditCard, Plus, ArrowUpRight, AlertTriangle, CheckCircle, ShieldAlert } from 'lucide-react';
-import type { CreditCardWithDetails } from '@/lib/api/creditCards';
+import { CreditCard, Plus, ArrowUpRight, AlertTriangle, CheckCircle, ShieldAlert, Pencil } from 'lucide-react';
+import type { CreditCardWithDetails, CreditCardRow } from '@/lib/api/creditCards';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { AddCreditCardModal } from './AddCreditCardModal';
 import { RecordCardPaymentModal } from './RecordCardPaymentModal';
+import { EditCreditCardModal } from './EditCreditCardModal';
 
 interface CreditCardSectionProps {
   cards: CreditCardWithDetails[];
@@ -29,6 +30,8 @@ interface CreditCardSectionProps {
     paymentDate?: string;
     notes?: string;
   }) => Promise<void>;
+  onUpdateCard?: (cardId: string, updates: Partial<CreditCardRow>) => Promise<void>;
+  onDeleteCard?: (cardId: string) => Promise<void>;
 }
 
 export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
@@ -40,9 +43,12 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
   isLoading,
   onAddCard,
   onPayCard,
+  onUpdateCard,
+  onDeleteCard,
 }) => {
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [editingCard, setEditingCard] = useState<CreditCardWithDetails | null>(null);
   const [selectedCardForPayment, setSelectedCardForPayment] = useState<string | undefined>();
 
   const handleOpenPayment = (cardId?: string) => {
@@ -153,7 +159,18 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
                       {card.card_name}
                     </div>
                   </div>
-                  {getStatusBadge(status, util)}
+                  <div className="flex items-center space-x-1.5">
+                    {getStatusBadge(status, util)}
+                    {onUpdateCard && (
+                      <button
+                        onClick={() => setEditingCard(card)}
+                        title="Edit Card Details"
+                        className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Balances */}
@@ -227,6 +244,17 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
           await onPayCard(params);
         }}
       />
+
+      {/* Edit Card Modal */}
+      {onUpdateCard && onDeleteCard && (
+        <EditCreditCardModal
+          isOpen={Boolean(editingCard)}
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onUpdate={onUpdateCard}
+          onDelete={onDeleteCard}
+        />
+      )}
     </div>
   );
 };

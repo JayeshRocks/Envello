@@ -114,3 +114,47 @@ export async function recordSelfEmiPayment(
     notes: `Reimbursed ₹${(amountPaise / 100).toFixed(2)} (${newReimbursed}/${emi.total_funded_paise})`,
   });
 }
+
+/**
+ * Update a Self EMI entry
+ */
+export async function updateSelfEmi(
+  userId: string,
+  emiId: string,
+  updates: Partial<SelfEmiInsert>
+): Promise<SelfEmiRow> {
+  const { data, error } = await supabase
+    .from('self_emis')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', emiId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error updating self EMI:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Delete a Self EMI entry
+ */
+export async function deleteSelfEmi(userId: string, emiId: string): Promise<void> {
+  const { error } = await supabase
+    .from('self_emis')
+    .delete()
+    .eq('id', emiId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error deleting self EMI:', error);
+    throw error;
+  }
+}
+

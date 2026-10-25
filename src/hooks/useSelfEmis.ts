@@ -3,8 +3,11 @@ import { useAuth } from './useAuth';
 import {
   fetchSelfEmis,
   createSelfEmi,
+  updateSelfEmi,
+  deleteSelfEmi,
   recordSelfEmiPayment,
   type SelfEmiRow,
+  type SelfEmiInsert,
 } from '@/lib/api/selfEmis';
 import { calculateSelfEmiProgress } from '@/lib/accounting/calculations';
 
@@ -94,5 +97,16 @@ export function useSelfEmis() {
     refreshSelfEmis: loadEmis,
     addEmi,
     payEmi,
+    editEmi: async (emiId: string, updates: Partial<SelfEmiInsert>) => {
+      if (!user) throw new Error('Authentication required');
+      const updated = await updateSelfEmi(user.id, emiId, updates);
+      setSelfEmis(prev => prev.map(e => (e.id === emiId ? updated : e)));
+      return updated;
+    },
+    removeEmi: async (emiId: string) => {
+      if (!user) throw new Error('Authentication required');
+      await deleteSelfEmi(user.id, emiId);
+      await loadEmis();
+    },
   };
 }

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { CalendarClock, Plus, CheckCircle, ArrowUpRight } from 'lucide-react';
-import type { ActualDebtRow } from '@/lib/api/actualDebts';
+import { CalendarClock, Plus, CheckCircle, ArrowUpRight, Pencil } from 'lucide-react';
+import type { ActualDebtRow, ActualDebtInsert } from '@/lib/api/actualDebts';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR, toPaise } from '@/lib/accounting/currency';
 import { AddActualDebtModal } from './AddActualDebtModal';
+import { EditDebtModal } from './EditDebtModal';
 
 interface ActualDebtsSectionProps {
   actualDebts: ActualDebtRow[];
@@ -23,6 +24,8 @@ interface ActualDebtsSectionProps {
     paymentDate?: string;
     notes?: string;
   }) => Promise<void>;
+  onUpdateDebt?: (debtId: string, updates: Partial<ActualDebtInsert>) => Promise<void>;
+  onDeleteDebt?: (debtId: string) => Promise<void>;
 }
 
 export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
@@ -32,9 +35,12 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
   isLoading,
   onAddDebt,
   onPayDebt,
+  onUpdateDebt,
+  onDeleteDebt,
 }) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [payingDebtId, setPayingDebtId] = useState<string | null>(null);
+  const [editingDebt, setEditingDebt] = useState<ActualDebtRow | null>(null);
   const [destAccountId, setDestAccountId] = useState<string>(accounts[0]?.id || '');
   const [customAmountRupees, setCustomAmountRupees] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,9 +130,20 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                       {debt.lender_name}
                     </div>
                   </div>
-                  <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                    {progress.toFixed(0)}% Repaid
-                  </span>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                      {progress.toFixed(0)}% Repaid
+                    </span>
+                    {onUpdateDebt && (
+                      <button
+                        onClick={() => setEditingDebt(debt)}
+                        title="Edit Debt Details"
+                        className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Amounts */}
@@ -235,6 +252,17 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
           await onAddDebt(params);
         }}
       />
+
+      {/* Edit Debt Modal */}
+      {onUpdateDebt && onDeleteDebt && (
+        <EditDebtModal
+          isOpen={Boolean(editingDebt)}
+          debt={editingDebt}
+          onClose={() => setEditingDebt(null)}
+          onUpdate={onUpdateDebt}
+          onDelete={onDeleteDebt}
+        />
+      )}
     </div>
   );
 };

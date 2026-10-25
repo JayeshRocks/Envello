@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Wallet,
   Mail,
@@ -20,6 +20,7 @@ import {
 } from '@/lib/accounting/calculations';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/context/ToastContext';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -42,6 +43,7 @@ import type { FinancialOverviewPillars } from '@/types/accounting.types';
 
 export const App: React.FC = () => {
   const { user, isAllowlisted, isLoading: isAuthLoading } = useAuth();
+  const { showToast } = useToast();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
   const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
@@ -85,6 +87,8 @@ export const App: React.FC = () => {
     isLoading: isCardsLoading,
     addCard,
     payCard,
+    updateCard,
+    removeCard,
     refreshCards,
   } = useCreditCards();
 
@@ -104,6 +108,8 @@ export const App: React.FC = () => {
     isLoading: isEmisLoading,
     addEmi,
     payEmi,
+    editEmi,
+    removeEmi,
     refreshSelfEmis,
   } = useSelfEmis();
 
@@ -113,6 +119,8 @@ export const App: React.FC = () => {
     isLoading: isDebtsLoading,
     addDebt,
     payDebt,
+    editDebt,
+    removeDebt,
     refreshDebts,
   } = useActualDebts();
 
@@ -173,6 +181,30 @@ export const App: React.FC = () => {
       refreshTargets(),
     ]);
   };
+
+  // Keyboard shortcut listener (Escape to close, 'T' to record transaction)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAuthModalOpen(false);
+        setIsRecordTxModalOpen(false);
+        setIsAccountsModalOpen(false);
+        setIsExportModalOpen(false);
+      }
+      if (
+        (e.key === 't' || e.key === 'T') &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        if (user) {
+          e.preventDefault();
+          setIsRecordTxModalOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [user]);
 
   // 1. Loading session state
   if (isAuthLoading) {
@@ -457,6 +489,15 @@ export const App: React.FC = () => {
             onPayCard={async (params) => {
               await payCard(params);
               await handleTransactionRecorded();
+              showToast('Credit card bill payment recorded', 'success');
+            }}
+            onUpdateCard={async (cardId, updates) => {
+              await updateCard(cardId, updates);
+              showToast('Credit card details updated', 'success');
+            }}
+            onDeleteCard={async (cardId) => {
+              await removeCard(cardId);
+              showToast('Credit card removed', 'info');
             }}
 
             fixedDeposits={fixedDeposits}
@@ -466,10 +507,12 @@ export const App: React.FC = () => {
             onAddFD={async (params) => {
               await addFD(params);
               await handleTransactionRecorded();
+              showToast('Fixed deposit registered', 'success');
             }}
             onLiquidateFD={async (params) => {
               await liquidateFD(params);
               await handleTransactionRecorded();
+              showToast('Fixed deposit liquidated to account', 'success');
             }}
 
             selfEmis={selfEmis}
@@ -477,10 +520,20 @@ export const App: React.FC = () => {
             isEmisLoading={isEmisLoading}
             onAddEmi={async (params) => {
               await addEmi(params);
+              showToast('Self EMI schedule created', 'success');
             }}
             onPayEmi={async (params) => {
               await payEmi(params);
               await handleTransactionRecorded();
+              showToast('Self EMI installment paid', 'success');
+            }}
+            onUpdateEmi={async (emiId, updates) => {
+              await editEmi(emiId, updates);
+              showToast('Self EMI updated', 'success');
+            }}
+            onDeleteEmi={async (emiId) => {
+              await removeEmi(emiId);
+              showToast('Self EMI removed', 'info');
             }}
 
             actualDebts={actualDebts}
@@ -488,10 +541,20 @@ export const App: React.FC = () => {
             isDebtsLoading={isDebtsLoading}
             onAddDebt={async (params) => {
               await addDebt(params);
+              showToast('Debt liability created', 'success');
             }}
             onPayDebt={async (params) => {
               await payDebt(params);
               await handleTransactionRecorded();
+              showToast('Debt payment recorded', 'success');
+            }}
+            onUpdateDebt={async (debtId, updates) => {
+              await editDebt(debtId, updates);
+              showToast('Debt details updated', 'success');
+            }}
+            onDeleteDebt={async (debtId) => {
+              await removeDebt(debtId);
+              showToast('Debt record removed', 'info');
             }}
 
             targets={targets}
@@ -500,12 +563,15 @@ export const App: React.FC = () => {
             isTargetsLoading={isTargetsLoading}
             onAddTarget={async (params) => {
               await addTarget(params);
+              showToast('Savings target created', 'success');
             }}
             onContributeTarget={async (targetId, amount) => {
               await contributeToTarget(targetId, amount);
+              showToast('Target contribution recorded', 'success');
             }}
             onRemoveTarget={async (targetId) => {
               await removeTarget(targetId);
+              showToast('Savings target removed', 'info');
             }}
 
             accounts={accounts}
@@ -525,6 +591,7 @@ export const App: React.FC = () => {
             onDeleteTransaction={async (txId) => {
               await removeTransaction(txId);
               await handleTransactionRecorded();
+              showToast('Transaction reverted and removed', 'info');
             }}
           />
         )}
@@ -571,14 +638,17 @@ export const App: React.FC = () => {
         onRecordExpense={async (params) => {
           await addExpense(params);
           await handleTransactionRecorded();
+          showToast('Expense recorded successfully', 'success');
         }}
         onRecordIncome={async (params) => {
           await addIncome(params);
           await handleTransactionRecorded();
+          showToast('Income added to account', 'success');
         }}
         onRecordTransfer={async (params) => {
           await addTransfer(params);
           await handleTransactionRecorded();
+          showToast('Account transfer recorded', 'success');
         }}
       />
 
@@ -589,12 +659,15 @@ export const App: React.FC = () => {
         onClose={() => setIsAccountsModalOpen(false)}
         onAddAccount={async (params) => {
           await addAccount(params);
+          showToast('Account created successfully', 'success');
         }}
         onEditAccount={async (accountId, params) => {
           await editAccount(accountId, params);
+          showToast('Account updated successfully', 'success');
         }}
         onDeleteAccount={async (accountId) => {
           await removeAccount(accountId);
+          showToast('Account deleted', 'info');
         }}
       />
 

@@ -8,9 +8,11 @@ import { TransferModal } from './TransferModal';
 import { CreateEnvelopeModal } from './CreateEnvelopeModal';
 import { EditEnvelopeModal } from './EditEnvelopeModal';
 import { formatINR } from '@/lib/accounting/currency';
+import { useToast } from '@/context/ToastContext';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 
 export const EnvelopeGrid: React.FC = () => {
+  const { showToast } = useToast();
   const {
     envelopes,
     isLoading,
@@ -159,7 +161,10 @@ export const EnvelopeGrid: React.FC = () => {
         isOpen={Boolean(allocatingEnvelope)}
         envelope={allocatingEnvelope}
         onClose={() => setAllocatingEnvelope(null)}
-        onAllocate={allocateFunds}
+        onAllocate={async (envelopeId, amount) => {
+          await allocateFunds(envelopeId, amount);
+          showToast('Monthly envelope budget set', 'success');
+        }}
       />
 
       <TransferModal
@@ -167,21 +172,33 @@ export const EnvelopeGrid: React.FC = () => {
         envelopes={envelopes}
         initialFromEnvelopeId={transferringEnvelopeId ?? undefined}
         onClose={() => setTransferringEnvelopeId(null)}
-        onTransfer={transferFunds}
+        onTransfer={async (fromId, toId, amount) => {
+          await transferFunds(fromId, toId, amount);
+          showToast('Funds reallocated between envelopes', 'success');
+        }}
       />
 
       <CreateEnvelopeModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onCreate={createEnvelope}
+        onCreate={async (data) => {
+          await createEnvelope(data);
+          showToast('New envelope category created', 'success');
+        }}
       />
 
       <EditEnvelopeModal
         isOpen={Boolean(editingEnvelope)}
         envelope={editingEnvelope}
         onClose={() => setEditingEnvelope(null)}
-        onUpdate={editEnvelope}
-        onDelete={removeEnvelope}
+        onUpdate={async (envId, data) => {
+          await editEnvelope(envId, data);
+          showToast('Envelope details updated', 'success');
+        }}
+        onDelete={async (envId) => {
+          await removeEnvelope(envId);
+          showToast('Envelope category deleted', 'info');
+        }}
       />
     </section>
   );

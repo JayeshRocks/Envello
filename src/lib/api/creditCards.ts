@@ -183,3 +183,30 @@ export async function recordCreditCardPayment(
       .eq('user_id', userId),
   ]);
 }
+
+/**
+ * Deletes or archives a credit card.
+ * If foreign key references exist, marks is_active = false.
+ */
+export async function deleteCreditCard(userId: string, cardId: string): Promise<void> {
+  const { error } = await supabase
+    .from('credit_cards')
+    .delete()
+    .eq('id', cardId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.warn('[creditCards API] Direct delete failed, archiving instead:', error.message);
+    const { error: archiveErr } = await supabase
+      .from('credit_cards')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', cardId)
+      .eq('user_id', userId);
+
+    if (archiveErr) {
+      console.error('Error archiving credit card:', archiveErr);
+      throw archiveErr;
+    }
+  }
+}
+

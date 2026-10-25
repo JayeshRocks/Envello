@@ -4,6 +4,7 @@ import {
   fetchCreditCards,
   createCreditCard,
   updateCreditCard,
+  deleteCreditCard,
   recordCreditCardPayment,
   type CreditCardRow,
   type CreditCardWithDetails,
@@ -116,6 +117,11 @@ export function useCreditCards() {
       const updated = await updateCreditCard(user.id, cardId, updates);
       setCards(prev => prev.map(c => (c.id === cardId ? updated : c)));
       return updated;
+    },
+    removeCard: async (cardId: string) => {
+      if (!user) throw new Error('Authentication required');
+      await deleteCreditCard(user.id, cardId);
+      await loadCards();
     },
   };
 }

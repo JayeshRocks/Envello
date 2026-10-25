@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { CreditCard, Landmark, RefreshCw, CalendarClock, Target } from 'lucide-react';
-import type { CreditCardWithDetails } from '@/lib/api/creditCards';
+import type { CreditCardWithDetails, CreditCardRow } from '@/lib/api/creditCards';
 import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
 import type { SelfEmiWithProgress } from '@/hooks/useSelfEmis';
-import type { ActualDebtRow } from '@/lib/api/actualDebts';
+import type { SelfEmiInsert } from '@/lib/api/selfEmis';
+import type { ActualDebtRow, ActualDebtInsert } from '@/lib/api/actualDebts';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
 import { CreditCardSection } from './CreditCardSection';
@@ -35,6 +36,8 @@ interface LiabilitiesAndAssetsContainerProps {
     paymentDate?: string;
     notes?: string;
   }) => Promise<void>;
+  onUpdateCard?: (cardId: string, updates: Partial<CreditCardRow>) => Promise<void>;
+  onDeleteCard?: (cardId: string) => Promise<void>;
 
   // FDs
   fixedDeposits: FixedDepositRow[];
@@ -71,6 +74,8 @@ interface LiabilitiesAndAssetsContainerProps {
     emiId: string;
     amountPaise: number;
   }) => Promise<void>;
+  onUpdateEmi?: (emiId: string, updates: Partial<SelfEmiInsert>) => Promise<void>;
+  onDeleteEmi?: (emiId: string) => Promise<void>;
 
   // Actual Debts
   actualDebts: ActualDebtRow[];
@@ -89,6 +94,8 @@ interface LiabilitiesAndAssetsContainerProps {
     paymentDate?: string;
     notes?: string;
   }) => Promise<void>;
+  onUpdateDebt?: (debtId: string, updates: Partial<ActualDebtInsert>) => Promise<void>;
+  onDeleteDebt?: (debtId: string) => Promise<void>;
 
   // Monthly Targets (Pillar 6)
   targets: MonthlyTargetWithProgress[];
@@ -194,6 +201,8 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             isLoading={props.isCardsLoading}
             onAddCard={props.onAddCard}
             onPayCard={props.onPayCard}
+            onUpdateCard={props.onUpdateCard}
+            onDeleteCard={props.onDeleteCard}
           />
         )}
 
@@ -216,6 +225,8 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             isLoading={props.isEmisLoading}
             onAddEmi={props.onAddEmi}
             onPayEmi={props.onPayEmi}
+            onUpdateEmi={props.onUpdateEmi}
+            onDeleteEmi={props.onDeleteEmi}
           />
         )}
 
@@ -227,6 +238,8 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             isLoading={props.isDebtsLoading}
             onAddDebt={props.onAddDebt}
             onPayDebt={props.onPayDebt}
+            onUpdateDebt={props.onUpdateDebt}
+            onDeleteDebt={props.onDeleteDebt}
           />
         )}
 

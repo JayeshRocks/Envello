@@ -3,8 +3,11 @@ import { useAuth } from './useAuth';
 import {
   fetchActualDebts,
   createActualDebt,
+  updateActualDebt,
+  deleteActualDebt,
   recordDebtPayment,
   type ActualDebtRow,
+  type ActualDebtInsert,
 } from '@/lib/api/actualDebts';
 
 export function useActualDebts() {
@@ -75,5 +78,16 @@ export function useActualDebts() {
     refreshDebts: loadDebts,
     addDebt,
     payDebt,
+    editDebt: async (debtId: string, updates: Partial<ActualDebtInsert>) => {
+      if (!user) throw new Error('Authentication required');
+      const updated = await updateActualDebt(user.id, debtId, updates);
+      setActualDebts(prev => prev.map(d => (d.id === debtId ? updated : d)));
+      return updated;
+    },
+    removeDebt: async (debtId: string) => {
+      if (!user) throw new Error('Authentication required');
+      await deleteActualDebt(user.id, debtId);
+      await loadDebts();
+    },
   };
 }

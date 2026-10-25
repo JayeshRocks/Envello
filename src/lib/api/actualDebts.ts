@@ -145,3 +145,47 @@ export async function recordDebtPayment(
       .eq('user_id', userId),
   ]);
 }
+
+/**
+ * Update an actual debt entry
+ */
+export async function updateActualDebt(
+  userId: string,
+  debtId: string,
+  updates: Partial<ActualDebtInsert>
+): Promise<ActualDebtRow> {
+  const { data, error } = await supabase
+    .from('actual_debts')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', debtId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Error updating actual debt:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Delete an actual debt entry
+ */
+export async function deleteActualDebt(userId: string, debtId: string): Promise<void> {
+  const { error } = await supabase
+    .from('actual_debts')
+    .delete()
+    .eq('id', debtId)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error deleting actual debt:', error);
+    throw error;
+  }
+}
+

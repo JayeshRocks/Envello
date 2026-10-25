@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { RefreshCw, Plus, CheckCircle, ArrowUpRight } from 'lucide-react';
+import { RefreshCw, Plus, CheckCircle, ArrowUpRight, Pencil } from 'lucide-react';
 import type { SelfEmiWithProgress } from '@/hooks/useSelfEmis';
+import type { SelfEmiInsert } from '@/lib/api/selfEmis';
 import { formatINR, toPaise } from '@/lib/accounting/currency';
 import { AddSelfEmiModal } from './AddSelfEmiModal';
+import { EditSelfEmiModal } from './EditSelfEmiModal';
 
 interface SelfEmiSectionProps {
   selfEmis: SelfEmiWithProgress[];
@@ -18,6 +20,8 @@ interface SelfEmiSectionProps {
     emiId: string;
     amountPaise: number;
   }) => Promise<void>;
+  onUpdateEmi?: (emiId: string, updates: Partial<SelfEmiInsert>) => Promise<void>;
+  onDeleteEmi?: (emiId: string) => Promise<void>;
 }
 
 export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
@@ -26,8 +30,11 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
   isLoading,
   onAddEmi,
   onPayEmi,
+  onUpdateEmi,
+  onDeleteEmi,
 }) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingEmi, setEditingEmi] = useState<SelfEmiWithProgress | null>(null);
   const [reimbursingEmiId, setReimbursingEmiId] = useState<string | null>(null);
   const [customAmountRupees, setCustomAmountRupees] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,9 +118,20 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
                       {emi.description}
                     </div>
                   </div>
-                  <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                    {emi.progress_percent.toFixed(1)}% Back
-                  </span>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                      {emi.progress_percent.toFixed(1)}% Back
+                    </span>
+                    {onUpdateEmi && (
+                      <button
+                        onClick={() => setEditingEmi(emi)}
+                        title="Edit Self EMI Details"
+                        className="p-1 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Amounts */}
@@ -205,6 +223,17 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
           await onAddEmi(params);
         }}
       />
+
+      {/* Edit Self EMI Modal */}
+      {onUpdateEmi && onDeleteEmi && (
+        <EditSelfEmiModal
+          isOpen={Boolean(editingEmi)}
+          emi={editingEmi}
+          onClose={() => setEditingEmi(null)}
+          onUpdate={onUpdateEmi}
+          onDelete={onDeleteEmi}
+        />
+      )}
     </div>
   );
 };
