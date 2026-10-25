@@ -9,6 +9,10 @@
     --color-surface-border: rgba(255, 255, 255, 0.08);
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--color-surface-bg);
     color: #f3f4f6;

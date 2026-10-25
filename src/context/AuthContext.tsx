@@ -11,6 +11,7 @@ export interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   sendMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
+  signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   refreshAllowlistStatus: () => Promise<void>;
   clearError: () => void;
@@ -132,6 +133,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: null };
   };
 
+  const signInWithGoogle = async () => {
+    setError(null);
+    const { error: googleError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    if (googleError) {
+      setError(googleError.message);
+      return { error: googleError };
+    }
+    return { error: null };
+  };
+
   const signOut = async () => {
     setError(null);
     const { error: signOutError } = await supabase.auth.signOut();
@@ -164,6 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithEmail,
         signUpWithEmail,
         sendMagicLink,
+        signInWithGoogle,
         signOut,
         refreshAllowlistStatus,
         clearError,

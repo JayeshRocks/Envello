@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Sparkles, X, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Sparkles,
+  X,
+  AlertCircle,
+  CheckCircle2,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  LogIn,
+  UserPlus,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AuthModalProps {
@@ -10,15 +23,25 @@ interface AuthModalProps {
 type AuthMode = 'signIn' | 'signUp' | 'magicLink';
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const { signInWithEmail, signUpWithEmail, sendMagicLink, error, clearError } = useAuth();
+  const {
+    signInWithEmail,
+    signUpWithEmail,
+    sendMagicLink,
+    signInWithGoogle,
+    error,
+    clearError,
+  } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -27,6 +50,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     clearError();
     setValidationError(null);
     setSuccessMessage(null);
+  };
+
+  const handleGoogleSignIn = async () => {
+    clearError();
+    setValidationError(null);
+    setIsGoogleSubmitting(true);
+    try {
+      const { error: err } = await signInWithGoogle();
+      if (err) {
+        setValidationError(err.message || 'Google authentication failed.');
+      }
+    } catch (err: unknown) {
+      setValidationError(err instanceof Error ? err.message : 'Google authentication failed.');
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,17 +120,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-      <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-8 space-y-6 border border-white/10 shadow-2xl relative modal-panel">
+      <div className="max-w-md w-full glass-card rounded-2xl p-6 sm:p-8 space-y-6 border border-white/10 shadow-2xl relative modal-panel overflow-hidden">
+        {/* Subtle decorative glow header */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500" />
+
         {/* Close button */}
         <button
           onClick={onClose}
+          aria-label="Close dialog"
           className="absolute top-4 right-4 p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
-        <div className="space-y-1.5 text-center sm:text-left">
+        {/* Modal Header */}
+        <div className="space-y-1.5 text-left">
           <div className="inline-flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Envello Authentication</span>
@@ -102,61 +145,111 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             {mode === 'magicLink' && 'Sign in with Magic Link'}
           </h2>
           <p className="text-xs text-neutral-400">
-            {mode === 'signIn' && 'Enter your credentials to access your budgeting workspace.'}
+            {mode === 'signIn' && 'Enter your credentials to access your private budgeting workspace.'}
             {mode === 'signUp' && 'Register your email address for private beta access.'}
             {mode === 'magicLink' && 'We will send a passwordless login link to your inbox.'}
           </p>
         </div>
 
-        {/* Tab Switcher */}
+        {/* Primary OAuth Action: Google Sign In */}
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isGoogleSubmitting || isSubmitting}
+          className="w-full flex items-center justify-center space-x-3 py-2.5 px-4 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-white text-xs sm:text-sm font-semibold border border-white/10 shadow-sm transition-all duration-200 active:scale-[0.98] hover:border-white/20 disabled:opacity-50"
+        >
+          {isGoogleSubmitting ? (
+            <Loader2 className="w-4 h-4 animate-spin text-sky-400" />
+          ) : (
+            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+          )}
+          <span>{isGoogleSubmitting ? 'Connecting with Google...' : 'Continue with Google'}</span>
+        </button>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-white/10 w-full" />
+          <span className="bg-[#121217] px-3 text-[11px] font-medium text-neutral-400 uppercase tracking-wider absolute">
+            or with email
+          </span>
+        </div>
+
+        {/* Fluid Mode Switcher */}
         <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-neutral-900 border border-white/5 text-xs font-medium">
           <button
             type="button"
             onClick={() => handleModeSwitch('signIn')}
-            className={`py-1.5 rounded-lg transition ${
-              mode === 'signIn' ? 'bg-sky-500 text-white shadow-sm' : 'text-neutral-400 hover:text-neutral-200'
+            className={`py-2 rounded-lg flex items-center justify-center space-x-1.5 transition-all duration-200 active:scale-95 ${
+              mode === 'signIn'
+                ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-md font-semibold'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60'
             }`}
           >
-            Sign In
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
           </button>
           <button
             type="button"
             onClick={() => handleModeSwitch('signUp')}
-            className={`py-1.5 rounded-lg transition ${
-              mode === 'signUp' ? 'bg-sky-500 text-white shadow-sm' : 'text-neutral-400 hover:text-neutral-200'
+            className={`py-2 rounded-lg flex items-center justify-center space-x-1.5 transition-all duration-200 active:scale-95 ${
+              mode === 'signUp'
+                ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-md font-semibold'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60'
             }`}
           >
-            Sign Up
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Sign Up</span>
           </button>
           <button
             type="button"
             onClick={() => handleModeSwitch('magicLink')}
-            className={`py-1.5 rounded-lg transition ${
-              mode === 'magicLink' ? 'bg-sky-500 text-white shadow-sm' : 'text-neutral-400 hover:text-neutral-200'
+            className={`py-2 rounded-lg flex items-center justify-center space-x-1.5 transition-all duration-200 active:scale-95 ${
+              mode === 'magicLink'
+                ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-md font-semibold'
+                : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60'
             }`}
           >
-            Magic Link
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Magic Link</span>
           </button>
         </div>
 
-        {/* Notifications / Errors */}
+        {/* Notifications / Validation alerts */}
         {(error || validationError) && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start space-x-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>{error || validationError}</span>
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-xs flex items-start space-x-2.5 animate-slide-down">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" />
+            <span className="leading-relaxed">{error || validationError}</span>
           </div>
         )}
 
         {successMessage && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-start space-x-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>{successMessage}</span>
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-start space-x-2.5 animate-slide-down">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
+            <span className="leading-relaxed">{successMessage}</span>
           </div>
         )}
 
-        {/* Form */}
+        {/* Email & Password Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
+          {/* Email input */}
+          <div className="space-y-1.5 text-left">
             <label className="text-xs font-medium text-neutral-300 flex items-center space-x-1.5">
               <Mail className="w-3.5 h-3.5 text-neutral-400" />
               <span>Email Address</span>
@@ -165,95 +258,147 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="name@example.com"
               required
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
+              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500/40"
             />
           </div>
 
+          {/* Password input */}
           {mode !== 'magicLink' && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-neutral-300 flex items-center space-x-1.5">
-                <Lock className="w-3.5 h-3.5 text-neutral-400" />
-                <span>Password</span>
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
-              />
+            <div className="space-y-1.5 text-left">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-neutral-300 flex items-center space-x-1.5">
+                  <Lock className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>Password</span>
+                </label>
+                {mode === 'signIn' && (
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch('magicLink')}
+                    className="text-[11px] text-sky-400 hover:text-sky-300 transition"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white transition p-1"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           )}
 
+          {/* Confirm Password input (Sign Up mode) */}
           {mode === 'signUp' && (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 text-left">
               <label className="text-xs font-medium text-neutral-300 flex items-center space-x-1.5">
                 <Lock className="w-3.5 h-3.5 text-neutral-400" />
                 <span>Confirm Password</span>
               </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl glass-input text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-sky-500/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white transition p-1"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           )}
 
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-medium transition shadow-lg shadow-sky-500/25"
+            disabled={isSubmitting || isGoogleSubmitting}
+            className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-sm shadow-xl shadow-sky-500/25 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
           >
-            <span>{isSubmitting ? 'Processing...' : mode === 'signIn' ? 'Sign In' : mode === 'signUp' ? 'Create Account' : 'Send Magic Link'}</span>
-            <ArrowRight className="w-4 h-4" />
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-neutral-950" />
+                <span>
+                  {mode === 'signIn'
+                    ? 'Signing in...'
+                    : mode === 'signUp'
+                    ? 'Creating account...'
+                    : 'Sending link...'}
+                </span>
+              </>
+            ) : (
+              <>
+                <span>
+                  {mode === 'signIn'
+                    ? 'Sign In to Workspace'
+                    : mode === 'signUp'
+                    ? 'Create Owner Account'
+                    : 'Send Passwordless Link'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-white/10 w-full" />
-          <span className="bg-[#121217] px-3 text-[11px] font-medium text-neutral-500 uppercase tracking-wider absolute">
-            or
-          </span>
-        </div>
-
-        {/* Google OAuth Option (Prepared for future activation) */}
-        <div className="space-y-2">
-          <button
-            type="button"
-            disabled
-            className="w-full flex items-center justify-center space-x-2.5 py-2.5 px-4 rounded-xl bg-neutral-900 border border-white/10 text-neutral-400 text-xs font-medium opacity-60 cursor-not-allowed transition"
-            title="Google OAuth can be enabled once Google Cloud Client ID is configured."
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>Continue with Google</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-neutral-400 font-normal">
-              Coming Soon
+        {/* Footer Prompt */}
+        <div className="pt-2 text-center text-xs text-neutral-400">
+          {mode === 'signIn' ? (
+            <span>
+              Don&apos;t have an account?{' '}
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('signUp')}
+                className="text-sky-400 hover:text-sky-300 font-semibold transition"
+              >
+                Sign up for beta
+              </button>
             </span>
-          </button>
+          ) : mode === 'signUp' ? (
+            <span>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('signIn')}
+                className="text-sky-400 hover:text-sky-300 font-semibold transition"
+              >
+                Sign in
+              </button>
+            </span>
+          ) : (
+            <span>
+              Remember your password?{' '}
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('signIn')}
+                className="text-sky-400 hover:text-sky-300 font-semibold transition"
+              >
+                Sign in with password
+              </button>
+            </span>
+          )}
         </div>
       </div>
     </div>

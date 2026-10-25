@@ -37,6 +37,13 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
   const lifestylePaise = (totalPaise * BigInt(lifestylePercent)) / 100n;
   const unallocatedPaise = totalPaise - (essentialsPaise + savingsPaise + lifestylePaise);
 
+  const scrollTo = (elementId: string) => {
+    const target = document.getElementById(elementId);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <div className="space-y-20 pb-16 animate-fade-in">
       {/* 1. Hero Section */}
@@ -68,12 +75,19 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
             <span>Sign In to Workspace</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
-          <a
-            href="#pillars"
+          <button
+            onClick={() => scrollTo('pillars')}
             className="w-full sm:w-auto px-5 py-3 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200"
           >
             Explore the 6 Pillars
-          </a>
+          </button>
+          <button
+            onClick={() => scrollTo('simulator')}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 text-sm font-medium border border-sky-500/20 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-1.5"
+          >
+            <Sliders className="w-4 h-4" />
+            <span>Try Simulator</span>
+          </button>
         </div>
 
         {/* Credibility badges */}
@@ -113,7 +127,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
       </section>
 
       {/* 2. The Core Problem & The 6 Balance Pillars */}
-      <section id="pillars" className="space-y-8 scroll-mt-20">
+      <section id="pillars" className="space-y-8 scroll-mt-24">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             The Six Financial Pillars
@@ -235,7 +249,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
       </section>
 
       {/* 3. Deep-Dive Capabilities Grid */}
-      <section className="space-y-8">
+      <section id="subsystems" className="space-y-8 scroll-mt-24">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Engineered for Precision & Convenience
@@ -357,7 +371,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
       </section>
 
       {/* 4. Interactive Live Budget Simulator */}
-      <section className="p-6 sm:p-8 rounded-3xl bg-neutral-900/70 border border-white/10 space-y-6">
+      <section id="simulator" className="p-6 sm:p-8 rounded-3xl bg-neutral-900/70 border border-white/10 space-y-6 scroll-mt-24">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center space-x-1.5 text-xs px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
