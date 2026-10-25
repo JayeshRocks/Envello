@@ -7,8 +7,6 @@ import {
   PlusCircle,
   LogIn,
   LogOut,
-  ShieldCheck,
-  ShieldAlert,
   Landmark,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   onRecordTransactionClick,
   onOpenAccountsModal,
 }) => {
-  const { user, isAllowlisted, signOut } = useAuth();
+  const { user, signOut } = useAuth();
 
   return (
     <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-40">
@@ -65,19 +63,6 @@ export const Header: React.FC<HeaderProps> = ({
           {/* User Session Area */}
           {user ? (
             <div className="flex items-center space-x-2">
-              {/* Allowlist status badge */}
-              {isAllowlisted ? (
-                <span className="hidden md:inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <ShieldCheck className="w-3 h-3" />
-                  <span>Authorized</span>
-                </span>
-              ) : (
-                <span className="hidden md:inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  <ShieldAlert className="w-3 h-3" />
-                  <span>Restricted</span>
-                </span>
-              )}
-
               {/* User Email Pill */}
               <div className="text-xs px-3 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5 text-neutral-300 font-mono max-w-[180px] sm:max-w-[220px] truncate">
                 {user.email}

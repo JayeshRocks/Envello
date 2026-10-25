@@ -67,30 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setHasPassword(currentUser.user_metadata?.has_set_password === true);
   }, []);
 
-  // Check if current authenticated user's email is on the server allowlist
+  // All authenticated users are authorized (whitelist gating removed)
   const checkAllowlist = useCallback(async (userEmail?: string) => {
-    if (!isSupabaseConfigured || !userEmail) {
-      setIsAllowlisted(false);
-      return;
-    }
-
-    try {
-      const { data, error: queryError } = await supabase
-        .from('allowed_users')
-        .select('email')
-        .eq('email', userEmail.toLowerCase().trim())
-        .maybeSingle();
-
-      if (queryError) {
-        console.error('[Envello Auth] Error verifying allowlist:', queryError.message);
-        setIsAllowlisted(false);
-      } else {
-        setIsAllowlisted(Boolean(data));
-      }
-    } catch (err) {
-      console.error('[Envello Auth] Unexpected error verifying allowlist:', err);
-      setIsAllowlisted(false);
-    }
+    setIsAllowlisted(Boolean(userEmail));
   }, []);
 
   // Sync session on mount and subscribe to auth state changes

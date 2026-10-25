@@ -24,7 +24,6 @@ import { useActualDebts } from '@/hooks/useActualDebts';
 import { useMonthlyTargets } from '@/hooks/useMonthlyTargets';
 import { Header } from '@/components/common/Header';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { AccessRestricted } from '@/components/auth/AccessRestricted';
 import { CoverPage } from '@/components/landing/CoverPage';
 import { EnvelopeGrid } from '@/components/envelopes/EnvelopeGrid';
 import { RecordTransactionModal } from '@/components/transactions/RecordTransactionModal';
@@ -40,7 +39,7 @@ import { ExportDataModal } from '@/components/export/ExportDataModal';
 import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
 
 export const App: React.FC = () => {
-  const { user, isAllowlisted, isLoading: isAuthLoading, isPasswordRecovery, needsPasswordSetup } = useAuth();
+  const { user, isLoading: isAuthLoading, isPasswordRecovery, needsPasswordSetup } = useAuth();
   const { showToast } = useToast();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
@@ -60,7 +59,7 @@ export const App: React.FC = () => {
 
   // If user signed in without a password, prompt them to set one on first login
   useEffect(() => {
-    if (user && isAllowlisted && needsPasswordSetup) {
+    if (user && needsPasswordSetup) {
       const dismissed = localStorage.getItem(`envello_dismissed_password_prompt_${user.id}`);
       if (!dismissed) {
         setIsFirstLoginPasswordModalOpen(true);
@@ -68,7 +67,7 @@ export const App: React.FC = () => {
     } else {
       setIsFirstLoginPasswordModalOpen(false);
     }
-  }, [user, isAllowlisted, needsPasswordSetup]);
+  }, [user, needsPasswordSetup]);
 
   // Live hooks
   const {
@@ -234,11 +233,6 @@ export const App: React.FC = () => {
         </div>
       </div>
     );
-  }
-
-  // 2. Private Beta Gating: Authenticated but email NOT on allowlist
-  if (user && isAllowlisted === false) {
-    return <AccessRestricted />;
   }
 
   return (
