@@ -9,7 +9,6 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkles,
-  Lock,
   ArrowRight,
   Landmark,
 } from 'lucide-react';
@@ -23,6 +22,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useCreditCards } from '@/hooks/useCreditCards';
+import { useFixedDeposits } from '@/hooks/useFixedDeposits';
+import { useSelfEmis } from '@/hooks/useSelfEmis';
+import { useActualDebts } from '@/hooks/useActualDebts';
 import { Header } from '@/components/common/Header';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { AccessRestricted } from '@/components/auth/AccessRestricted';
@@ -30,6 +33,7 @@ import { EnvelopeGrid } from '@/components/envelopes/EnvelopeGrid';
 import { RecordTransactionModal } from '@/components/transactions/RecordTransactionModal';
 import { AccountListModal } from '@/components/accounts/AccountListModal';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
+import { LiabilitiesAndAssetsContainer } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import type { FinancialOverviewPillars } from '@/types/accounting.types';
 
 export const App: React.FC = () => {
@@ -65,6 +69,45 @@ export const App: React.FC = () => {
     refreshTransactions,
   } = useTransactions();
 
+  const {
+    cards,
+    totalOutstandingPaise: totalCardOutstandingPaise,
+    totalCreditLimitPaise,
+    overallUtilizationPercent,
+    isLoading: isCardsLoading,
+    addCard,
+    payCard,
+    refreshCards,
+  } = useCreditCards();
+
+  const {
+    fixedDeposits,
+    totalPrincipalPaise,
+    totalMaturityPaise,
+    isLoading: isFdsLoading,
+    addFD,
+    liquidateFD,
+    refreshFDs,
+  } = useFixedDeposits();
+
+  const {
+    selfEmis,
+    totalRemainingPaise: totalSelfEmiRemainingPaise,
+    isLoading: isEmisLoading,
+    addEmi,
+    payEmi,
+    refreshSelfEmis,
+  } = useSelfEmis();
+
+  const {
+    actualDebts,
+    totalRemainingDebtPaise,
+    isLoading: isDebtsLoading,
+    addDebt,
+    payDebt,
+    refreshDebts,
+  } = useActualDebts();
+
   // Baseline demo state (used as fallback for locked assets or unauthenticated preview)
   const [demoPillars] = useState<FinancialOverviewPillars>({
     spendableCashPaise: 12540050n,       // ₹1,25,400.50
@@ -76,17 +119,18 @@ export const App: React.FC = () => {
   });
 
   // Effective authoritative pillars:
-  // Spendable cash & envelope allocations are driven dynamically from live Supabase data
+  // All pillars driven dynamically from live Supabase data when authenticated
   const effectiveSpendableCashPaise = user ? totalSpendableCashPaise : demoPillars.spendableCashPaise;
   const effectiveEnvelopeAllocationsPaise = user ? totalAllocatedPaise : demoPillars.envelopeAllocationsPaise;
+  const effectiveSavingsAndFDsPaise = user ? totalPrincipalPaise : demoPillars.savingsAndFDsPaise;
+  const effectiveCreditCardLiabilitiesPaise = user ? totalCardOutstandingPaise : demoPillars.creditCardLiabilitiesPaise;
+  const effectiveActualDebtsPaise = user ? totalRemainingDebtPaise : demoPillars.actualDebtsPaise;
 
-  // Credit card demonstration calculation
-  const demoCardLimit = 10000000n; // ₹1,00,000.00
-  const cardUtilization = calculateCreditCardUtilization(
-    demoPillars.creditCardLiabilitiesPaise,
-    demoCardLimit
-  );
-  const cardStatus = getCreditCardUtilizationStatus(cardUtilization);
+  // Credit card utilization calculation
+  const effectiveCardUtilization = user
+    ? overallUtilizationPercent
+    : calculateCreditCardUtilization(demoPillars.creditCardLiabilitiesPaise, 10000000n);
+  const effectiveCardStatus = getCreditCardUtilizationStatus(effectiveCardUtilization);
 
   const envelopeCategories = [
     { name: 'Regular / Balance', amount: 1500000n, color: 'text-sky-400', border: 'border-sky-500/20' },
@@ -102,6 +146,10 @@ export const App: React.FC = () => {
       refreshAccounts(),
       refreshEnvelopes(),
       refreshTransactions(),
+      refreshCards(),
+      refreshFDs(),
+      refreshSelfEmis(),
+      refreshDebts(),
     ]);
   };
 
@@ -130,88 +178,76 @@ export const App: React.FC = () => {
       {/* Top Application Header */}
       <Header
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onRecordTransactionClick={() => {
-          if (!user) {
-            setIsAuthModalOpen(true);
-          } else {
-            setIsRecordTxModalOpen(true);
-          }
-        }}
+        onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
       />
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
-        {/* Banner: Unauthenticated Preview Mode */}
+      {/* Main Content Dashboard */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+        {/* Banner for unauthenticated preview mode */}
         {!user && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-transparent border border-sky-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start space-x-3.5">
-              <div className="p-2.5 rounded-xl bg-sky-500/20 text-sky-400 flex-shrink-0 mt-0.5">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 border border-sky-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-sky-500/20 text-sky-400">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <div className="space-y-0.5">
-                <div className="font-semibold text-sm text-white">Previewing Envello Workspace</div>
-                <p className="text-xs text-neutral-400 max-w-xl">
-                  You are previewing sample data with the deterministic accounting engine. Sign in with your allowlisted email to connect your personal financial ledger.
+              <div>
+                <h4 className="text-sm font-semibold text-white">Owner Private Beta Preview</h4>
+                <p className="text-xs text-neutral-400">
+                  {isSupabaseConfigured
+                    ? 'Connected to Supabase. Sign in with your allowlisted email to manage your real financial ledger.'
+                    : 'Supabase configuration missing in environment. Running in offline inspection mode.'}
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold shadow-md shadow-sky-500/20 transition whitespace-nowrap"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Sign In / Register</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* Setup Banner if Supabase connection is pending */}
-        {!isSupabaseConfigured && (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm flex items-start space-x-3">
-            <ShieldCheck className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <div className="font-semibold text-amber-300">Welcome to Envello! Database Connection Setup Needed</div>
-              <p className="text-xs text-amber-200/80">
-                To connect your local workspace to Supabase, copy your Project URL and anon key into <code className="px-1.5 py-0.5 rounded bg-black/40 font-mono text-amber-300">.env</code>.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Section: Six Pillars of Financial Clarity */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight text-white flex items-center space-x-2">
-                <span>Financial Overview</span>
-                <span className="text-xs font-normal text-neutral-400">(Six Pillars of Clarity)</span>
-              </h2>
-              <p className="text-xs text-neutral-400">
-                Balances are strictly categorized into liquid cash, allocations, locked savings, and debts.
-              </p>
-            </div>
-            {user && (
+            {isSupabaseConfigured && (
               <button
-                onClick={() => setIsAccountsModalOpen(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/5 text-neutral-300 hover:text-white text-xs font-medium transition"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 font-semibold text-xs transition flex items-center space-x-1.5 flex-shrink-0 shadow-lg shadow-sky-500/20"
               >
-                <Landmark className="w-3.5 h-3.5 text-sky-400" />
-                <span>Manage Accounts ({accounts.length})</span>
+                <span>Sign In to Workspace</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
+            )}
+          </div>
+        )}
+
+        {/* Section: The Six Financial Pillars */}
+        <section className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-semibold tracking-tight text-white">Financial Pillars</h2>
+                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Deterministic Math
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Explicit balance taxonomy. Liquid cash is never conflated with credit limits or locked savings.
+              </p>
+            </div>
+
+            {user && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setIsAccountsModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition"
+                >
+                  <Landmark className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{accounts.length} Accounts</span>
+                </button>
+                <button
+                  onClick={() => setIsRecordTxModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-lg shadow-sky-500/20 transition"
+                >
+                  + Record Transaction
+                </button>
+              </div>
             )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 1. Spendable Cash */}
-            <div
-              onClick={() => {
-                if (user) setIsAccountsModalOpen(true);
-              }}
-              className={`glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden transition ${
-                user ? 'cursor-pointer hover:border-sky-500/30' : ''
-              }`}
-            >
+            <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   1. Spendable Cash
@@ -221,13 +257,10 @@ export const App: React.FC = () => {
                 </div>
               </div>
               <div>
-                <div className="text-2xl font-bold font-mono tracking-tight text-white tabular-nums">
+                <div className="text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums">
                   {formatINR(effectiveSpendableCashPaise)}
                 </div>
-                <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                  <span>Liquid Bank Accounts & Cash</span>
-                  {user && <span className="text-sky-400 text-[11px]">Manage →</span>}
-                </div>
+                <div className="text-xs text-neutral-400 mt-1">Liquid Bank Accounts & Cash</div>
               </div>
             </div>
 
@@ -235,7 +268,7 @@ export const App: React.FC = () => {
             <div className="glass-card rounded-2xl p-5 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                  2. Envelope Budget
+                  2. Envelope Allocations
                 </span>
                 <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
                   <Mail className="w-5 h-5" />
@@ -261,7 +294,7 @@ export const App: React.FC = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums">
-                  {formatINR(demoPillars.savingsAndFDsPaise)}
+                  {formatINR(effectiveSavingsAndFDsPaise)}
                 </div>
                 <div className="text-xs text-neutral-400 mt-1">Super.Money FDs & Locked Reserves</div>
               </div>
@@ -273,26 +306,26 @@ export const App: React.FC = () => {
                 <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   4. Card Liabilities
                 </span>
-                <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
+                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
                   <CreditCard className="w-5 h-5" />
                 </div>
               </div>
               <div>
-                <div className="text-2xl font-bold font-mono tracking-tight text-red-400 tabular-nums">
-                  {formatINR(demoPillars.creditCardLiabilitiesPaise)}
+                <div className="text-2xl font-bold font-mono tracking-tight text-purple-400 tabular-nums">
+                  {formatINR(effectiveCreditCardLiabilitiesPaise)}
                 </div>
                 <div className="flex items-center space-x-2 text-xs mt-1">
                   <span className="text-neutral-400">Utilization:</span>
                   <span
                     className={`font-semibold font-mono ${
-                      cardStatus === 'safe'
+                      effectiveCardStatus === 'safe'
                         ? 'text-emerald-400'
-                        : cardStatus === 'warning'
+                        : effectiveCardStatus === 'warning'
                         ? 'text-amber-400'
                         : 'text-red-400'
                     }`}
                   >
-                    {cardUtilization.toFixed(1)}% ({cardStatus === 'safe' ? '<30% Safe' : 'High'})
+                    {effectiveCardUtilization.toFixed(1)}% ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
                   </span>
                 </div>
               </div>
@@ -310,7 +343,7 @@ export const App: React.FC = () => {
               </div>
               <div>
                 <div className="text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums">
-                  {formatINR(demoPillars.actualDebtsPaise)}
+                  {formatINR(effectiveActualDebtsPaise)}
                 </div>
                 <div className="text-xs text-neutral-400 mt-1">External Loans & Debts Owed</div>
               </div>
@@ -367,6 +400,61 @@ export const App: React.FC = () => {
           </section>
         )}
 
+        {/* Section: Liabilities & Locked Assets (Credit Cards, Super.Money FDs, Self EMIs, Debts) */}
+        {user && (
+          <LiabilitiesAndAssetsContainer
+            cards={cards}
+            totalCardOutstandingPaise={totalCardOutstandingPaise}
+            totalCardLimitPaise={totalCreditLimitPaise}
+            cardUtilizationPercent={overallUtilizationPercent}
+            isCardsLoading={isCardsLoading}
+            onAddCard={async (data) => {
+              await addCard(data);
+            }}
+            onPayCard={async (params) => {
+              await payCard(params);
+              await handleTransactionRecorded();
+            }}
+
+            fixedDeposits={fixedDeposits}
+            totalFdPrincipalPaise={totalPrincipalPaise}
+            totalFdMaturityPaise={totalMaturityPaise}
+            isFdsLoading={isFdsLoading}
+            onAddFD={async (params) => {
+              await addFD(params);
+              await handleTransactionRecorded();
+            }}
+            onLiquidateFD={async (params) => {
+              await liquidateFD(params);
+              await handleTransactionRecorded();
+            }}
+
+            selfEmis={selfEmis}
+            totalSelfEmiRemainingPaise={totalSelfEmiRemainingPaise}
+            isEmisLoading={isEmisLoading}
+            onAddEmi={async (params) => {
+              await addEmi(params);
+            }}
+            onPayEmi={async (params) => {
+              await payEmi(params);
+              await handleTransactionRecorded();
+            }}
+
+            actualDebts={actualDebts}
+            totalActualDebtRemainingPaise={totalRemainingDebtPaise}
+            isDebtsLoading={isDebtsLoading}
+            onAddDebt={async (params) => {
+              await addDebt(params);
+            }}
+            onPayDebt={async (params) => {
+              await payDebt(params);
+              await handleTransactionRecorded();
+            }}
+
+            accounts={accounts}
+          />
+        )}
+
         {/* Section: Transaction Ledger */}
         {user && (
           <TransactionTable
@@ -382,9 +470,9 @@ export const App: React.FC = () => {
 
         {/* Quick Guide Links */}
         <section className="p-6 rounded-2xl bg-neutral-900/50 border border-white/5 space-y-3">
-          <h3 className="text-sm font-semibold text-neutral-200">Next Steps & Documentation</h3>
+          <h3 className="text-sm font-semibold text-neutral-200">System Architecture & Invariants</h3>
           <p className="text-xs text-neutral-400">
-            Phase 4 Transaction Ledger is active. Record expenses, income, and account transfers in integer paise.
+            Phase 5 Complete: All six financial pillars are live and authoritative. Credit card debt settlements and FD movements preserve double-entry integrity.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
             <a
@@ -396,8 +484,9 @@ export const App: React.FC = () => {
               <span>1. Supabase Dashboard</span>
               <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
             </a>
-            <div className="p-3 rounded-xl bg-neutral-800/60 border border-white/5 text-neutral-300">
-              <span>2. Check <code className="text-sky-400 font-mono">public.transactions</code></span>
+            <div className="p-3 rounded-xl bg-neutral-800/60 border border-white/5 text-neutral-300 flex items-center justify-between">
+              <span>2. Integer Paise Math</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             </div>
             <a
               href="https://vercel.com"
@@ -405,7 +494,7 @@ export const App: React.FC = () => {
               rel="noreferrer"
               className="p-3 rounded-xl bg-neutral-800/60 hover:bg-neutral-800 border border-white/5 flex items-center justify-between text-neutral-300 hover:text-white transition"
             >
-              <span>3. Vercel Production Deployment</span>
+              <span>3. Vercel Production Build</span>
               <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
             </a>
           </div>

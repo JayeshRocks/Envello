@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Landmark, Plus, CheckCircle2 } from 'lucide-react';
 import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
-import type { AccountRow } from '@/lib/api/accounts';
+import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { AddFixedDepositModal } from './AddFixedDepositModal';
 
 interface FixedDepositSectionProps {
   fixedDeposits: FixedDepositRow[];
-  accounts: AccountRow[];
+  accounts: AccountItem[];
   totalPrincipalPaise: bigint;
   totalMaturityPaise: bigint;
   isLoading: boolean;

@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase/client';
+import type { Database } from '@/types/database.types';
 import type { AccountType } from '@/types/accounting.types';
+
+export type AccountRow = Database['public']['Tables']['accounts']['Row'];
 
 export interface AccountItem {
   id: string;

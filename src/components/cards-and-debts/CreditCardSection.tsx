@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { CreditCard, Plus, ArrowUpRight, AlertTriangle, CheckCircle, ShieldAlert } from 'lucide-react';
 import type { CreditCardWithDetails } from '@/lib/api/creditCards';
-import type { AccountRow } from '@/lib/api/accounts';
+import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { AddCreditCardModal } from './AddCreditCardModal';
 import { RecordCardPaymentModal } from './RecordCardPaymentModal';
 
 interface CreditCardSectionProps {
   cards: CreditCardWithDetails[];
-  accounts: AccountRow[];
+  accounts: AccountItem[];
   totalOutstandingPaise: bigint;
   totalLimitPaise: bigint;
   overallUtilizationPercent: number;

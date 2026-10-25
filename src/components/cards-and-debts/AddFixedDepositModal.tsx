@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { X, Landmark, ShieldAlert, Sparkles } from 'lucide-react';
-import type { AccountRow } from '@/lib/api/accounts';
+import type { AccountItem } from '@/lib/api/accounts';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
 
 interface AddFixedDepositModalProps {
   isOpen: boolean;
-  accounts: AccountRow[];
+  accounts: AccountItem[];
   onClose: () => void;
   onAddFD: (params: {
     institution: string;
@@ -243,7 +243,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 <option value="">None (Already funded externally)</option>
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.institution}) — Balance: {formatINR(acc.balance_paise)}
+                    {acc.name} ({acc.institution}) — Balance: {formatINR(acc.balancePaise)}
                   </option>
                 ))}
               </select>

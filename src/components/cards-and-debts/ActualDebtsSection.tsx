@@ -1,0 +1,240 @@
+import React, { useState } from 'react';
+import { CalendarClock, Plus, CheckCircle, ArrowUpRight } from 'lucide-react';
+import type { ActualDebtRow } from '@/lib/api/actualDebts';
+import type { AccountItem } from '@/lib/api/accounts';
+import { formatINR, toPaise } from '@/lib/accounting/currency';
+import { AddActualDebtModal } from './AddActualDebtModal';
+
+interface ActualDebtsSectionProps {
+  actualDebts: ActualDebtRow[];
+  accounts: AccountItem[];
+  totalRemainingDebtPaise: bigint;
+  isLoading: boolean;
+  onAddDebt: (params: {
+    lender_name: string;
+    initial_debt_paise: number;
+    monthly_instalment_paise: number;
+    due_date?: string;
+  }) => Promise<void>;
+  onPayDebt: (params: {
+    debtId: string;
+    fromAccountId: string;
+    amountPaise: number;
+    paymentDate?: string;
+    notes?: string;
+  }) => Promise<void>;
+}
+
+export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
+  actualDebts,
+  accounts,
+  totalRemainingDebtPaise,
+  isLoading,
+  onAddDebt,
+  onPayDebt,
+}) => {
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [payingDebtId, setPayingDebtId] = useState<string | null>(null);
+  const [destAccountId, setDestAccountId] = useState<string>(accounts[0]?.id || '');
+  const [customAmountRupees, setCustomAmountRupees] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const activeDebts = actualDebts.filter((d) => !d.is_settled);
+
+  const handlePay = async (debt: ActualDebtRow) => {
+    if (!destAccountId) return;
+    const amt = parseFloat(customAmountRupees) || (debt.monthly_instalment_paise / 100);
+    if (isNaN(amt) || amt <= 0) return;
+
+    try {
+      setIsSubmitting(true);
+      await onPayDebt({
+        debtId: debt.id,
+        fromAccountId: destAccountId,
+        amountPaise: Number(toPaise(amt)),
+      });
+      setPayingDebtId(null);
+      setCustomAmountRupees('');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center space-x-2">
+            <h3 className="text-base font-semibold text-white">Actual Debts (External Liabilities)</h3>
+            <span className="text-xs text-neutral-400">({activeDebts.length} active)</span>
+          </div>
+          <p className="text-xs text-neutral-400">
+            Total Remaining Owed:{' '}
+            <span className="font-mono text-orange-400 font-semibold">{formatINR(totalRemainingDebtPaise)}</span>
+          </p>
+        </div>
+
+        <button
+          onClick={() => setIsAddOpen(true)}
+          className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs text-white font-medium shadow-lg shadow-orange-600/20 flex items-center space-x-1.5 self-start sm:self-auto transition"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Debt</span>
+        </button>
+      </div>
+
+      {/* Grid */}
+      {isLoading ? (
+        <div className="p-8 text-center text-xs text-neutral-500">Loading debts...</div>
+      ) : activeDebts.length === 0 ? (
+        <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center mx-auto">
+            <CalendarClock className="w-5 h-5" />
+          </div>
+          <div className="text-xs text-neutral-400">Zero external debts recorded. You are debt-free!</div>
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 border border-white/10 transition"
+          >
+            Track A Debt or Loan
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {activeDebts.map((debt) => {
+            const isPaying = payingDebtId === debt.id;
+            const progress =
+              debt.initial_debt_paise > 0
+                ? ((debt.initial_debt_paise - debt.remaining_debt_paise) / debt.initial_debt_paise) * 100
+                : 0;
+
+            return (
+              <div
+                key={debt.id}
+                className="glass-card rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-orange-500/30 transition group"
+              >
+                {/* Top Info */}
+                <div className="flex items-start justify-between">
+                  <div className="space-y-0.5">
+                    <div className="text-xs text-neutral-400 font-medium tracking-wide uppercase">
+                      Lender / Creditor
+                    </div>
+                    <div className="text-sm font-semibold text-white group-hover:text-orange-300 transition">
+                      {debt.lender_name}
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                    {progress.toFixed(0)}% Repaid
+                  </span>
+                </div>
+
+                {/* Amounts */}
+                <div className="space-y-1">
+                  <div className="text-[11px] text-neutral-400">Remaining Debt Owed</div>
+                  <div className="text-xl font-bold font-mono tracking-tight text-white tabular-nums">
+                    {formatINR(debt.remaining_debt_paise)}
+                  </div>
+                  <div className="text-[11px] text-neutral-400 flex items-center justify-between pt-0.5">
+                    <span>Monthly Instalment:</span>
+                    <span className="font-mono text-orange-300 font-medium">
+                      {formatINR(debt.monthly_instalment_paise)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Due Date & Initial */}
+                <div className="p-2.5 rounded-xl bg-neutral-900/60 border border-white/5 text-[11px] space-y-1 text-neutral-400">
+                  <div className="flex items-center justify-between">
+                    <span>Initial Loan:</span>
+                    <span className="text-neutral-300 font-mono">{formatINR(debt.initial_debt_paise)}</span>
+                  </div>
+                  {debt.due_date && (
+                    <div className="flex items-center justify-between">
+                      <span>Target Date:</span>
+                      <span className="text-orange-400 font-medium">{debt.due_date}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action footer */}
+                <div className="pt-2 border-t border-white/5">
+                  {isPaying ? (
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <label className="text-[10px] text-neutral-400 block mb-1">Pay From Bank:</label>
+                        <select
+                          value={destAccountId}
+                          onChange={(e) => setDestAccountId(e.target.value)}
+                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                        >
+                          {accounts.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name} ({a.institution})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          step="any"
+                          value={customAmountRupees}
+                          onChange={(e) => setCustomAmountRupees(e.target.value)}
+                          placeholder={(debt.monthly_instalment_paise / 100).toString()}
+                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-white font-mono"
+                        />
+                        <button
+                          onClick={() => handlePay(debt)}
+                          disabled={isSubmitting}
+                          className="px-3 py-1 rounded-lg bg-orange-600 hover:bg-orange-500 text-xs text-white font-medium flex-shrink-0"
+                        >
+                          {isSubmitting ? '...' : 'Pay'}
+                        </button>
+                        <button
+                          onClick={() => setPayingDebtId(null)}
+                          className="p-1 rounded-lg bg-neutral-800 text-xs text-neutral-400"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-neutral-500 flex items-center space-x-1">
+                        <CheckCircle className="w-3 h-3 text-orange-400" />
+                        <span>Pillar 5 Debt</span>
+                      </span>
+                      {accounts.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setPayingDebtId(debt.id);
+                            if (accounts[0]) setDestAccountId(accounts[0].id);
+                            setCustomAmountRupees((debt.monthly_instalment_paise / 100).toString());
+                          }}
+                          className="text-xs text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1"
+                        >
+                          <span>Record Payment</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add Modal */}
+      <AddActualDebtModal
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        onAddDebt={async (params) => {
+          await onAddDebt(params);
+        }}
+      />
+    </div>
+  );
+};

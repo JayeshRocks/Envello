@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { X, CreditCard, ArrowRight, ShieldAlert } from 'lucide-react';
 import type { CreditCardWithDetails } from '@/lib/api/creditCards';
-import type { AccountRow } from '@/lib/api/accounts';
+import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR, toPaise } from '@/lib/accounting/currency';
 
 interface RecordCardPaymentModalProps {
   isOpen: boolean;
   cards: CreditCardWithDetails[];
-  accounts: AccountRow[];
+  accounts: AccountItem[];
   preselectedCardId?: string;
   onClose: () => void;
   onRecordPayment: (params: {
@@ -149,7 +149,7 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.name} ({a.institution}) — Balance: {formatINR(a.balance_paise)}
+                  {a.name} ({a.institution}) — Balance: {formatINR(a.balancePaise)}
                 </option>
               ))}
             </select>
