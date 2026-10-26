@@ -93,7 +93,7 @@ gantt
   - Cards list, limits, outstanding balances, utilization gauge (< 30% guideline).
   - Statement closing dates and payment due dates.
 - Savings & Fixed Deposits module:
-  - Super.Money FD tracking (principal, interest, maturity).
+  - Fixed Deposit and term asset tracking (principal, interest, maturity).
   - Non-spendable asset isolation.
 - Debt & EMI management:
   - Self EMIs (reimbursements back to savings).

@@ -17,7 +17,7 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
 2. **Envelope Allocations (Assigned Money)**:
    - Funds from spendable cash that have been budgeted into active spending categories for the current month.
 3. **Savings & Fixed Deposits (Non-Spendable Assets)**:
-   - Long-term reserves, fixed deposits (such as Super.Money FDs), emergency funds, and recurring deposits.
+   - Long-term reserves, bank fixed deposits, term deposits, and recurring deposits.
    - Explicitly excluded from spendable cash to prevent accidental spending.
 4. **Credit Card Liabilities (Unsettled Debt)**:
    - Total outstanding balances across all active credit cards.
@@ -51,7 +51,7 @@ Envello utilizes zero-based envelope budgeting principles: every rupee of spenda
    - Dining out, weekend activities, entertainment.
 6. **Birthdays**:
    - Gifts, celebratory meals, social events.
-7. **Savings (Super.Money FDs)**:
+7. **Savings & Fixed Deposits**:
    - Tracked separately as non-spendable asset balances.
 8. **Credit Cards**:
    - Tracking envelope for holding money reserved to pay off card statements.

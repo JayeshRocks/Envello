@@ -25,9 +25,9 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
   onClose,
   onAddFD,
 }) => {
-  const [institution, setInstitution] = useState('Super.Money');
+  const [institution, setInstitution] = useState('');
   const [principalRupees, setPrincipalRupees] = useState('');
-  const [interestRate, setInterestRate] = useState('9.5'); // Default high rate for Super.Money / NBFC FDs
+  const [interestRate, setInterestRate] = useState('7.5'); // Standard bank FD rate default
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [tenureMonths, setTenureMonths] = useState(12);
   const [maturityRupees, setMaturityRupees] = useState('');
@@ -125,7 +125,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-semibold text-white">Add Fixed Deposit</h3>
-              <p className="text-xs text-neutral-400">Locked assets (Super.Money, Bank FDs)</p>
+              <p className="text-xs text-neutral-400">Locked assets (Fixed Deposits & Term Reserves)</p>
             </div>
           </div>
           <button
@@ -145,12 +145,12 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block text-neutral-400 font-medium mb-1">Platform / Institution</label>
+            <label className="block text-neutral-400 font-medium mb-1">Bank / Institution / NBFC</label>
             <input
               type="text"
               value={institution}
               onChange={(e) => setInstitution(e.target.value)}
-              placeholder="e.g. Super.Money (Utkarsh SFB), HDFC, SBI"
+              placeholder="e.g. HDFC Bank, SBI, ICICI, Post Office, Super.Money"
               className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
               required
             />

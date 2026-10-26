@@ -175,7 +175,7 @@ CREATE TABLE IF NOT EXISTS public.credit_card_statements (
 CREATE TABLE IF NOT EXISTS public.fixed_deposits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    institution TEXT NOT NULL, -- e.g. Super.Money / Bank
+    institution TEXT NOT NULL, -- e.g. Bank / NBFC / Post Office
     principal_paise BIGINT NOT NULL CHECK (principal_paise > 0),
     interest_rate_percent NUMERIC(5, 2) NOT NULL,
     start_date DATE NOT NULL,

@@ -33,7 +33,7 @@ export interface FinancialOverviewPillars {
   spendableCashPaise: bigint;
   /** 2. Total active allocations across all envelopes for the current period */
   envelopeAllocationsPaise: bigint;
-  /** 3. Long-term locked reserves, Fixed Deposits (Super.Money), etc. */
+  /** 3. Long-term locked reserves, Fixed Deposits, Term Assets, etc. */
   savingsAndFDsPaise: bigint;
   /** 4. Current unsettled liabilities across all credit cards */
   creditCardLiabilitiesPaise: bigint;

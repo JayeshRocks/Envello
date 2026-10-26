@@ -95,7 +95,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
             onClick={() => setIsAddOpen(true)}
             className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 border border-white/10 transition"
           >
-            Track Super.Money or Bank FD
+            Track Fixed Deposit / Term Asset
           </button>
         </div>
       ) : (

@@ -187,7 +187,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
             <div>
               <div className="text-xl font-bold font-mono text-white">Protected Assets</div>
               <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                Super.Money fixed deposits and high-yield instruments with maturity dates. Completely isolated from your daily spendable cash.
+                Fixed deposits, term instruments, and high-yield savings with maturity dates. Completely isolated from your daily spendable cash.
               </p>
             </div>
           </div>

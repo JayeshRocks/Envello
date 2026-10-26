@@ -37,7 +37,7 @@ The UI must NEVER summarize wealth into an ambiguous "Total Balance". It must al
 | :--- | :--- | :--- | :--- |
 | **Spendable Cash** | Asset | Checking, Savings, Physical Cash | **Yes** |
 | **Envelope Allocations** | Budget | Designated portion of Spendable Cash | **Yes (earmarked)** |
-| **Savings & Fixed Deposits** | Asset | Fixed Deposits, Super.Money FDs | **No (locked)** |
+| **Savings & Fixed Deposits** | Asset | Bank FDs, Post Office, Term Deposits | **No (locked)** |
 | **Credit Card Liabilities** | Liability | Outstanding credit card debt | **Obligation** |
 | **Actual Debts** | Liability | Personal loans, debts to individuals | **Obligation** |
 | **Monthly Targets** | Planning | Planned savings/purchase intentions | **N/A (goal)** |
@@ -93,7 +93,7 @@ Never classify a transaction as an expense unless purchasing power is actually c
 4. **Essentials**: Core living necessities (rent, utilities, groceries). Maintained strictly independent of Gym.
 5. **Outing**: Social spending, dining, entertainment.
 6. **Birthdays**: Gifts, celebrations.
-7. **Savings (Super.Money FDs)**: Tracked separately as non-spendable asset balances.
+7. **Savings & Fixed Deposits**: Tracked separately as non-spendable asset balances.
 8. **Credit Cards**: Pool holding cash reserved to pay card bills.
 9. **EMI(s)**: Allocations reserved for debt repayments.
 10. **Monthly Targets**: Planning goals for upcoming recurring purchases.

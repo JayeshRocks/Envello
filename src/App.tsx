@@ -389,7 +389,7 @@ export const App: React.FC = () => {
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums truncate">
                       {formatINR(effectiveSavingsAndFDsPaise)}
                     </div>
-                    <div className="text-xs text-neutral-400 mt-1">Super.Money FDs & Locked Reserves</div>
+                    <div className="text-xs text-neutral-400 mt-1">Fixed Deposits & Term Reserves</div>
                   </div>
                 </div>
 
