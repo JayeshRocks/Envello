@@ -30,6 +30,7 @@ export interface AuthContextType {
   updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: Error | null }>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
   refreshAllowlistStatus: () => Promise<void>;
   clearError: () => void;
 }
@@ -329,6 +330,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAccount = async (): Promise<{ error: Error | null }> => {
+    if (!user) return { error: new Error('User not authenticated') };
+    setError(null);
+
+    try {
+      // 1. Invoke PostgreSQL SECURITY DEFINER RPC to delete user and cascade financial records
+      const { error: rpcError } = await (supabase.rpc as any)('delete_user_account');
+      if (rpcError) {
+        return { error: new Error(rpcError.message || 'Failed to execute account deletion') };
+      }
+
+      // 2. Clear all local storage and session credentials
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (storageErr) {
+        console.warn('[Envello Auth] Warning clearing browser storage:', storageErr);
+      }
+
+      // 3. Terminate local auth session
+      await supabase.auth.signOut().catch(() => {});
+      setUser(null);
+      setSession(null);
+      setIsAllowlisted(null);
+
+      return { error: null };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error('Unexpected error deleting account') };
+    }
+  };
+
   const clearError = () => setError(null);
 
   const needsPasswordSetup = hasPassword === false;
@@ -371,6 +403,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatePassword,
         signInWithGoogle,
         signOut,
+        deleteAccount,
         refreshAllowlistStatus,
         clearError,
       }}

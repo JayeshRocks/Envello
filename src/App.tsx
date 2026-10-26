@@ -808,6 +808,7 @@ export const App: React.FC = () => {
       <AccountDeletionModal
         isOpen={isDeletionModalOpen}
         onClose={() => setIsDeletionModalOpen(false)}
+        onOpenExport={() => setIsExportModalOpen(true)}
       />
 
       {/* Mobile Floating Action Button (FAB) */}
