@@ -43,6 +43,22 @@ npm run dev
 ```
 Open `http://localhost:5173` in your browser.
 
+### 2.4 Transactional Email Setup (Resend Custom SMTP)
+By default, Supabase's built-in email provider is strictly rate-limited to 3–4 emails/hour on the free tier. To bypass this and ensure reliable delivery of Magic Links, OTPs, and password reset emails, Envello uses **Resend** via Supabase's native Custom SMTP support (3,000 free emails/month):
+1. Sign up at [Resend.com](https://resend.com) (free).
+2. Go to **API Keys** and generate an API key (e.g., `re_123456...`).
+3. (Optional) Verify your custom domain in Resend, or use `onboarding@resend.dev` for testing to your verified account email.
+4. In **Supabase Dashboard** -> **Project Settings** -> **Authentication** -> **SMTP Settings**:
+   - Toggle **Enable Custom SMTP**: `ON`
+   - **Sender email**: `noreply@yourdomain.com` (or `onboarding@resend.dev`)
+   - **Sender name**: `Envello`
+   - **Host**: `smtp.resend.com`
+   - **Port**: `465` (SSL) or `587` (TLS)
+   - **Minimum TLS Version**: `TLSv1.2`
+   - **User**: `resend`
+   - **Password**: `<your_resend_api_key>`
+5. Click **Save**. All Supabase Auth emails will now be delivered via Resend with zero code changes required in the app.
+
 ---
 
 ## 3. Database & Supabase Workflow
