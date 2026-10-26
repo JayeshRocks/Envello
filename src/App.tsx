@@ -61,24 +61,30 @@ export const App: React.FC = () => {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
 
-  // Handle external URL hash navigation for compliance (#terms, #privacy, #legal)
+  // Handle external URL path and hash navigation for compliance (/privacy, /terms, #privacy, #terms)
   useEffect(() => {
-    const handleHashChange = () => {
+    const handleRouteCheck = () => {
+      const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
-      if (hash === '#privacy') {
+
+      if (path === '/privacy' || path.startsWith('/privacy') || hash === '#privacy') {
         setLegalModalTab('privacy');
         setIsLegalModalOpen(true);
-      } else if (hash === '#terms') {
+      } else if (path === '/terms' || path.startsWith('/terms') || hash === '#terms') {
         setLegalModalTab('terms');
         setIsLegalModalOpen(true);
-      } else if (hash === '#legal') {
+      } else if (path === '/legal' || path.startsWith('/legal') || hash === '#legal') {
         setIsLegalModalOpen(true);
       }
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    handleRouteCheck();
+    window.addEventListener('hashchange', handleRouteCheck);
+    window.addEventListener('popstate', handleRouteCheck);
+    return () => {
+      window.removeEventListener('hashchange', handleRouteCheck);
+      window.removeEventListener('popstate', handleRouteCheck);
+    };
   }, []);
 
   // Auto-open auth modal if user arrives from a password recovery email
@@ -773,8 +779,8 @@ export const App: React.FC = () => {
         initialTab={legalModalTab}
         onClose={() => {
           setIsLegalModalOpen(false);
-          if (window.location.hash) {
-            history.replaceState(null, '', window.location.pathname);
+          if (window.location.hash || window.location.pathname !== '/') {
+            history.replaceState(null, '', '/');
           }
         }}
       />
