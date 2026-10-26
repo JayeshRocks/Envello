@@ -48,7 +48,11 @@ These rules apply to any AI agent working on the Envello codebase.
 - **Rule**: Envello must provide accessible, responsive Privacy Policy and Terms of Service interfaces accessible via direct URL routing (`/privacy`, `/terms`, `/#privacy`, `/#terms`). Auth forms must link to terms, and external OAuth reviewers must receive valid public endpoints.
 - **Context**: Required for Google OAuth verification, GDPR/CCPA compliance, and establishing clear legal boundaries (e.g. non-investment-advisor disclaimer) for a personal financial management tool.
 
-## 11. Definition of Done
+## 11. Account Deletion & 30-Day Closure Lifecycle
+- **Rule**: Account closure strictly adheres to the 30-day grace period stated in the Terms of Service and Privacy Policy. When requested, an account transitions to `pending_deletion` with `scheduled_deletion_at = now() + 30 days`. Signing in during this window displays a persistent warning banner with 1-click restoration (`cancel_account_deletion`). Past 30 days, an automated sweep permanently cascades and purges all financial records. Users also retain the right to bypass the 30 days and execute an immediate wipe via explicit typed email confirmation.
+- **Context**: Prevents catastrophic accidental data loss while honoring GDPR/CCPA data erasure and regulatory compliance commitments.
+
+## 12. Definition of Done
 - **Rule**: A feature or fix is done ONLY after:
   `Plan -> Implement -> Lint (npm run lint) -> Build (npm run build) -> Verify`
   Never leave placeholder buttons, pretend actions, or unhandled errors.

@@ -39,6 +39,9 @@ export interface Database {
           display_name: string | null;
           base_currency: string;
           is_allowlisted: boolean;
+          deletion_status: 'active' | 'pending_deletion';
+          deletion_requested_at: string | null;
+          scheduled_deletion_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -48,6 +51,9 @@ export interface Database {
           display_name?: string | null;
           base_currency?: string;
           is_allowlisted?: boolean;
+          deletion_status?: 'active' | 'pending_deletion';
+          deletion_requested_at?: string | null;
+          scheduled_deletion_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -57,6 +63,9 @@ export interface Database {
           display_name?: string | null;
           base_currency?: string;
           is_allowlisted?: boolean;
+          deletion_status?: 'active' | 'pending_deletion';
+          deletion_requested_at?: string | null;
+          scheduled_deletion_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -587,6 +596,35 @@ export interface Database {
           p_date: string;
         };
         Returns: string;
+      };
+      request_account_deletion: {
+        Args: Record<string, never>;
+        Returns: {
+          success: boolean;
+          deletion_status: string;
+          scheduled_deletion_at: string;
+        };
+      };
+      cancel_account_deletion: {
+        Args: Record<string, never>;
+        Returns: {
+          success: boolean;
+          deletion_status: string;
+        };
+      };
+      delete_user_account: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      purge_user_data: {
+        Args: {
+          target_user_id: string;
+        };
+        Returns: boolean;
+      };
+      purge_expired_accounts: {
+        Args: Record<string, never>;
+        Returns: number;
       };
     };
     Enums: Record<string, never>;

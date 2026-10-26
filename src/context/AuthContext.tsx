@@ -30,7 +30,12 @@ export interface AuthContextType {
   updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: Error | null }>;
+  deletionStatus: 'active' | 'pending_deletion';
+  scheduledDeletionAt: string | null;
+  requestAccountDeletion: () => Promise<{ error: Error | null; scheduledDeletionAt?: string }>;
+  cancelAccountDeletion: () => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
+  purgeAccountImmediately: () => Promise<{ error: Error | null }>;
   refreshAllowlistStatus: () => Promise<void>;
   clearError: () => void;
 }
@@ -45,6 +50,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+  const [deletionStatus, setDeletionStatus] = useState<'active' | 'pending_deletion'>('active');
+  const [scheduledDeletionAt, setScheduledDeletionAt] = useState<string | null>(null);
 
   // Check if current user has an actual password in the authoritative database
   const checkHasPassword = useCallback(async (currentUser?: User | null) => {
@@ -72,6 +79,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setHasPassword(currentUser.user_metadata?.has_set_password === true);
   }, []);
 
+  // Check 30-day deletion status and scheduled date from public.profiles
+  const checkDeletionStatus = useCallback(async (currentUser?: User | null) => {
+    if (!currentUser) {
+      setDeletionStatus('active');
+      setScheduledDeletionAt(null);
+      return;
+    }
+
+    try {
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('deletion_status, scheduled_deletion_at')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+      if (!profileError && data) {
+        if (data.deletion_status === 'pending_deletion') {
+          // If scheduled date has expired, trigger sweep and sign out
+          if (data.scheduled_deletion_at && new Date(data.scheduled_deletion_at) <= new Date()) {
+            await (supabase.rpc as any)('delete_user_account').catch(() => {});
+            await supabase.auth.signOut().catch(() => {});
+            setUser(null);
+            setSession(null);
+            setDeletionStatus('active');
+            setScheduledDeletionAt(null);
+            return;
+          }
+          setDeletionStatus('pending_deletion');
+          setScheduledDeletionAt(data.scheduled_deletion_at);
+          return;
+        }
+      }
+      setDeletionStatus('active');
+      setScheduledDeletionAt(null);
+    } catch {
+      setDeletionStatus('active');
+      setScheduledDeletionAt(null);
+    }
+  }, []);
+
   // All authenticated users are authorized (whitelist gating removed)
   const checkAllowlist = useCallback(async (userEmail?: string) => {
     setIsAllowlisted(Boolean(userEmail));
@@ -93,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(initialSession?.user ?? null);
       if (initialSession?.user) {
         checkHasPassword(initialSession.user);
+        checkDeletionStatus(initialSession.user);
       }
       if (initialSession?.user?.email) {
         checkAllowlist(initialSession.user.email).finally(() => setIsLoading(false));
@@ -112,6 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
         checkHasPassword(newSession.user);
+        checkDeletionStatus(newSession.user);
       }
       if (newSession?.user?.email) {
         await checkAllowlist(newSession.user.email);
@@ -124,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, [checkAllowlist, checkHasPassword]);
+  }, [checkAllowlist, checkHasPassword, checkDeletionStatus]);
 
   const signInWithEmail = async (email: string, password: string) => {
     setError(null);
@@ -330,15 +379,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteAccount = async (): Promise<{ error: Error | null }> => {
+  const requestAccountDeletion = async (): Promise<{ error: Error | null; scheduledDeletionAt?: string }> => {
     if (!user) return { error: new Error('User not authenticated') };
     setError(null);
 
     try {
-      // 1. Invoke PostgreSQL SECURITY DEFINER RPC to delete user and cascade financial records
+      const { data, error: rpcError } = await (supabase.rpc as any)('request_account_deletion');
+      if (rpcError) {
+        return { error: new Error(rpcError.message || 'Failed to request account deletion') };
+      }
+
+      const scheduledDate = data?.scheduled_deletion_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      setDeletionStatus('pending_deletion');
+      setScheduledDeletionAt(scheduledDate);
+
+      return { error: null, scheduledDeletionAt: scheduledDate };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error('Unexpected error requesting account deletion') };
+    }
+  };
+
+  const cancelAccountDeletion = async (): Promise<{ error: Error | null }> => {
+    if (!user) return { error: new Error('User not authenticated') };
+    setError(null);
+
+    try {
+      const { error: rpcError } = await (supabase.rpc as any)('cancel_account_deletion');
+      if (rpcError) {
+        return { error: new Error(rpcError.message || 'Failed to cancel account deletion') };
+      }
+
+      setDeletionStatus('active');
+      setScheduledDeletionAt(null);
+
+      return { error: null };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error('Unexpected error cancelling account deletion') };
+    }
+  };
+
+  const purgeAccountImmediately = async (): Promise<{ error: Error | null }> => {
+    if (!user) return { error: new Error('User not authenticated') };
+    setError(null);
+
+    try {
+      // 1. Invoke PostgreSQL SECURITY DEFINER RPC to delete user and cascade financial records immediately
       const { error: rpcError } = await (supabase.rpc as any)('delete_user_account');
       if (rpcError) {
-        return { error: new Error(rpcError.message || 'Failed to execute account deletion') };
+        return { error: new Error(rpcError.message || 'Failed to execute immediate account deletion') };
       }
 
       // 2. Clear all local storage and session credentials
@@ -354,12 +442,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setIsAllowlisted(null);
+      setDeletionStatus('active');
+      setScheduledDeletionAt(null);
 
       return { error: null };
     } catch (err: unknown) {
-      return { error: err instanceof Error ? err : new Error('Unexpected error deleting account') };
+      return { error: err instanceof Error ? err : new Error('Unexpected error during immediate purge') };
     }
   };
+
+  const deleteAccount = purgeAccountImmediately;
 
   const clearError = () => setError(null);
 
@@ -403,7 +495,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatePassword,
         signInWithGoogle,
         signOut,
+        deletionStatus,
+        scheduledDeletionAt,
+        requestAccountDeletion,
+        cancelAccountDeletion,
         deleteAccount,
+        purgeAccountImmediately,
         refreshAllowlistStatus,
         clearError,
       }}
