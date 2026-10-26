@@ -384,8 +384,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
 
     try {
-      const { data, error: rpcError } = await (supabase.rpc as any)('request_account_deletion');
+      const { data, error: rpcError } = await (supabase.rpc as any)('request_account_deletion', {});
       if (rpcError) {
+        if (rpcError.message?.includes('schema cache') || rpcError.code === 'PGRST202') {
+          return {
+            error: new Error(
+              'Database setup pending: Please run migration 20261027000001_account_deletion_grace_period.sql in your Supabase SQL Editor.'
+            ),
+          };
+        }
         return { error: new Error(rpcError.message || 'Failed to request account deletion') };
       }
 
@@ -404,8 +411,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
 
     try {
-      const { error: rpcError } = await (supabase.rpc as any)('cancel_account_deletion');
+      const { error: rpcError } = await (supabase.rpc as any)('cancel_account_deletion', {});
       if (rpcError) {
+        if (rpcError.message?.includes('schema cache') || rpcError.code === 'PGRST202') {
+          return {
+            error: new Error(
+              'Database setup pending: Please run migration 20261027000001_account_deletion_grace_period.sql in your Supabase SQL Editor.'
+            ),
+          };
+        }
         return { error: new Error(rpcError.message || 'Failed to cancel account deletion') };
       }
 
@@ -424,8 +438,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // 1. Invoke PostgreSQL SECURITY DEFINER RPC to delete user and cascade financial records immediately
-      const { error: rpcError } = await (supabase.rpc as any)('delete_user_account');
+      const { error: rpcError } = await (supabase.rpc as any)('delete_user_account', {});
       if (rpcError) {
+        if (rpcError.message?.includes('schema cache') || rpcError.code === 'PGRST202') {
+          return {
+            error: new Error(
+              'Database setup pending: Please run migration 20261027000001_account_deletion_grace_period.sql in your Supabase SQL Editor.'
+            ),
+          };
+        }
         return { error: new Error(rpcError.message || 'Failed to execute immediate account deletion') };
       }
 
