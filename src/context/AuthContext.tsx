@@ -18,6 +18,10 @@ export interface AuthContextType {
   isPasswordRecovery: boolean;
   setIsPasswordRecovery: (value: boolean) => void;
   needsPasswordSetup: boolean;
+  needsNameSetup: boolean;
+  displayName: string;
+  updateProfileName: (displayName: string) => Promise<{ error: Error | null }>;
+  updateUserEmail: (newEmail: string) => Promise<{ error: Error | null }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<SignUpResult>;
   sendMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
@@ -258,9 +262,91 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: null };
   };
 
+  const updateProfileName = async (newDisplayName: string): Promise<{ error: Error | null }> => {
+    if (!user) return { error: new Error('User not authenticated') };
+    const cleanName = newDisplayName.trim();
+    if (!cleanName) return { error: new Error('Name cannot be empty') };
+
+    try {
+      // 1. Update Supabase Auth user metadata
+      const { data, error: authUpdateError } = await supabase.auth.updateUser({
+        data: {
+          display_name: cleanName,
+          full_name: cleanName,
+          has_confirmed_name: true,
+        },
+      });
+
+      if (authUpdateError) {
+        return { error: authUpdateError };
+      }
+
+      if (data.user) {
+        setUser(data.user);
+      }
+
+      // 2. Upsert into public.profiles for persistent relational queries
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          display_name: cleanName,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (dbErr) {
+        console.warn('[Envello Auth] Warning updating profiles table:', dbErr);
+      }
+
+      return { error: null };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error('Failed to update name') };
+    }
+  };
+
+  const updateUserEmail = async (newEmail: string): Promise<{ error: Error | null }> => {
+    if (!user) return { error: new Error('User not authenticated') };
+    const cleanEmail = newEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { error: new Error('Please enter a valid email address.') };
+    }
+
+    try {
+      const { data, error: emailError } = await supabase.auth.updateUser(
+        { email: cleanEmail },
+        { emailRedirectTo: window.location.origin }
+      );
+
+      if (emailError) {
+        return { error: emailError };
+      }
+
+      if (data.user) {
+        setUser(data.user);
+      }
+
+      return { error: null };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error('Failed to request email change') };
+    }
+  };
+
   const clearError = () => setError(null);
 
   const needsPasswordSetup = hasPassword === false;
+
+  // Determine user display name: check display_name, full_name, name, or email prefix
+  const displayName =
+    user?.user_metadata?.display_name ||
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    (user?.email ? user.email.split('@')[0] : 'User');
+
+  // User needs to confirm their preferred name on first login if not set yet
+  const needsNameSetup = Boolean(
+    user &&
+    !user.user_metadata?.has_confirmed_name &&
+    typeof window !== 'undefined' &&
+    !localStorage.getItem(`envello_dismissed_name_prompt_${user.id}`)
+  );
 
   return (
     <AuthContext.Provider
@@ -273,6 +359,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isPasswordRecovery,
         setIsPasswordRecovery,
         needsPasswordSetup,
+        needsNameSetup,
+        displayName,
+        updateProfileName,
+        updateUserEmail,
         signInWithEmail,
         signUpWithEmail,
         sendMagicLink,

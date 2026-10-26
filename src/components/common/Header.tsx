@@ -6,24 +6,33 @@ import {
   AlertTriangle,
   PlusCircle,
   LogIn,
-  LogOut,
   Landmark,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 
+import { UserAccountDropdown } from '@/components/common/UserAccountDropdown';
+
 interface HeaderProps {
   onOpenAuthModal: () => void;
   onRecordTransactionClick: () => void;
   onOpenAccountsModal?: () => void;
+  onOpenSetNameModal?: () => void;
+  onOpenChangeEmailModal?: () => void;
+  onOpenSetPasswordModal?: () => void;
+  onOpenDeletionModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenAuthModal,
   onRecordTransactionClick,
   onOpenAccountsModal,
+  onOpenSetNameModal = () => {},
+  onOpenChangeEmailModal = () => {},
+  onOpenSetPasswordModal = () => {},
+  onOpenDeletionModal = () => {},
 }) => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   return (
     <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-40">
@@ -60,23 +69,14 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* User Session Area */}
+          {/* User Account Dropdown (Authenticated) or Sign In button */}
           {user ? (
-            <div className="flex items-center space-x-1 sm:space-x-2">
-              {/* User Email Pill */}
-              <div className="text-[11px] sm:text-xs px-2.5 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5 text-neutral-300 font-mono max-w-[110px] xs:max-w-[140px] sm:max-w-[220px] truncate" title={user.email}>
-                {user.email}
-              </div>
-
-              {/* Sign Out Button */}
-              <button
-                onClick={() => signOut()}
-                title="Sign Out"
-                className="p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 active:scale-90 transition-all duration-200 min-h-[38px] min-w-[38px] flex items-center justify-center"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
+            <UserAccountDropdown
+              onOpenSetNameModal={onOpenSetNameModal}
+              onOpenChangeEmailModal={onOpenChangeEmailModal}
+              onOpenSetPasswordModal={onOpenSetPasswordModal}
+              onOpenDeletionModal={onOpenDeletionModal}
+            />
           ) : (
             <button
               onClick={onOpenAuthModal}

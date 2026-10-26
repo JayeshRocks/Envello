@@ -38,9 +38,12 @@ import { LiabilitiesAndAssetsContainer } from '@/components/cards-and-debts/Liab
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { ExportDataModal } from '@/components/export/ExportDataModal';
 import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
+import { SetNameModal } from '@/components/auth/SetNameModal';
+import { ChangeEmailModal } from '@/components/auth/ChangeEmailModal';
+import { AccountDeletionModal } from '@/components/auth/AccountDeletionModal';
 
 export const App: React.FC = () => {
-  const { user, isLoading: isAuthLoading, isPasswordRecovery, needsPasswordSetup } = useAuth();
+  const { user, isLoading: isAuthLoading, isPasswordRecovery, needsPasswordSetup, needsNameSetup } = useAuth();
   const { showToast } = useToast();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
@@ -49,7 +52,11 @@ export const App: React.FC = () => {
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [reconcileAccountId, setReconcileAccountId] = useState<string | undefined>(undefined);
-  const [isFirstLoginPasswordModalOpen, setIsFirstLoginPasswordModalOpen] = useState(false);
+  const [isSetNameModalOpen, setIsSetNameModalOpen] = useState(false);
+  const [isFirstTimeNameModal, setIsFirstTimeNameModal] = useState(false);
+  const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
+  const [isSetPasswordModalOpen, setIsSetPasswordModalOpen] = useState(false);
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
 
   // Auto-open auth modal if user arrives from a password recovery email
   useEffect(() => {
@@ -58,17 +65,27 @@ export const App: React.FC = () => {
     }
   }, [isPasswordRecovery]);
 
-  // If user signed in without a password, prompt them to set one on first login
+  // Onboarding Sequence Step 1: "What should we call you?" prompt
   useEffect(() => {
-    if (user && needsPasswordSetup) {
+    if (user && needsNameSetup) {
+      const dismissed = localStorage.getItem(`envello_dismissed_name_prompt_${user.id}`);
+      if (!dismissed) {
+        setIsSetNameModalOpen(true);
+        setIsFirstTimeNameModal(true);
+      }
+    }
+  }, [user, needsNameSetup]);
+
+  // Onboarding Sequence Step 2: "Create Account Password" prompt for magic link users
+  // (Only open after name prompt is completed or dismissed)
+  useEffect(() => {
+    if (user && needsPasswordSetup && !isSetNameModalOpen) {
       const dismissed = localStorage.getItem(`envello_dismissed_password_prompt_${user.id}`);
       if (!dismissed) {
-        setIsFirstLoginPasswordModalOpen(true);
+        setIsSetPasswordModalOpen(true);
       }
-    } else {
-      setIsFirstLoginPasswordModalOpen(false);
     }
-  }, [user, needsPasswordSetup]);
+  }, [user, needsPasswordSetup, isSetNameModalOpen]);
 
   // Live hooks
   const {
@@ -243,6 +260,13 @@ export const App: React.FC = () => {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
         onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
+        onOpenSetNameModal={() => {
+          setIsFirstTimeNameModal(false);
+          setIsSetNameModalOpen(true);
+        }}
+        onOpenChangeEmailModal={() => setIsChangeEmailModalOpen(true)}
+        onOpenSetPasswordModal={() => setIsSetPasswordModalOpen(true)}
+        onOpenDeletionModal={() => setIsDeletionModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -694,10 +718,29 @@ export const App: React.FC = () => {
         onClose={() => setIsAuthModalOpen(false)}
       />
 
-      {/* First-Login Set Password Modal for Magic Link Users */}
+      {/* "What should we call you?" / Edit Name Modal */}
+      <SetNameModal
+        isOpen={isSetNameModalOpen}
+        onClose={() => setIsSetNameModalOpen(false)}
+        isFirstTime={isFirstTimeNameModal}
+      />
+
+      {/* Change Account Email Modal */}
+      <ChangeEmailModal
+        isOpen={isChangeEmailModalOpen}
+        onClose={() => setIsChangeEmailModalOpen(false)}
+      />
+
+      {/* Set or Update Account Password Modal */}
       <SetPasswordModal
-        isOpen={isFirstLoginPasswordModalOpen}
-        onClose={() => setIsFirstLoginPasswordModalOpen(false)}
+        isOpen={isSetPasswordModalOpen}
+        onClose={() => setIsSetPasswordModalOpen(false)}
+      />
+
+      {/* Account Deletion & Data Retention Policy Modal */}
+      <AccountDeletionModal
+        isOpen={isDeletionModalOpen}
+        onClose={() => setIsDeletionModalOpen(false)}
       />
 
       {/* Mobile Floating Action Button (FAB) */}
