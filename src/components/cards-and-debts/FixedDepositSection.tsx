@@ -168,14 +168,14 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                       <div className="flex items-center justify-end space-x-2 pt-1">
                         <button
                           onClick={() => setLiquidatingFdId(null)}
-                          className="px-3 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-neutral-800 text-xs sm:text-[11px] text-neutral-300 transition"
+                          className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-800 text-xs sm:text-sm text-neutral-300 transition active:scale-95"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleConfirmLiquidation(fd.id)}
                           disabled={isLiquidating}
-                          className="px-3 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs sm:text-[11px] text-white font-medium transition"
+                          className="px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs sm:text-sm text-white font-medium transition active:scale-95"
                         >
                           {isLiquidating ? 'Redeeming...' : 'Confirm'}
                         </button>
@@ -193,7 +193,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                             setLiquidatingFdId(fd.id);
                             if (accounts[0]) setDestAccountId(accounts[0].id);
                           }}
-                          className="text-xs text-neutral-400 hover:text-white transition py-1.5 px-3 rounded-lg hover:bg-white/5 min-h-[34px] flex items-center"
+                          className="text-xs sm:text-sm text-neutral-300 hover:text-white transition py-2 px-3.5 rounded-xl hover:bg-white/5 min-h-[44px] sm:min-h-[38px] flex items-center active:scale-95"
                         >
                           Redeem / Liquidate
                         </button>

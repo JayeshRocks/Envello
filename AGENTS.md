@@ -57,8 +57,11 @@ This document is the authoritative, permanent instructions guide for any AI agen
 ### 3.3 Mobile & Tablet Ergonomics
 - **Form Typography Scale**: Always use `text-base sm:text-sm` for inputs, selects, and textareas. Never use `sm:text-xs` (12px), which is cramped and illegible on tablets and desktops.
 - **iOS Safari Auto-Zoom Safeguard**: Enforce `font-size: 16px` on mobile inputs (< 640px) to prevent automatic viewport zooming.
-- **44px Minimum Touch Targets**: Interactive buttons, dropdown items, and modal actions must have at least 44px height (`min-h-[44px]`) on touch viewports.
+- **44px Minimum Touch Targets**: Interactive buttons, dropdown items, quick actions, tab pills, and modal close triggers must have at least 44px height (`min-h-[44px] min-w-[44px]`) on touch viewports with `active:scale-95` tactile feedback.
+- **Bottom-Sheet Modal Experience**: Modals dock as bottom-sheets on mobile (`flex items-end sm:items-center`, `rounded-t-3xl sm:rounded-2xl`, `max-h-[92vh] sm:max-h-[90vh] overflow-y-auto`) with a grab handle indicator for clean thumb ergonomics.
+- **Scrollable Horizontal Filter & Tab Strips**: Category selectors, filter chips, and tab buttons must support smooth touch-scrolling with `scrollbar-none` and `flex-nowrap` on mobile and tablet screens.
 - **Responsive Overlays**: Overlays and dropdown menus must never use fixed pixel widths that overflow small devices; always cap with `w-[min(calc(100vw-24px),22rem)]`.
+
 
 ### 3.4 Code Quality & Architecture
 - **Strict TypeScript**: No `any`, no unhandled promises, no `@ts-ignore` without documented justification.

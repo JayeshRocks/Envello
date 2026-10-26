@@ -77,7 +77,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as 'all' | 'this_month' | 'last_month')}
-              className="w-full xs:w-auto px-2.5 py-1.5 rounded-xl bg-neutral-900 border border-white/10 text-xs text-neutral-300 focus:ring-1 focus:ring-sky-500 cursor-pointer"
+              className="w-full xs:w-auto px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 border border-white/10 text-xs sm:text-sm text-neutral-300 focus:ring-1 focus:ring-sky-500 cursor-pointer"
             >
               <option value="all">All Dates</option>
               <option value="this_month">This Month</option>
@@ -93,13 +93,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search payee..."
-              className="w-full pl-8 pr-7 py-1.5 min-h-[36px] rounded-xl glass-input text-base sm:text-sm text-white placeholder-neutral-500 xs:w-36 sm:w-48"
+              className="w-full pl-8 pr-7 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl glass-input text-base sm:text-sm text-white placeholder-neutral-500 xs:w-36 sm:w-48"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => onSearchChange('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-neutral-400 hover:text-white transition"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-neutral-400 hover:text-white transition min-h-[36px] min-w-[36px] flex items-center justify-center"
                 title="Clear search"
                 aria-label="Clear search"
               >
@@ -109,7 +109,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </div>
 
           {/* Type Filter Pills */}
-          <div className="flex items-center p-0.5 rounded-xl bg-neutral-900 border border-white/10 text-xs font-medium overflow-x-auto scrollbar-none">
+          <div className="flex items-center p-1 rounded-xl bg-neutral-900 border border-white/10 text-xs sm:text-sm font-medium overflow-x-auto scrollbar-none">
             {[
               { id: 'all', label: 'All' },
               { id: 'expense', label: 'Expenses' },
@@ -119,7 +119,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               <button
                 key={tab.id}
                 onClick={() => onTypeFilterChange(tab.id)}
-                className={`px-2.5 py-1 rounded-lg transition-all duration-200 active:scale-95 whitespace-nowrap ${
+                className={`px-3 py-2 sm:py-1.5 min-h-[40px] sm:min-h-[32px] rounded-lg transition-all duration-200 active:scale-95 whitespace-nowrap flex items-center justify-center ${
                   typeFilter === tab.id
                     ? 'bg-neutral-800 text-white shadow-sm font-semibold'
                     : 'text-neutral-400 hover:text-neutral-200'
@@ -260,14 +260,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                           }
                         }}
                         disabled={isDeleting}
-                        className="text-[11px] px-2 py-1 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition min-h-[30px]"
+                        className="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition min-h-[36px]"
                       >
                         {isDeleting ? '...' : 'Yes'}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
                         disabled={isDeleting}
-                        className="text-[11px] px-2 py-1 rounded bg-neutral-800 text-neutral-400 hover:text-white transition min-h-[30px]"
+                        className="text-[11px] px-2.5 py-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white transition min-h-[36px]"
                       >
                         No
                       </button>
@@ -276,7 +276,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     <button
                       onClick={() => setConfirmDeleteId(tx.id)}
                       title="Revert & Delete Transaction"
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95"
+                      className="p-2 sm:p-2.5 rounded-xl hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center active:scale-95"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

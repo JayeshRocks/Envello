@@ -200,18 +200,18 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                           value={customAmountRupees}
                           onChange={(e) => setCustomAmountRupees(e.target.value)}
                           placeholder={(debt.monthly_instalment_paise / 100).toString()}
-                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-sm text-white font-mono"
+                          className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 sm:py-2 text-base sm:text-sm text-white font-mono min-h-[44px] sm:min-h-[38px]"
                         />
                         <button
                           onClick={() => handlePay(debt)}
                           disabled={isSubmitting}
-                          className="px-3.5 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-orange-600 hover:bg-orange-500 text-xs text-white font-medium flex-shrink-0 transition"
+                          className="px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-orange-600 hover:bg-orange-500 text-xs sm:text-sm text-white font-medium flex-shrink-0 transition active:scale-95"
                         >
                           {isSubmitting ? '...' : 'Pay'}
                         </button>
                         <button
                           onClick={() => setPayingDebtId(null)}
-                          className="p-2 sm:p-1 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg bg-neutral-800 text-xs text-neutral-400 transition"
+                          className="p-2.5 sm:p-2 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center rounded-xl bg-neutral-800 text-xs text-neutral-400 transition active:scale-95"
                         >
                           ✕
                         </button>
@@ -230,7 +230,7 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                             if (accounts[0]) setDestAccountId(accounts[0].id);
                             setCustomAmountRupees((debt.monthly_instalment_paise / 100).toString());
                           }}
-                          className="text-xs text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1 py-1.5 px-3 rounded-lg hover:bg-orange-500/10 min-h-[34px] transition"
+                          className="text-xs sm:text-sm text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1 py-2 px-3.5 rounded-xl hover:bg-orange-500/10 min-h-[44px] sm:min-h-[38px] transition active:scale-95"
                         >
                           <span>Record Payment</span>
                           <ArrowUpRight className="w-3.5 h-3.5" />

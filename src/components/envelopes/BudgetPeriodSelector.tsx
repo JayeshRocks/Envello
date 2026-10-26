@@ -29,12 +29,12 @@ export const BudgetPeriodSelector: React.FC<BudgetPeriodSelectorProps> = ({
           onClick={onPrev}
           title="Previous Month"
           aria-label="Previous Month"
-          className="p-2 sm:p-1.5 min-h-[34px] min-w-[34px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
+          className="p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 active:scale-95 transition"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center space-x-2 px-3 py-1 text-xs font-semibold text-neutral-200">
+        <div className="flex items-center space-x-2 px-3 py-1 text-xs sm:text-sm font-semibold text-neutral-200">
           <Calendar className="w-3.5 h-3.5 text-sky-400" />
           <span>{formattedMonth}</span>
         </div>
@@ -43,7 +43,7 @@ export const BudgetPeriodSelector: React.FC<BudgetPeriodSelectorProps> = ({
           onClick={onNext}
           title="Next Month"
           aria-label="Next Month"
-          className="p-2 sm:p-1.5 min-h-[34px] min-w-[34px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition"
+          className="p-2 sm:p-1.5 min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 active:scale-95 transition"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

@@ -57,7 +57,10 @@ Maintain clear boundaries between application layers:
 
 - **Input Typography Scale**: All inputs, selects, and textareas must be styled with `text-base sm:text-sm` (16px mobile, 14px tablet/desktop). Never use `sm:text-xs` on form controls.
 - **Auto-Zoom Safeguard**: All input elements on mobile viewports (< 640px) must maintain at least 16px font size to prevent iOS Safari auto-zooming into the input.
-- **Touch Target Sizing**: Primary interactive elements, modal buttons, and dropdown links must maintain at least a 44px minimum tap target (`min-h-[44px]`).
+- **Touch Target Sizing**: Primary interactive elements, modal action buttons, tab pills, and modal close triggers must maintain at least a 44px minimum tap target (`min-h-[44px]` on mobile, with desktop fallback `sm:min-h-[36px]`).
+- **Bottom-Sheet Modal Pattern**: Modals must present as bottom-sheet cards on mobile (`rounded-t-3xl sm:rounded-2xl`, `max-h-[92vh] sm:max-h-[90vh] overflow-y-auto`) with a centered top grab indicator (`w-12 h-1 rounded-full bg-white/20 mx-auto sm:hidden`) for intuitive thumb dismissals.
+- **Scrollable Horizontal Strips**: Navigation tabs, filter chips, and month selectors must allow smooth touch swipe (`overflow-x-auto scrollbar-none flex-nowrap`) with generous tap padding and non-breaking labels.
 - **Responsive Dropdowns & Overlays**: Floating dropdowns must constrain their maximum width with responsive formulas (e.g. `w-[min(calc(100vw-24px),22rem)]`) to prevent horizontal screen overflow on 320px–375px screens.
 - **Header Actions**: Mobile headers should remain clean and non-crowded (relying on bottom FAB for primary add actions) while tablet headers progressively reveal action buttons.
 - **Compliance Routing Support**: Ensure compliance routes (`/privacy`, `/terms`, `/#privacy`, `/#terms`) are supported at the top-level router/app layer to enable external verification crawlers and direct user access.
+

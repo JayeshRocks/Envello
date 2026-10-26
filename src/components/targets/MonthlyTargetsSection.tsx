@@ -177,18 +177,18 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
                           value={customAmountRupees}
                           onChange={(e) => setCustomAmountRupees(e.target.value)}
                           placeholder="Amount in ₹"
-                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-sm text-white font-mono"
+                          className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 sm:py-2 text-base sm:text-sm text-white font-mono min-h-[44px] sm:min-h-[38px]"
                         />
                         <button
                           onClick={() => handleContribute(target.id)}
                           disabled={isSubmitting}
-                          className="px-3.5 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs text-white font-medium flex-shrink-0"
+                          className="px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs sm:text-sm text-white font-medium flex-shrink-0 active:scale-95 transition"
                         >
                           {isSubmitting ? '...' : 'Add'}
                         </button>
                         <button
                           onClick={() => setContributingTargetId(null)}
-                          className="p-2 sm:p-1 min-h-[36px] min-w-[36px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg bg-neutral-800 text-xs text-neutral-400"
+                          className="p-2.5 sm:p-2 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center rounded-xl bg-neutral-800 text-xs text-neutral-400 active:scale-95 transition"
                         >
                           ✕
                         </button>
@@ -198,7 +198,7 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => onRemoveTarget(target.id)}
-                        className="p-2 -ml-2 text-neutral-500 hover:text-red-400 transition rounded-lg hover:bg-white/5 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                        className="p-2.5 -ml-2 text-neutral-500 hover:text-red-400 transition rounded-xl hover:bg-white/5 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
                         title="Delete target"
                         aria-label="Delete target"
                       >
@@ -210,7 +210,7 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
                             setContributingTargetId(target.id);
                             setCustomAmountRupees('');
                           }}
-                          className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center space-x-1 py-1.5 px-3 rounded-lg hover:bg-cyan-500/10 min-h-[36px] transition"
+                          className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-300 font-medium flex items-center space-x-1.5 py-2 px-3.5 rounded-xl hover:bg-cyan-500/10 min-h-[44px] sm:min-h-[38px] active:scale-95 transition"
                         >
                           <span>+ Contribute</span>
                         </button>

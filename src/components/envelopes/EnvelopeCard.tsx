@@ -117,21 +117,21 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
           <button
             onClick={onEdit}
             title="Edit Envelope Details"
-            className="p-2 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90 min-h-[34px] min-w-[34px] flex items-center justify-center"
+            className="p-2.5 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onTransfer}
             title="Transfer / Reallocate Funds"
-            className="p-2 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90 min-h-[34px] min-w-[34px] flex items-center justify-center"
+            className="p-2.5 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center"
           >
             <ArrowRightLeft className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onAllocate}
             title="Set Monthly Budget"
-            className="p-2 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90 min-h-[34px] min-w-[34px] flex items-center justify-center"
+            className="p-2.5 sm:p-1.5 rounded-lg bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5 transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center"
           >
             <PlusCircle className="w-3.5 h-3.5" />
           </button>

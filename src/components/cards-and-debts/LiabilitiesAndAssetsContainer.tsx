@@ -169,7 +169,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-medium flex items-center space-x-2 transition-all duration-200 active:scale-95 flex-shrink-0 whitespace-nowrap min-h-[36px] ${
+              className={`px-3.5 sm:px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium flex items-center space-x-2 transition-all duration-200 active:scale-95 flex-shrink-0 whitespace-nowrap min-h-[44px] sm:min-h-[40px] ${
                 isActive
                   ? 'bg-neutral-800 text-white shadow-lg border border-white/10 font-semibold'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60'

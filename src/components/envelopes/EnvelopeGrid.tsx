@@ -64,14 +64,14 @@ export const EnvelopeGrid: React.FC = () => {
           <button
             onClick={() => refresh()}
             title="Refresh Envelopes"
-            className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white transition shadow-sm min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-95"
+            className="p-2 sm:p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white transition shadow-sm min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center active:scale-95"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-sky-400' : ''}`} />
           </button>
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-white/10 text-white text-xs font-semibold shadow-sm transition active:scale-95 min-h-[36px]"
+            className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-white/10 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95 min-h-[44px] sm:min-h-[38px]"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Envelope</span>

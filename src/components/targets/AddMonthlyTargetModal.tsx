@@ -95,7 +95,7 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 sm:p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+            className="p-2 sm:p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn active:scale-95 transition"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />

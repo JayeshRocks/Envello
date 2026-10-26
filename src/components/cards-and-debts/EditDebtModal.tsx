@@ -109,7 +109,7 @@ export const EditDebtModal: React.FC<EditDebtModalProps> = ({
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 sm:p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn"
+          className="absolute top-4 right-4 p-2 sm:p-2 min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn active:scale-95 transition"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />

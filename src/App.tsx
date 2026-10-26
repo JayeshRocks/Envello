@@ -413,10 +413,10 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none flex-nowrap pb-1 sm:pb-0 w-full sm:w-auto -mx-1 px-1 sm:mx-0 sm:px-0">
+                <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none flex-nowrap pb-1.5 sm:pb-0 w-full sm:w-auto -mx-1 px-1 sm:mx-0 sm:px-0">
                   <button
                     onClick={() => setIsExportModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95"
+                    className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95 shadow-sm"
                     title="Export Data"
                   >
                     <Download className="w-3.5 h-3.5 text-sky-400" />
@@ -427,7 +427,7 @@ export const App: React.FC = () => {
                       setReconcileAccountId(undefined);
                       setIsReconcileModalOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95"
+                    className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95 shadow-sm"
                     title="Reconcile Account Balance against Bank Statement"
                   >
                     <Scale className="w-3.5 h-3.5 text-emerald-400" />
@@ -435,7 +435,7 @@ export const App: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setIsRecurringModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition relative flex-shrink-0 whitespace-nowrap active:scale-95"
+                    className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition relative flex-shrink-0 whitespace-nowrap active:scale-95 shadow-sm"
                     title="Standing Recurring Schedules"
                   >
                     <CalendarClock className="w-3.5 h-3.5 text-indigo-400" />
@@ -446,14 +446,14 @@ export const App: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setIsAccountsModalOpen(true)}
-                    className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95"
+                    className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95 shadow-sm"
                   >
                     <Landmark className="w-3.5 h-3.5 text-sky-400" />
                     <span>{accounts.length} Accounts</span>
                   </button>
                   <button
                     onClick={() => setIsRecordTxModalOpen(true)}
-                    className="hidden sm:flex px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs font-semibold shadow-lg shadow-sky-500/20 transition flex-shrink-0 whitespace-nowrap active:scale-95"
+                    className="hidden sm:flex px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-lg shadow-sky-500/20 transition flex-shrink-0 whitespace-nowrap active:scale-95 items-center"
                   >
                     + Record Transaction
                   </button>

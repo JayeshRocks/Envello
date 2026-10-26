@@ -51,7 +51,10 @@ Guide the visual design system, financial data legibility, responsive layouts, a
 
 ## 5. Mobile & Tablet Touch Standards & Layouts
 
-- **Comfortable Touch Targets**: Every button, pill toggle, and modal trigger must provide at least 44px of touch height on mobile devices (`min-h-[44px]`).
+- **Comfortable Touch Targets**: Every button, pill toggle, quick-action trigger, and modal close button must provide at least 44px of touch height on mobile devices (`min-h-[44px] min-w-[44px]`).
 - **Visual Feedback on Tap**: All interactive elements must feature subtle active scale feedback (`active:scale-[0.98]` or `active:scale-95`) to give tactile touch confirmation.
 - **Form Readability**: Form inputs must never be smaller than 14px on tablets/desktops and must always be 16px on mobile viewports to ensure legible financial data entry without viewport zoom.
+- **Bottom Sheets on Mobile**: All modals should appear anchored to the bottom on mobile screens (`flex items-end sm:items-center`, `rounded-t-3xl sm:rounded-2xl`) with internal scroll containment (`max-h-[92vh] sm:max-h-[90vh] overflow-y-auto`).
+- **Touch-Friendly Horizontal Overflow**: Tabs, filter chips, and period selectors must scroll horizontally without ugly scrollbars (`overflow-x-auto scrollbar-none flex-nowrap`).
 - **Dropdown Safe Area**: Never let dropdowns overflow viewport edges. Ensure responsive padding and soft shadow containment.
+

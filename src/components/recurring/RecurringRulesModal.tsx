@@ -106,7 +106,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
         <button
           onClick={onClose}
           aria-label="Close Recurring Rules Modal"
-          className="absolute top-4 right-4 p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[38px] min-w-[38px] flex items-center justify-center"
+          className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
         >
           <X className="w-5 h-5" />
         </button>

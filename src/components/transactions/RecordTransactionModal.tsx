@@ -156,7 +156,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[38px] min-w-[38px] flex items-center justify-center"
+          className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
         >
           <X className="w-5 h-5" />
         </button>
@@ -170,14 +170,14 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         </div>
 
         {/* Mode Switcher */}
-        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-neutral-900 border border-white/5 text-xs font-semibold">
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-neutral-900 border border-white/5 text-xs sm:text-sm font-semibold">
           <button
             type="button"
             onClick={() => {
               setMode('expense');
               setError(null);
             }}
-            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[40px] ${
+            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[44px] active:scale-95 ${
               mode === 'expense'
                 ? 'bg-rose-500 text-white shadow-sm font-bold'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -192,7 +192,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               setMode('income');
               setError(null);
             }}
-            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[40px] ${
+            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[44px] active:scale-95 ${
               mode === 'income'
                 ? 'bg-emerald-500 text-white shadow-sm font-bold'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -207,7 +207,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               setMode('transfer');
               setError(null);
             }}
-            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[40px] ${
+            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[44px] active:scale-95 ${
               mode === 'transfer'
                 ? 'bg-indigo-500 text-white shadow-sm font-bold'
                 : 'text-neutral-400 hover:text-neutral-200'

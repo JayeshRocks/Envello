@@ -37,8 +37,9 @@ These rules apply to any AI agent working on the Envello codebase.
 - **Context**: Prevents partial failure scenarios where funds are debited from one account but never credited to another.
 
 ## 8. Mobile & Tablet Form Ergonomics
-- **Rule**: All form inputs, selects, and textareas must use `text-base sm:text-sm` (16px on mobile, 14px on tablet/desktop). Never use `sm:text-xs` (12px). All primary touch actions, dropdown items, and modal triggers must meet the 44px minimum touch target height (`min-h-[44px]`).
-- **Context**: Mobile inputs below 16px trigger iOS Safari auto-zoom, and tiny 12px inputs on tablets cause eye strain and mis-taps.
+- **Rule**: All form inputs, selects, and textareas must use `text-base sm:text-sm` (16px on mobile, 14px on tablet/desktop). Never use `sm:text-xs` (12px). All primary touch actions, dropdown items, quick actions, tab pills, and modal close triggers must meet the 44px minimum touch target (`min-h-[44px] min-w-[44px]`) with `active:scale-95` tactile feedback. Modals must render as bottom-sheets on mobile (`rounded-t-3xl sm:rounded-2xl`, `max-h-[92vh] sm:max-h-[90vh] overflow-y-auto`) with a top grab indicator. Tab strips and filter pills must support horizontal swipe with `scrollbar-none`.
+- **Context**: Mobile inputs below 16px trigger iOS Safari auto-zoom, and tiny touch targets cause eye strain and high mis-tap rates on mobile and tablet devices.
+
 
 ## 9. Transactional Emails & Resend Custom SMTP
 - **Rule**: Supabase Auth transactional emails are powered by Resend custom SMTP. All email templates must be production-ready HTML, free of temporary beta markers, and reference the official hosted brand logo (`public/logo.png`).
