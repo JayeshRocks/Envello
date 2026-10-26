@@ -50,3 +50,13 @@ Maintain clear boundaries between application layers:
   4. **Success State**: Clear confirmation for critical actions (transaction recorded, balance reconciled).
 - **Destructive Action Confirmation**: All irreversible or consequential actions (deleting an account, resetting an envelope allocation, recording a balance adjustment) must require explicit modal confirmation.
 - **No Placeholder Elements**: Completed features must not contain non-functional buttons, dead links, or simulated UI elements.
+
+---
+
+## 5. Mobile & Tablet Responsiveness & Form Ergonomics
+
+- **Input Typography Scale**: All inputs, selects, and textareas must be styled with `text-base sm:text-sm` (16px mobile, 14px tablet/desktop). Never use `sm:text-xs` on form controls.
+- **Auto-Zoom Safeguard**: All input elements on mobile viewports (< 640px) must maintain at least 16px font size to prevent iOS Safari auto-zooming into the input.
+- **Touch Target Sizing**: Primary interactive elements, modal buttons, and dropdown links must maintain at least a 44px minimum tap target (`min-h-[44px]`).
+- **Responsive Dropdowns & Overlays**: Floating dropdowns must constrain their maximum width with responsive formulas (e.g. `w-[min(calc(100vw-24px),22rem)]`) to prevent horizontal screen overflow on 320px–375px screens.
+- **Header Actions**: Mobile headers should remain clean and non-crowded (relying on bottom FAB for primary add actions) while tablet headers progressively reveal action buttons.

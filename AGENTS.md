@@ -25,8 +25,9 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **Icons**: Lucide React
 - **Charts**: Lightweight, tree-shakeable charting library (e.g., Recharts or Chart.js)
 - **Backend & Database**: Supabase PostgreSQL + Supabase Auth + Row Level Security (RLS)
+- **Email Delivery**: Resend via Supabase Custom SMTP for production transactional emails
 - **Deployment**: Vercel Hobby (Frontend) + Supabase Cloud (Backend/DB)
-- **Authentication**: Google OAuth via Supabase Auth
+- **Authentication**: Google OAuth + Email/Password + Magic Link via Supabase Auth
 
 ---
 
@@ -44,13 +45,21 @@ This document is the authoritative, permanent instructions guide for any AI agen
   6. **Monthly Targets** (planning goals, not liquid balances).
 - **Atomic Operations**: Transfers, allocations, and multi-table financial movements must be executed inside database transactions or secure PostgreSQL RPC functions. No partial state updates.
 
-### 3.2 Security & Authorization
+### 3.2 Security, Auth & Profile Lifecycle
 - **RLS on Every Table**: Every table, view, and bucket must have Row Level Security enabled with explicit least-privilege policies.
 - **Zero Trust for Client User ID**: Never trust `auth.uid()` or user IDs passed in request bodies or query params. All operations must resolve ownership against `auth.uid()` directly in PostgreSQL policies or server-side functions.
 - **Private Beta Gating**: New account registrations must not automatically gain access to financial workspaces. Access must be verified against a server-enforced owner allowlist. Never rely on frontend-only email checks.
 - **No Secrets in Frontend**: Never commit `.env` or expose Supabase `service_role` keys in browser code or `VITE_*` environment variables.
+- **Account Lifecycle & Security**: User profile updates (display name, email change, password setup/change, and account deletion requests) must follow strict verification and confirmation dialogs.
+- **Branded Transactional Emails**: All auth templates (confirm signup, magic link, password reset, email change, verification code, and security notifications) must be production-ready HTML, free of temporary beta markers, and use the official hosted logo (`public/logo.png`).
 
-### 3.3 Code Quality & Architecture
+### 3.3 Mobile & Tablet Ergonomics
+- **Form Typography Scale**: Always use `text-base sm:text-sm` for inputs, selects, and textareas. Never use `sm:text-xs` (12px), which is cramped and illegible on tablets and desktops.
+- **iOS Safari Auto-Zoom Safeguard**: Enforce `font-size: 16px` on mobile inputs (< 640px) to prevent automatic viewport zooming.
+- **44px Minimum Touch Targets**: Interactive buttons, dropdown items, and modal actions must have at least 44px height (`min-h-[44px]`) on touch viewports.
+- **Responsive Overlays**: Overlays and dropdown menus must never use fixed pixel widths that overflow small devices; always cap with `w-[min(calc(100vw-24px),22rem)]`.
+
+### 3.4 Code Quality & Architecture
 - **Strict TypeScript**: No `any`, no unhandled promises, no `@ts-ignore` without documented justification.
 - **Separation of Concerns**: Keep presentation components separate from business logic, domain calculations, and database access layers.
 - **No Placeholder Functionality**: Do not leave dead buttons, pretend modal triggers, or mockup forms in completed features.

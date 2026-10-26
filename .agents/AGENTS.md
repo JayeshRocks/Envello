@@ -36,7 +36,15 @@ These rules apply to any AI agent working on the Envello codebase.
 - **Rule**: Multi-table updates (e.g., account transfers, debt repayments, envelope reallocations) must be executed in database transactions or secure PostgreSQL RPC functions.
 - **Context**: Prevents partial failure scenarios where funds are debited from one account but never credited to another.
 
-## 8. Definition of Done
+## 8. Mobile & Tablet Form Ergonomics
+- **Rule**: All form inputs, selects, and textareas must use `text-base sm:text-sm` (16px on mobile, 14px on tablet/desktop). Never use `sm:text-xs` (12px). All primary touch actions, dropdown items, and modal triggers must meet the 44px minimum touch target height (`min-h-[44px]`).
+- **Context**: Mobile inputs below 16px trigger iOS Safari auto-zoom, and tiny 12px inputs on tablets cause eye strain and mis-taps.
+
+## 9. Transactional Emails & Resend Custom SMTP
+- **Rule**: Supabase Auth transactional emails are powered by Resend custom SMTP. All email templates must be production-ready HTML, free of temporary beta markers, and reference the official hosted brand logo (`public/logo.png`).
+- **Context**: Delivers high deliverability, consistent typography, and cohesive branding across the full user lifecycle.
+
+## 10. Definition of Done
 - **Rule**: A feature or fix is done ONLY after:
   `Plan -> Implement -> Lint (npm run lint) -> Build (npm run build) -> Verify`
   Never leave placeholder buttons, pretend actions, or unhandled errors.

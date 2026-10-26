@@ -23,6 +23,8 @@ Ensure zero-defect, secure, and compliant production releases of Envello to Verc
 - [ ] Server-enforced private beta allowlist is active.
 - [ ] No `service_role` keys or private credentials are in Vercel environment variables prefixed with `VITE_`.
 - [ ] OAuth redirect URIs in Supabase Auth match production Vercel domain.
+- [ ] Supabase Custom SMTP configured with Resend and transactional email templates tested.
+- [ ] Branded logo (`public/logo.png`) accessible via production CDN URL.
 
 ---
 
@@ -38,4 +40,5 @@ Ensure zero-defect, secure, and compliant production releases of Envello to Verc
 ## 4. Post-Deployment Smoke Test
 - [ ] Log in with authorized Google account on production domain.
 - [ ] Verify financial overview renders all 6 balance pillars cleanly.
+- [ ] Mobile & tablet layout verification on viewport widths: 320px, 375px, 768px, 1024px.
 - [ ] Check browser console: 0 errors, 0 unhandled rejections.

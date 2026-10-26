@@ -46,3 +46,12 @@ Guide the visual design system, financial data legibility, responsive layouts, a
 - **Tabular Figures**: Use `font-mono` or `tabular-nums` for all financial figures in tables, cards, and transaction lists to ensure decimal points and digits align vertically.
 - **Indian Currency Formatting**: Format all INR figures with the Indian numbering format (`₹1,50,000.00`).
 - **Credit Card Utilization**: Display utilization percentages with visual indicators (< 30% green, 30% - 50% yellow, > 50% red). Do not present 30% as an absolute legal rule, but as a healthy financial guideline.
+
+---
+
+## 5. Mobile & Tablet Touch Standards & Layouts
+
+- **Comfortable Touch Targets**: Every button, pill toggle, and modal trigger must provide at least 44px of touch height on mobile devices (`min-h-[44px]`).
+- **Visual Feedback on Tap**: All interactive elements must feature subtle active scale feedback (`active:scale-[0.98]` or `active:scale-95`) to give tactile touch confirmation.
+- **Form Readability**: Form inputs must never be smaller than 14px on tablets/desktops and must always be 16px on mobile viewports to ensure legible financial data entry without viewport zoom.
+- **Dropdown Safe Area**: Never let dropdowns overflow viewport edges. Ensure responsive padding and soft shadow containment.
