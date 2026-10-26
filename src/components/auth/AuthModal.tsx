@@ -24,11 +24,18 @@ import { useModalDismiss } from '@/hooks/useModalDismiss';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
 type AuthMode = 'signIn' | 'signUp' | 'magicLink' | 'resetPassword';
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  onOpenPrivacy = () => {},
+  onOpenTerms = () => {},
+}) => {
   const {
     signInWithEmail,
     signUpWithEmail,
@@ -668,6 +675,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             )}
           </div>
         )}
+
+        {/* Regulatory & Terms Agreement Notice */}
+        <div className="pt-2 border-t border-white/5 text-center">
+          <p className="text-[11px] text-neutral-400 leading-relaxed">
+            By continuing, you agree to Envello&apos;s{' '}
+            <button
+              type="button"
+              onClick={onOpenTerms}
+              className="text-neutral-400 hover:text-white underline decoration-white/30 hover:decoration-white font-medium transition"
+            >
+              Terms of Service
+            </button>{' '}
+            and{' '}
+            <button
+              type="button"
+              onClick={onOpenPrivacy}
+              className="text-neutral-400 hover:text-white underline decoration-white/30 hover:decoration-white font-medium transition"
+            >
+              Privacy Policy
+            </button>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );

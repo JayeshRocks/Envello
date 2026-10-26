@@ -21,6 +21,8 @@ interface HeaderProps {
   onOpenChangeEmailModal?: () => void;
   onOpenSetPasswordModal?: () => void;
   onOpenDeletionModal?: () => void;
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,6 +33,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenChangeEmailModal = () => {},
   onOpenSetPasswordModal = () => {},
   onOpenDeletionModal = () => {},
+  onOpenPrivacy = () => {},
+  onOpenTerms = () => {},
 }) => {
   const { user } = useAuth();
 
@@ -76,6 +80,8 @@ export const Header: React.FC<HeaderProps> = ({
               onOpenChangeEmailModal={onOpenChangeEmailModal}
               onOpenSetPasswordModal={onOpenSetPasswordModal}
               onOpenDeletionModal={onOpenDeletionModal}
+              onOpenPrivacy={onOpenPrivacy}
+              onOpenTerms={onOpenTerms}
             />
           ) : (
             <button

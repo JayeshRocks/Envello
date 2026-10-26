@@ -22,9 +22,15 @@ import { formatINR } from '@/lib/accounting/currency';
 
 interface CoverPageProps {
   onOpenAuthModal: () => void;
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
-export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
+export const CoverPage: React.FC<CoverPageProps> = ({
+  onOpenAuthModal,
+  onOpenPrivacy = () => {},
+  onOpenTerms = () => {},
+}) => {
   // Interactive Simulator state for prospective budgeters
   const [simulatorIncomeRupees, setSimulatorIncomeRupees] = useState<number>(85000);
   const [essentialsPercent, setEssentialsPercent] = useState<number>(40);
@@ -504,7 +510,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
             Ready for True Financial Sovereignty?
           </h2>
           <p className="text-xs sm:text-sm text-neutral-300">
-            Sign in with your Google account to access your private financial ledger and begin zero-based budgeting today.
+            Sign in with your Google account or magic link to access your private financial ledger and begin zero-based budgeting today.
           </p>
         </div>
 
@@ -517,10 +523,74 @@ export const CoverPage: React.FC<CoverPageProps> = ({ onOpenAuthModal }) => {
             <ArrowRight className="w-4 h-4" />
           </button>
           <p className="text-[11px] text-neutral-400 mt-2">
-            Secure Cloud • Row Level Security Guarded
+            Secure Cloud &bull; Row Level Security Guarded
           </p>
         </div>
       </section>
+
+      {/* 6. Comprehensive Legal & Compliance Footer */}
+      <footer className="pt-8 pb-12 border-t border-white/10 space-y-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          {/* Brand Info */}
+          <div className="space-y-2 max-w-sm">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 flex-shrink-0">
+                <Mail className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-lg text-white tracking-tight">Envello</span>
+            </div>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Deterministic double-entry envelope budgeting. Built for financial sovereignty, absolute math precision, and strict cryptographic data isolation.
+            </p>
+          </div>
+
+          {/* Quick Legal & Nav Links */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs">
+            <button
+              type="button"
+              onClick={onOpenPrivacy}
+              className="text-neutral-400 hover:text-white transition font-medium min-h-[44px] flex items-center"
+            >
+              Privacy Policy
+            </button>
+            <button
+              type="button"
+              onClick={onOpenTerms}
+              className="text-neutral-400 hover:text-white transition font-medium min-h-[44px] flex items-center"
+            >
+              Terms of Service
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTo('pillars')}
+              className="text-neutral-400 hover:text-white transition font-medium min-h-[44px] flex items-center"
+            >
+              6 Pillars of Truth
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTo('simulator')}
+              className="text-neutral-400 hover:text-white transition font-medium min-h-[44px] flex items-center"
+            >
+              Budget Simulator
+            </button>
+          </div>
+        </div>
+
+        {/* Regulatory & Advisory Disclaimer */}
+        <div className="p-4 rounded-xl bg-neutral-950/60 border border-white/5 space-y-2 text-[11px] text-neutral-400 leading-relaxed">
+          <p>
+            <strong className="text-neutral-300">Regulatory Disclaimer:</strong> Envello is a self-directed personal finance software tool. Envello is not a registered investment advisor, broker, or financial depository. Calculations, utilization recommendations (&lt;30%), and simulated projections are deterministic mathematical calculations based entirely on user-entered values.
+          </p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 border-t border-white/5 text-[10px] text-neutral-400">
+            <span>&copy; {new Date().getFullYear()} Envello. Zero data monetization &bull; AES-256 Encrypted &bull; TLS 1.3</span>
+            <span className="text-emerald-400/90 font-medium flex items-center space-x-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Row Level Security Active</span>
+            </span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

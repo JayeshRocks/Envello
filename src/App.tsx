@@ -41,6 +41,7 @@ import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
 import { SetNameModal } from '@/components/auth/SetNameModal';
 import { ChangeEmailModal } from '@/components/auth/ChangeEmailModal';
 import { AccountDeletionModal } from '@/components/auth/AccountDeletionModal';
+import { LegalModal, LegalTab } from '@/components/legal/LegalModal';
 
 export const App: React.FC = () => {
   const { user, isLoading: isAuthLoading, isPasswordRecovery, needsPasswordSetup, needsNameSetup } = useAuth();
@@ -57,6 +58,28 @@ export const App: React.FC = () => {
   const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
   const [isSetPasswordModalOpen, setIsSetPasswordModalOpen] = useState(false);
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
+
+  // Handle external URL hash navigation for compliance (#terms, #privacy, #legal)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#privacy') {
+        setLegalModalTab('privacy');
+        setIsLegalModalOpen(true);
+      } else if (hash === '#terms') {
+        setLegalModalTab('terms');
+        setIsLegalModalOpen(true);
+      } else if (hash === '#legal') {
+        setIsLegalModalOpen(true);
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Auto-open auth modal if user arrives from a password recovery email
   useEffect(() => {
@@ -267,12 +290,30 @@ export const App: React.FC = () => {
         onOpenChangeEmailModal={() => setIsChangeEmailModalOpen(true)}
         onOpenSetPasswordModal={() => setIsSetPasswordModalOpen(true)}
         onOpenDeletionModal={() => setIsDeletionModalOpen(true)}
+        onOpenPrivacy={() => {
+          setLegalModalTab('privacy');
+          setIsLegalModalOpen(true);
+        }}
+        onOpenTerms={() => {
+          setLegalModalTab('terms');
+          setIsLegalModalOpen(true);
+        }}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-8">
         {!user ? (
-          <CoverPage onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+          <CoverPage
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            onOpenPrivacy={() => {
+              setLegalModalTab('privacy');
+              setIsLegalModalOpen(true);
+            }}
+            onOpenTerms={() => {
+              setLegalModalTab('terms');
+              setIsLegalModalOpen(true);
+            }}
+          />
         ) : (
           <div className="space-y-6 sm:space-y-8">
             {/* Section: The Six Financial Pillars */}
@@ -716,6 +757,26 @@ export const App: React.FC = () => {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        onOpenPrivacy={() => {
+          setLegalModalTab('privacy');
+          setIsLegalModalOpen(true);
+        }}
+        onOpenTerms={() => {
+          setLegalModalTab('terms');
+          setIsLegalModalOpen(true);
+        }}
+      />
+
+      {/* Legal & Privacy Compliance Modal */}
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        initialTab={legalModalTab}
+        onClose={() => {
+          setIsLegalModalOpen(false);
+          if (window.location.hash) {
+            history.replaceState(null, '', window.location.pathname);
+          }
+        }}
       />
 
       {/* "What should we call you?" / Edit Name Modal */}
@@ -756,8 +817,33 @@ export const App: React.FC = () => {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-4 pb-8 sm:pb-4 safe-padding-bottom text-center text-xs text-neutral-500">
-        Envello Personal Finance Platform • Target ₹0/mo Budget • Deterministic Accounting Engine
+      <footer className="border-t border-white/5 py-4 pb-8 sm:pb-4 safe-padding-bottom text-center text-xs text-neutral-500 space-y-1.5">
+        <div>Envello Personal Finance Platform &bull; Deterministic Accounting Engine</div>
+        <div className="flex items-center justify-center space-x-3 text-[11px] text-neutral-400">
+          <button
+            type="button"
+            onClick={() => {
+              setLegalModalTab('privacy');
+              setIsLegalModalOpen(true);
+            }}
+            className="hover:text-neutral-300 transition underline decoration-white/20 hover:decoration-white"
+          >
+            Privacy Policy
+          </button>
+          <span>&bull;</span>
+          <button
+            type="button"
+            onClick={() => {
+              setLegalModalTab('terms');
+              setIsLegalModalOpen(true);
+            }}
+            className="hover:text-neutral-300 transition underline decoration-white/20 hover:decoration-white"
+          >
+            Terms of Service
+          </button>
+          <span>&bull;</span>
+          <span className="text-emerald-400/90 font-medium">RLS Protected</span>
+        </div>
       </footer>
     </div>
   );

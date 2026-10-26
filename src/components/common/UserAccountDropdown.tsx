@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   ChevronDown,
   CheckCircle2,
+  Scale,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -16,6 +17,8 @@ interface UserAccountDropdownProps {
   onOpenChangeEmailModal: () => void;
   onOpenSetPasswordModal: () => void;
   onOpenDeletionModal: () => void;
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
 export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
@@ -23,6 +26,8 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
   onOpenChangeEmailModal,
   onOpenSetPasswordModal,
   onOpenDeletionModal,
+  onOpenPrivacy = () => {},
+  onOpenTerms = () => {},
 }) => {
   const { user, displayName, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -210,7 +215,46 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
           </div>
 
           {/* Privacy & Account Deletion Policy Section */}
-          <div className="p-2">
+          <div className="p-2 space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onOpenPrivacy();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 text-neutral-300 hover:text-white transition active:scale-[0.99] text-left min-h-[44px]"
+            >
+              <div className="flex items-center space-x-2.5">
+                <Scale className="w-4 h-4 text-sky-400 flex-shrink-0" />
+                <div>
+                  <span className="text-xs font-medium block">Privacy &amp; Terms of Service</span>
+                  <span className="text-[10px] text-neutral-500 block">Data isolation &amp; legal rights</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onOpenTerms();
+                  }}
+                  className="text-[10px] text-sky-400 hover:text-sky-300 font-medium px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20"
+                >
+                  Terms
+                </span>
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onOpenPrivacy();
+                  }}
+                  className="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20"
+                >
+                  Privacy
+                </span>
+              </div>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -223,11 +267,11 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
                 <ShieldAlert className="w-4 h-4 text-amber-400 flex-shrink-0" />
                 <div>
                   <span className="text-xs font-medium block">Account Deletion Policy</span>
-                  <span className="text-[10px] text-neutral-500 block">Data privacy & retention</span>
+                  <span className="text-[10px] text-neutral-500 block">Data retention &amp; 30-day grace</span>
                 </div>
               </div>
               <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-300 bg-amber-500/10">
-                STAMP: BETA
+                Policy
               </span>
             </button>
           </div>
