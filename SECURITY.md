@@ -30,7 +30,7 @@ If you discover a security vulnerability or suspect an authorization bypass in E
 Instead, please disclose it responsibly by contacting the maintainer directly:
 
 - **Security Contact**: Jayesh Yadav
-- **Email**: [jayeshyadav40@gmail.com](mailto:jayeshyadav40@gmail.com)
+- **Email**: [yadavjayesh2008@gmail.com](mailto:yadavjayesh2008@gmail.com)
 - **Response Window**: We acknowledge security reports within 48 hours and aim to provide a mitigation or patch within 7 days.
 
 ### What to Include in Your Report
