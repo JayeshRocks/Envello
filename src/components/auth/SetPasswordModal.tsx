@@ -189,7 +189,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-sm shadow-xl shadow-sky-500/25 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+            className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-sm shadow-xl shadow-sky-500/25 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 min-h-[44px]"
           >
             {isSubmitting ? (
               <>

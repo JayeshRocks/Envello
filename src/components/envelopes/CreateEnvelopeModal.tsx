@@ -137,7 +137,7 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
             <select
               value={rolloverPolicy}
               onChange={(e) => setRolloverPolicy(e.target.value as EnvelopeRolloverPolicy)}
-              className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+              className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
             >
               <option value="carry_forward" className="bg-neutral-900 text-white">
                 Carry Forward (Keep unused funds in this envelope)
@@ -155,7 +155,7 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-emerald-500/25"
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-emerald-500/25 active:scale-[0.98] min-h-[44px]"
             >
               <span>{isSubmitting ? 'Creating Envelope...' : 'Create Envelope'}</span>
               <ArrowRight className="w-4 h-4" />

@@ -174,7 +174,7 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
                           value={customAmountRupees}
                           onChange={(e) => setCustomAmountRupees(e.target.value)}
                           placeholder={(emi.monthly_reimbursement_paise / 100).toString()}
-                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-xs text-white font-mono"
+                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-sm text-white font-mono"
                         />
                         <button
                           onClick={() => handleReimburse(emi)}

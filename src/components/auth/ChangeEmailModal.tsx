@@ -152,7 +152,7 @@ export const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ isOpen, onCl
                   placeholder="your-new-email@example.com"
                   autoFocus
                   required
-                  className="w-full pl-10 pr-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
+                  className="w-full pl-10 pr-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 text-base sm:text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
                 />
               </div>
               <p className="text-[11px] text-neutral-400 leading-relaxed">
@@ -164,14 +164,14 @@ export const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ isOpen, onCl
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-semibold border border-white/10 transition active:scale-95"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-semibold border border-white/10 transition active:scale-95 min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!newEmail.trim()}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-md shadow-sky-500/25 transition active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-md shadow-sky-500/25 transition active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50 min-h-[44px]"
               >
                 <span>Continue</span>
                 <ArrowRight className="w-4 h-4" />
@@ -198,7 +198,7 @@ export const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ isOpen, onCl
                 type="button"
                 onClick={() => setConfirmStep(false)}
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-semibold border border-white/10 transition active:scale-95"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-semibold border border-white/10 transition active:scale-95 min-h-[44px]"
               >
                 Back
               </button>
@@ -206,7 +206,7 @@ export const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ isOpen, onCl
                 type="button"
                 onClick={handleExecuteChange}
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-md shadow-sky-500/25 transition active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-md shadow-sky-500/25 transition active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50 min-h-[44px]"
               >
                 {isSubmitting ? (
                   <>

@@ -93,7 +93,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search payee..."
-              className="w-full pl-8 pr-7 py-1.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 xs:w-36 sm:w-44"
+              className="w-full pl-8 pr-7 py-1.5 min-h-[36px] rounded-xl glass-input text-base sm:text-sm text-white placeholder-neutral-500 xs:w-36 sm:w-48"
             />
             {searchQuery && (
               <button

@@ -250,7 +250,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Apartment Rent, WiFi"
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>
@@ -263,7 +263,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value)}
                   placeholder="e.g. 25000"
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm font-mono text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>
@@ -275,7 +275,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                 <select
                   value={accountId}
                   onChange={(e) => setAccountId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                   required
                 >
                   {activeAccounts.map((a) => (
@@ -291,7 +291,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                 <select
                   value={envelopeId}
                   onChange={(e) => setEnvelopeId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                   required
                 >
                   {envelopes.map((e) => (
@@ -313,7 +313,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   max="31"
                   value={dayOfMonth}
                   onChange={(e) => setDayOfMonth(Math.min(31, Math.max(1, parseInt(e.target.value, 10) || 1)))}
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm font-mono text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>
@@ -323,7 +323,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-xs transition flex items-center space-x-1.5 shadow-md disabled:opacity-50"
+                className="w-full sm:w-auto px-5 py-2.5 min-h-[44px] rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 shadow-md disabled:opacity-50 active:scale-95"
               >
                 {isSubmitting ? (
                   <>

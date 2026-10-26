@@ -42,6 +42,19 @@
     cursor: not-allowed;
     opacity: 0.6;
   }
+
+  /* Prevent iOS Safari from auto-zooming into inputs when focused (< 16px triggers zoom) */
+  @media (max-width: 639px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
 }
 
 @layer utilities {

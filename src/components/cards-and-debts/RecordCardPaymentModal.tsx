@@ -135,7 +135,7 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
             <select
               value={selectedCardId}
               onChange={(e) => setSelectedCardId(e.target.value)}
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none focus:border-sky-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white focus:outline-none focus:border-sky-500"
               required
             >
               {cards.map((c) => (
@@ -151,7 +151,7 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
             <select
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none focus:border-sky-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white focus:outline-none focus:border-sky-500"
               required
             >
               {accounts.map((a) => (
@@ -169,7 +169,7 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
                 <button
                   type="button"
                   onClick={handleFillOutstanding}
-                  className="text-[11px] text-sky-400 hover:underline"
+                  className="text-[11px] text-sky-400 hover:underline min-h-[32px] flex items-center"
                 >
                   Pay Full ({formatINR(currentCard.outstanding_balance_paise)})
                 </button>
@@ -193,7 +193,7 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none focus:border-sky-500"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white focus:outline-none focus:border-sky-500"
                 required
               />
             </div>
@@ -204,7 +204,7 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g. Statement settled via UPI"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-sky-500"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-sky-500"
               />
             </div>
           </div>
@@ -224,14 +224,14 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+              className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-medium shadow-lg shadow-sky-600/20 disabled:opacity-50 transition"
+              className="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-medium shadow-lg shadow-sky-600/20 disabled:opacity-50 transition active:scale-95"
             >
               {isSubmitting ? 'Recording...' : 'Record Payment'}
             </button>

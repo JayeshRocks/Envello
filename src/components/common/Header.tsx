@@ -87,11 +87,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Accounts Button (Authenticated only) */}
+          {/* Accounts Button (Authenticated only - Tablet & Desktop) */}
           {user && onOpenAccountsModal && (
             <button
               onClick={onOpenAccountsModal}
-              className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200 min-h-[38px]"
+              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200 min-h-[38px]"
               title="Manage Liquid Accounts"
             >
               <Landmark className="w-3.5 h-3.5 text-sky-400" />
@@ -99,15 +99,14 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Record Transaction Button (Authenticated only) */}
+          {/* Record Transaction Button (Authenticated only - Tablet & Desktop, mobile uses bottom FAB) */}
           {user && (
             <button
               onClick={onRecordTransactionClick}
-              className="flex items-center space-x-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm shadow-sky-500/30 active:scale-95 hover:shadow-sky-500/40 min-h-[38px]"
+              className="hidden sm:flex items-center space-x-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm shadow-sky-500/30 active:scale-95 hover:shadow-sky-500/40 min-h-[38px]"
             >
               <PlusCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Record Transaction</span>
-              <span className="sm:hidden">Add</span>
+              <span>Record Transaction</span>
             </button>
           )}
         </div>

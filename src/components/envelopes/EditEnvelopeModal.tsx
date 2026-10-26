@@ -191,7 +191,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
           {/* Icon Selector */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-neutral-300">Category Icon</label>
-            <div className="grid grid-cols-7 gap-1.5 pt-1">
+            <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 pt-1">
               {ICON_OPTIONS.map((item) => {
                 const ItemIcon = item.icon;
                 const isSelected = icon === item.name;
@@ -200,7 +200,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
                     key={item.name}
                     type="button"
                     onClick={() => setIcon(item.name)}
-                    className={`p-2 rounded-xl flex items-center justify-center transition border ${
+                    className={`p-2.5 sm:p-2 rounded-xl flex items-center justify-center transition border min-h-[40px] active:scale-95 ${
                       isSelected
                         ? 'bg-sky-500/20 border-sky-500 text-sky-300 ring-2 ring-sky-500/30'
                         : 'bg-neutral-900/50 border-white/5 text-neutral-400 hover:text-white hover:bg-neutral-800'
@@ -224,7 +224,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
                   type="button"
                   onClick={() => setColor(preset.hex)}
                   style={{ backgroundColor: preset.hex }}
-                  className={`w-6 h-6 rounded-full transition-transform ${
+                  className={`w-7 h-7 sm:w-6 sm:h-6 rounded-full transition-transform active:scale-95 ${
                     color === preset.hex
                       ? 'scale-125 ring-2 ring-white ring-offset-2 ring-offset-black'
                       : 'opacity-70 hover:opacity-100'
@@ -242,7 +242,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
               value={rolloverPolicy}
               onChange={(e) => setRolloverPolicy(e.target.value as EnvelopeRolloverPolicy)}
               disabled={envelope.isSystemReserved}
-              className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+              className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
             >
               <option value="carry_forward" className="bg-neutral-900 text-white">
                 Carry Forward (Keep unused funds in this envelope)
@@ -260,7 +260,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-sky-500/25"
+              className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-sky-500/25 active:scale-[0.98] min-h-[44px]"
             >
               <Save className="w-4 h-4" />
               <span>{isSubmitting ? 'Saving Changes...' : 'Save Changes'}</span>
@@ -275,7 +275,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowConfirmDelete(true)}
-                className="w-full py-2 px-3 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium flex items-center justify-center space-x-1.5 transition"
+                className="w-full py-2.5 px-3 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium flex items-center justify-center space-x-1.5 transition min-h-[44px] active:scale-[0.98]"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Envelope Category</span>

@@ -177,7 +177,7 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
                           value={customAmountRupees}
                           onChange={(e) => setCustomAmountRupees(e.target.value)}
                           placeholder="Amount in ₹"
-                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-xs text-white font-mono"
+                          className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1 text-base sm:text-sm text-white font-mono"
                         />
                         <button
                           onClick={() => handleContribute(target.id)}

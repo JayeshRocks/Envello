@@ -120,7 +120,7 @@ export const AddCreditCardModal: React.FC<AddCreditCardModalProps> = ({
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
               placeholder="e.g. Amazon Pay ICICI, Infinia, Coral"
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
               required
             />
           </div>
@@ -132,7 +132,7 @@ export const AddCreditCardModal: React.FC<AddCreditCardModalProps> = ({
               value={issuer}
               onChange={(e) => setIssuer(e.target.value)}
               placeholder="e.g. ICICI Bank, HDFC, SBI, Axis"
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
               required
             />
           </div>
@@ -146,7 +146,7 @@ export const AddCreditCardModal: React.FC<AddCreditCardModalProps> = ({
                 value={creditLimitRupees}
                 onChange={(e) => setCreditLimitRupees(e.target.value)}
                 placeholder="100000"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
                 required
               />
             </div>
@@ -158,7 +158,7 @@ export const AddCreditCardModal: React.FC<AddCreditCardModalProps> = ({
                 value={outstandingRupees}
                 onChange={(e) => setOutstandingRupees(e.target.value)}
                 placeholder="0"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
               />
             </div>
           </div>
@@ -172,7 +172,7 @@ export const AddCreditCardModal: React.FC<AddCreditCardModalProps> = ({
                 max={31}
                 value={statementDay}
                 onChange={(e) => setStatementDay(parseInt(e.target.value) || 1)}
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
                 required
               />
             </div>
@@ -184,7 +184,7 @@ export const AddCreditCardModal: React.FC<AddCreditCardModalProps> = ({
                 max={31}
                 value={paymentDueDay}
                 onChange={(e) => setPaymentDueDay(parseInt(e.target.value) || 1)}
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500 font-mono"
                 required
               />
             </div>
@@ -194,14 +194,14 @@ export const AddCreditCardModal: React.FC<AddCreditCardModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+              className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-lg shadow-purple-600/20 disabled:opacity-50 transition"
+              className="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-lg shadow-purple-600/20 disabled:opacity-50 transition active:scale-95"
             >
               {isSubmitting ? 'Adding...' : 'Add Credit Card'}
             </button>

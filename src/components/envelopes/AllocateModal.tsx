@@ -120,14 +120,14 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
           </div>
 
           {/* Quick Increment Shortcuts */}
-          <div className="flex items-center space-x-2 pt-1">
+          <div className="flex items-center space-x-2 pt-1 flex-wrap gap-y-1.5">
             <span className="text-[11px] text-neutral-500">Quick Add:</span>
             {[500, 1000, 5000].map((amt) => (
               <button
                 key={amt}
                 type="button"
                 onClick={() => handleShortcutAdd(amt)}
-                className="text-xs px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-white/5 text-neutral-300 hover:text-white font-mono transition"
+                className="text-xs px-3 py-1.5 min-h-[36px] rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-white/5 text-neutral-300 hover:text-white font-mono transition active:scale-95 flex items-center"
               >
                 +₹{amt.toLocaleString('en-IN')}
               </button>
@@ -138,7 +138,7 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-sky-500/25"
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-sky-500/25 active:scale-[0.98] min-h-[44px]"
             >
               <span>{isSubmitting ? 'Saving Allocation...' : 'Save Allocation'}</span>
               <ArrowRight className="w-4 h-4" />

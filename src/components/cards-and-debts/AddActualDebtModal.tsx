@@ -115,7 +115,7 @@ export const AddActualDebtModal: React.FC<AddActualDebtModalProps> = ({
               value={lenderName}
               onChange={(e) => setLenderName(e.target.value)}
               placeholder="e.g. Ramesh, Uncle Sharma, Personal Loan"
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-orange-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-orange-500"
               required
             />
           </div>
@@ -129,7 +129,7 @@ export const AddActualDebtModal: React.FC<AddActualDebtModalProps> = ({
                 value={initialDebtRupees}
                 onChange={(e) => setInitialDebtRupees(e.target.value)}
                 placeholder="50000"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-orange-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-orange-500 font-mono"
                 required
               />
             </div>
@@ -141,7 +141,7 @@ export const AddActualDebtModal: React.FC<AddActualDebtModalProps> = ({
                 value={monthlyInstalmentRupees}
                 onChange={(e) => setMonthlyInstalmentRupees(e.target.value)}
                 placeholder="5000"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-orange-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-orange-500 font-mono"
                 required
               />
             </div>
@@ -153,7 +153,7 @@ export const AddActualDebtModal: React.FC<AddActualDebtModalProps> = ({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 sm:py-2 text-base sm:text-xs text-white focus:outline-none focus:border-orange-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 sm:py-2 text-base sm:text-sm text-white focus:outline-none focus:border-orange-500"
             />
           </div>
 
@@ -161,14 +161,14 @@ export const AddActualDebtModal: React.FC<AddActualDebtModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+              className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-lg shadow-orange-600/20 disabled:opacity-50 transition"
+              className="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-lg shadow-orange-600/20 disabled:opacity-50 transition active:scale-95"
             >
               {isSubmitting ? 'Recording...' : 'Add Debt'}
             </button>

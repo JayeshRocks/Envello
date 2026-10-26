@@ -114,7 +114,7 @@ export const AddSelfEmiModal: React.FC<AddSelfEmiModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. MacBook Pro, Vacation Advance, Camera Lens"
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
               required
             />
           </div>
@@ -128,7 +128,7 @@ export const AddSelfEmiModal: React.FC<AddSelfEmiModalProps> = ({
                 value={totalFundedRupees}
                 onChange={(e) => setTotalFundedRupees(e.target.value)}
                 placeholder="60000"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 font-mono"
                 required
               />
             </div>
@@ -140,7 +140,7 @@ export const AddSelfEmiModal: React.FC<AddSelfEmiModalProps> = ({
                 value={monthlyRupees}
                 onChange={(e) => setMonthlyRupees(e.target.value)}
                 placeholder="5000"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-indigo-500 font-mono"
                 required
               />
             </div>
@@ -152,7 +152,7 @@ export const AddSelfEmiModal: React.FC<AddSelfEmiModalProps> = ({
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 sm:py-2 text-base sm:text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 sm:py-2 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
               required
             />
           </div>
@@ -161,14 +161,14 @@ export const AddSelfEmiModal: React.FC<AddSelfEmiModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+              className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition"
+              className="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition active:scale-95"
             >
               {isSubmitting ? 'Adding...' : 'Add Self EMI'}
             </button>

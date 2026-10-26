@@ -177,9 +177,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               setMode('expense');
               setError(null);
             }}
-            className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg transition ${
+            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[40px] ${
               mode === 'expense'
-                ? 'bg-rose-500 text-white shadow-sm'
+                ? 'bg-rose-500 text-white shadow-sm font-bold'
                 : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
@@ -192,9 +192,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               setMode('income');
               setError(null);
             }}
-            className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg transition ${
+            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[40px] ${
               mode === 'income'
-                ? 'bg-emerald-500 text-white shadow-sm'
+                ? 'bg-emerald-500 text-white shadow-sm font-bold'
                 : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
@@ -207,9 +207,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               setMode('transfer');
               setError(null);
             }}
-            className={`flex items-center justify-center space-x-1.5 py-2 rounded-lg transition ${
+            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[40px] ${
               mode === 'transfer'
-                ? 'bg-indigo-500 text-white shadow-sm'
+                ? 'bg-indigo-500 text-white shadow-sm font-bold'
                 : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
@@ -316,7 +316,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 <select
                   value={selectedEnvelopeId}
                   onChange={(e) => setSelectedEnvelopeId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
                 >
                   {envelopes.map((env) => (
                     <option key={env.id} value={env.id} className="bg-neutral-900 text-white">
@@ -331,7 +331,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
                 >
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id} className="bg-neutral-900 text-white">
@@ -350,7 +350,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               <select
                 value={selectedAccountId}
                 onChange={(e) => setSelectedAccountId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
               >
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id} className="bg-neutral-900 text-white">
@@ -369,7 +369,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
                 >
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id} className="bg-neutral-900 text-white">
@@ -384,7 +384,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 <select
                   value={toAccountId}
                   onChange={(e) => setToAccountId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
                 >
                   {accounts
                     .filter((a) => a.id !== selectedAccountId)
@@ -410,7 +410,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
               />
             </div>
 
@@ -421,7 +421,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Additional details..."
-                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-xs text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
           </div>
@@ -430,7 +430,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl text-white text-sm font-semibold transition shadow-lg disabled:opacity-50 ${
+              className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-white text-sm font-semibold transition shadow-lg active:scale-[0.98] min-h-[44px] disabled:opacity-50 ${
                 mode === 'income'
                   ? 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/25'
                   : mode === 'expense'

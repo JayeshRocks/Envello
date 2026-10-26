@@ -160,7 +160,7 @@ export const SetNameModal: React.FC<SetNameModalProps> = ({
                 placeholder="e.g. Alex, Priya, Jordan"
                 autoFocus
                 maxLength={40}
-                className="w-full pl-10 pr-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition disabled:opacity-50"
+                className="w-full pl-10 pr-4 py-2.5 bg-neutral-900 border border-white/10 rounded-xl text-white placeholder-neutral-500 text-base sm:text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition disabled:opacity-50"
               />
             </div>
             {isFirstTime && (
@@ -176,7 +176,7 @@ export const SetNameModal: React.FC<SetNameModalProps> = ({
                 type="button"
                 onClick={handleDismiss}
                 disabled={isSubmitting || success}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-semibold border border-white/10 transition active:scale-95 disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-semibold border border-white/10 transition active:scale-95 disabled:opacity-50 min-h-[44px]"
               >
                 Skip for Now
               </button>
@@ -184,7 +184,7 @@ export const SetNameModal: React.FC<SetNameModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || success || !name.trim()}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-md shadow-sky-500/25 transition active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-md shadow-sky-500/25 transition active:scale-95 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
             >
               {isSubmitting ? (
                 <>

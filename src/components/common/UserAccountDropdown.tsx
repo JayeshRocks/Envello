@@ -76,7 +76,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
         aria-expanded={isOpen}
         aria-haspopup="true"
         title={`Account: ${displayName}`}
-        className="flex items-center space-x-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-white/10 hover:border-white/20 active:scale-95 transition-all duration-200 shadow-sm min-h-[38px] group"
+        className="flex items-center space-x-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-white/10 hover:border-white/20 active:scale-95 transition-all duration-200 shadow-sm min-h-[40px] sm:min-h-[38px] group"
       >
         {/* Avatar / Symbol */}
         <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg overflow-hidden bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-inner ring-1 ring-white/20 flex-shrink-0">
@@ -110,7 +110,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
 
       {/* Modern High-End Account Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-88 rounded-2xl glass-card border border-white/15 bg-neutral-950/95 backdrop-blur-2xl shadow-2xl z-50 animate-scale-up overflow-hidden divide-y divide-white/5">
+        <div className="absolute right-0 mt-2 w-[min(calc(100vw-24px),22rem)] max-w-sm sm:w-88 rounded-2xl glass-card border border-white/15 bg-neutral-950/95 backdrop-blur-2xl shadow-2xl z-50 animate-scale-up overflow-hidden divide-y divide-white/5">
           {/* Header Profile Section */}
           <div className="p-4 sm:p-5 bg-gradient-to-b from-sky-950/20 via-transparent to-transparent">
             <div className="flex items-center space-x-3.5">
@@ -161,7 +161,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
                   setIsOpen(false);
                   onOpenSetNameModal();
                 }}
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-sky-400 hover:bg-sky-500/10 transition active:scale-95"
+                className="p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-sky-400 hover:bg-sky-500/10 transition active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title="Edit Display Name"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -185,7 +185,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
                   setIsOpen(false);
                   onOpenChangeEmailModal();
                 }}
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition active:scale-95"
+                className="p-2 sm:p-1.5 rounded-lg text-neutral-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title="Change Email Address"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -199,7 +199,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
                 setIsOpen(false);
                 onOpenSetPasswordModal();
               }}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-neutral-300 hover:text-white transition active:scale-[0.99] text-left group"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 text-neutral-300 hover:text-white transition active:scale-[0.99] text-left group min-h-[44px]"
             >
               <div className="flex items-center space-x-2.5">
                 <KeyRound className="w-4 h-4 text-purple-400 flex-shrink-0" />
@@ -217,7 +217,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
                 setIsOpen(false);
                 onOpenDeletionModal();
               }}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 text-neutral-300 hover:text-white transition active:scale-[0.99] text-left"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 text-neutral-300 hover:text-white transition active:scale-[0.99] text-left min-h-[44px]"
             >
               <div className="flex items-center space-x-2.5">
                 <ShieldAlert className="w-4 h-4 text-amber-400 flex-shrink-0" />
@@ -240,7 +240,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
                 setIsOpen(false);
                 signOut();
               }}
-              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 active:scale-95 transition-all duration-200"
+              className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 active:scale-95 transition-all duration-200 min-h-[44px]"
             >
               <LogOut className="w-4 h-4" />
               <span>Sign Out of Envello</span>

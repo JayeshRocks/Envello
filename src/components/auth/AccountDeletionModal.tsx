@@ -106,7 +106,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({ isOp
             <button
               type="button"
               onClick={() => setRequestSubmitted(true)}
-              className="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition active:scale-95 flex items-center justify-center space-x-2"
+              className="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition active:scale-95 flex items-center justify-center space-x-2 min-h-[44px]"
             >
               <Trash2 className="w-4 h-4 text-rose-400" />
               <span>Request Account & Data Deletion</span>
@@ -118,7 +118,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({ isOp
           <button
             type="button"
             onClick={handleDismiss}
-            className="w-full py-2.5 px-4 rounded-xl bg-neutral-850 hover:bg-neutral-800 text-white text-xs font-semibold border border-white/10 transition"
+            className="w-full py-2.5 px-4 rounded-xl bg-neutral-850 hover:bg-neutral-800 text-white text-xs font-semibold border border-white/10 transition min-h-[44px]"
           >
             Close
           </button>

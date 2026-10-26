@@ -122,7 +122,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               <select
                 value={fromId}
                 onChange={(e) => setFromId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
               >
                 {envelopes.map((env) => (
                   <option key={env.id} value={env.id} className="bg-neutral-900 text-white">
@@ -138,7 +138,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               <select
                 value={toId}
                 onChange={(e) => setToId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
               >
                 {envelopes
                   .filter((env) => env.id !== fromId)
@@ -186,12 +186,12 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               <p className="text-[11px] leading-relaxed text-red-200/90">
                 Emergency funds are strictly reserved for critical situations. Withdrawing will reduce your safety net.
               </p>
-              <label className="flex items-start space-x-2 pt-1 cursor-pointer select-none">
+              <label className="flex items-start space-x-2.5 pt-1 cursor-pointer select-none min-h-[36px]">
                 <input
                   type="checkbox"
                   checked={emergencyConfirmed}
                   onChange={(e) => setEmergencyConfirmed(e.target.checked)}
-                  className="mt-0.5 rounded border-white/20 text-red-500 focus:ring-red-500 bg-black/40"
+                  className="mt-0.5 w-4 h-4 rounded border-white/20 text-red-500 focus:ring-red-500 bg-black/40"
                 />
                 <span className="text-[11px] text-red-200 font-medium">
                   I explicitly confirm withdrawing from Emergency reserve.
@@ -204,7 +204,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || (isFromEmergency && !emergencyConfirmed)}
-              className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-indigo-500/25"
+              className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-indigo-500/25 active:scale-[0.98] min-h-[44px]"
             >
               <span>{isSubmitting ? 'Transferring...' : `Move ${toEnvelope?.name ? `to ${toEnvelope.name}` : 'Funds'}`}</span>
               <ArrowRight className="w-4 h-4" />

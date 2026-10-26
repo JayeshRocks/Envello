@@ -157,7 +157,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                       <select
                         value={destAccountId}
                         onChange={(e) => setDestAccountId(e.target.value)}
-                        className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1.5 text-base sm:text-xs text-white"
+                        className="w-full bg-neutral-900 border border-white/10 rounded-lg px-2.5 py-2 sm:py-1.5 text-base sm:text-sm text-white"
                       >
                         {accounts.map((a) => (
                           <option key={a.id} value={a.id}>

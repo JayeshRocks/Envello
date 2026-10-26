@@ -117,7 +117,7 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Next Month Rent, New Phone, Annual Insurance"
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500"
               required
             />
           </div>
@@ -131,7 +131,7 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
                 value={targetAmountRupees}
                 onChange={(e) => setTargetAmountRupees(e.target.value)}
                 placeholder="25000"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500 font-mono"
                 required
               />
             </div>
@@ -143,7 +143,7 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
                 value={initialContributedRupees}
                 onChange={(e) => setInitialContributedRupees(e.target.value)}
                 placeholder="0"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500 font-mono"
               />
             </div>
           </div>
@@ -154,7 +154,7 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
               type="date"
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 sm:py-2 text-base sm:text-xs text-white focus:outline-none focus:border-cyan-500"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white focus:outline-none focus:border-cyan-500"
               required
             />
           </div>
@@ -163,14 +163,14 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+              className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium shadow-lg shadow-cyan-600/20 disabled:opacity-50 transition"
+              className="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium shadow-lg shadow-cyan-600/20 disabled:opacity-50 transition active:scale-95"
             >
               {isSubmitting ? 'Adding...' : 'Create Target'}
             </button>

@@ -150,8 +150,8 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               type="text"
               value={institution}
               onChange={(e) => setInstitution(e.target.value)}
-              placeholder="e.g. HDFC Bank, SBI, ICICI, Post Office, Super.Money"
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+              placeholder="e.g. HDFC Bank, SBI, ICICI, Post Office, Stable Money"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
               required
             />
           </div>
@@ -165,7 +165,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 value={principalRupees}
                 onChange={(e) => setPrincipalRupees(e.target.value)}
                 placeholder="50000"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 font-mono"
                 required
               />
             </div>
@@ -177,7 +177,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 value={interestRate}
                 onChange={(e) => setInterestRate(e.target.value)}
                 placeholder="9.50"
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 font-mono"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 font-mono"
                 required
               />
             </div>
@@ -190,7 +190,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white focus:outline-none focus:border-emerald-500"
                 required
               />
             </div>
@@ -199,7 +199,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               <select
                 value={tenureMonths}
                 onChange={(e) => setTenureMonths(parseInt(e.target.value))}
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value={3}>3 Months</option>
                 <option value={6}>6 Months</option>
@@ -217,7 +217,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               <button
                 type="button"
                 onClick={handleAutoEstimateMaturity}
-                className="text-[11px] text-emerald-400 hover:underline flex items-center space-x-1"
+                className="text-[11px] text-emerald-400 hover:underline flex items-center space-x-1 min-h-[32px]"
               >
                 <Sparkles className="w-3 h-3" />
                 <span>Auto Estimate</span>
@@ -229,7 +229,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               value={maturityRupees}
               onChange={(e) => setMaturityRupees(e.target.value)}
               placeholder="e.g. 54800"
-              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 font-mono"
+              className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 font-mono"
               required
             />
             <span className="text-[10px] text-neutral-500 mt-1 block">
@@ -245,7 +245,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               <select
                 value={fundingAccountId}
                 onChange={(e) => setFundingAccountId(e.target.value)}
-                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">None (Already funded externally)</option>
                 {accounts.map((acc) => (
@@ -261,14 +261,14 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition"
+              className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition"
+              className="flex-1 sm:flex-none px-5 py-2.5 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition active:scale-95"
             >
               {isSubmitting ? 'Creating...' : 'Create Fixed Deposit'}
             </button>
