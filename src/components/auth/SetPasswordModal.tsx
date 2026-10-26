@@ -9,7 +9,7 @@ interface SetPasswordModalProps {
 }
 
 export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onClose }) => {
-  const { updatePassword, user } = useAuth();
+  const { updatePassword, user, needsPasswordSetup } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,16 +18,20 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!isOpen) return null;
-
   const handleDismiss = () => {
     if (user?.id) {
       localStorage.setItem(`envello_dismissed_password_prompt_${user.id}`, 'true');
     }
+    setPassword('');
+    setConfirmPassword('');
+    setError(null);
+    setSuccess(null);
     onClose();
   };
 
   const { handleBackdropClick } = useModalDismiss(isOpen, handleDismiss);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,10 +57,10 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
         if (user?.id) {
           localStorage.removeItem(`envello_dismissed_password_prompt_${user.id}`);
         }
-        setSuccess('Password created successfully! You can now log in using your password anytime.');
+        setSuccess('Password saved successfully! You can now log in using your password anytime.');
         setTimeout(() => {
-          onClose();
-        }, 1800);
+          handleDismiss();
+        }, 1500);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unexpected error saving password.');
@@ -87,18 +91,31 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
         {/* Modal Header */}
         <div className="space-y-1.5 text-left">
           <div className="inline-flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>First-Time Account Setup</span>
+            {needsPasswordSetup ? (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>First-Time Account Setup</span>
+              </>
+            ) : (
+              <>
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Security & Credentials</span>
+              </>
+            )}
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Create Account Password</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white">
+            {needsPasswordSetup ? 'Create Account Password' : 'Update Account Password'}
+          </h2>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            You signed in using{' '}
-            <span className="text-neutral-200 font-medium">
-              {user?.app_metadata?.provider === 'google' || user?.app_metadata?.providers?.includes('google')
-                ? 'Google'
-                : 'a Magic Link'}
-            </span>
-            . Create a password for <span className="font-mono text-sky-300">{user?.email}</span> so you can also log in directly with your email and password on any browser.
+            {needsPasswordSetup ? (
+              <>
+                Create a password for <span className="font-mono text-sky-300">{user?.email}</span> so you can also log in directly with your email and password on any browser.
+              </>
+            ) : (
+              <>
+                Enter your new password below for <span className="font-mono text-sky-300">{user?.email}</span>.
+              </>
+            )}
           </p>
         </div>
 
@@ -180,7 +197,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
                 <span>Saving Password...</span>
               </>
             ) : (
-              <span>Save Account Password</span>
+              <span>{needsPasswordSetup ? 'Save Account Password' : 'Update Password'}</span>
             )}
           </button>
 
@@ -190,7 +207,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
               onClick={handleDismiss}
               className="text-xs text-neutral-500 hover:text-neutral-400 transition underline"
             >
-              Skip for now
+              {needsPasswordSetup ? 'Skip for now' : 'Cancel'}
             </button>
           </div>
         </form>
