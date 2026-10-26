@@ -52,7 +52,15 @@ export function useEnvelopes() {
     setError(null);
     try {
       const data = await fetchEnvelopesWithAllocations(user.id, selectedPeriod);
-      setEnvelopes(data);
+      // Auto-generalize any legacy envelope names (e.g. 'Savings (Super.Money)')
+      const sanitized = data.map((env) => {
+        if (env.name.toLowerCase().includes('super.money')) {
+          updateEnvelope(env.id, user.id, { name: 'Savings & Fixed Deposits' }).catch(() => {});
+          return { ...env, name: 'Savings & Fixed Deposits' };
+        }
+        return env;
+      });
+      setEnvelopes(sanitized);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load envelopes.';
       console.error('[useEnvelopes] Error loading envelopes:', err);

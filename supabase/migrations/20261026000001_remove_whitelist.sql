@@ -39,7 +39,7 @@ BEGIN
         (new.id, 'Essentials', 'essentials', 'shopping-cart', '#f59e0b', false, 'carry_forward'),
         (new.id, 'Outing', 'outing', 'utensils', '#8b5cf6', false, 'sweep_to_regular'),
         (new.id, 'Birthdays', 'birthdays', 'gift', '#ec4899', false, 'carry_forward'),
-        (new.id, 'Savings (Super.Money)', 'savings', 'piggy-bank', '#eab308', true, 'carry_forward'),
+        (new.id, 'Savings & Fixed Deposits', 'savings', 'piggy-bank', '#eab308', true, 'carry_forward'),
         (new.id, 'Credit Cards', 'credit-cards', 'credit-card', '#6366f1', true, 'carry_forward'),
         (new.id, 'EMI(s)', 'emis', 'calendar-clock', '#f97316', true, 'carry_forward'),
         (new.id, 'Monthly Targets', 'monthly-targets', 'target', '#06b6d4', true, 'carry_forward')
