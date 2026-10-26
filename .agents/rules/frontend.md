@@ -60,3 +60,4 @@ Maintain clear boundaries between application layers:
 - **Touch Target Sizing**: Primary interactive elements, modal buttons, and dropdown links must maintain at least a 44px minimum tap target (`min-h-[44px]`).
 - **Responsive Dropdowns & Overlays**: Floating dropdowns must constrain their maximum width with responsive formulas (e.g. `w-[min(calc(100vw-24px),22rem)]`) to prevent horizontal screen overflow on 320px–375px screens.
 - **Header Actions**: Mobile headers should remain clean and non-crowded (relying on bottom FAB for primary add actions) while tablet headers progressively reveal action buttons.
+- **Compliance Routing Support**: Ensure compliance routes (`/privacy`, `/terms`, `/#privacy`, `/#terms`) are supported at the top-level router/app layer to enable external verification crawlers and direct user access.

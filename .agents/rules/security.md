@@ -51,3 +51,13 @@ Enforce zero-trust architecture, strict Row Level Security (RLS), private beta g
 - **Strict Schema Validation**: Validate all client inputs (amounts, account IDs, envelope types, dates) using a runtime schema validator (such as Zod) before sending queries to Supabase.
 - **Parameterized SQL**: Always use Supabase PostgREST client methods or parameterized SQL queries in migrations/RPCs. Never construct dynamic raw SQL strings from user inputs.
 - **Sanitized Presentation**: Escape or sanitize all user-supplied descriptions and notes to prevent Cross-Site Scripting (XSS).
+
+---
+
+## 6. Legal & Regulatory Compliance (Terms, Privacy, & OAuth Verification)
+
+- **Mandatory Public Compliance Endpoints**: Maintain public, crawlable Privacy Policy and Terms of Service endpoints accessible via clean paths (`/privacy`, `/terms`) and hash fragments (`/#privacy`, `/#terms`).
+- **OAuth Consent Transparency**: All OAuth consent forms (such as Google Cloud Console OAuth verification) must link directly to these published endpoints.
+- **Regulatory Disclaimers**: Explicitly state that Envello is a personal budgeting and financial tracking software utility, not a licensed broker, registered investment advisor, or banking institution.
+- **Sub-Processor Transparency**: Publicly disclose all third-party sub-processors (Supabase, Resend, Vercel, Google OAuth) handling user credentials or ledger entries.
+- **User Data Rights**: Preserve absolute user ownership of data, including in-app CSV/JSON data export and an explicit account deletion process with a 30-day grace period before irreversible database purge.

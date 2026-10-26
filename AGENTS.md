@@ -52,6 +52,7 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **No Secrets in Frontend**: Never commit `.env` or expose Supabase `service_role` keys in browser code or `VITE_*` environment variables.
 - **Account Lifecycle & Security**: User profile updates (display name, email change, password setup/change, and account deletion requests) must follow strict verification and confirmation dialogs.
 - **Branded Transactional Emails**: All auth templates (confirm signup, magic link, password reset, email change, verification code, and security notifications) must be production-ready HTML, free of temporary beta markers, and use the official hosted logo (`public/logo.png`).
+- **Regulatory Compliance & Legal Routing**: Publicly expose comprehensive Privacy Policy and Terms of Service interfaces accessible via clean paths (`/privacy`, `/terms`) and hashes (`/#privacy`, `/#terms`). Ensure full compliance with Google OAuth consent requirements, non-financial-advisor disclaimers, cloud sub-processor disclosures (Supabase, Resend, Vercel), data portability (export), and account deletion rights.
 
 ### 3.3 Mobile & Tablet Ergonomics
 - **Form Typography Scale**: Always use `text-base sm:text-sm` for inputs, selects, and textareas. Never use `sm:text-xs` (12px), which is cramped and illegible on tablets and desktops.

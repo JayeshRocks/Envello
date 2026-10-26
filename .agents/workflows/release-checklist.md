@@ -25,6 +25,7 @@ Ensure zero-defect, secure, and compliant production releases of Envello to Verc
 - [ ] OAuth redirect URIs in Supabase Auth match production Vercel domain.
 - [ ] Supabase Custom SMTP configured with Resend and transactional email templates tested.
 - [ ] Branded logo (`public/logo.png`) accessible via production CDN URL.
+- [ ] Google OAuth Consent Screen verification URLs (`/privacy` and `/terms`) tested and returning active legal content.
 
 ---
 

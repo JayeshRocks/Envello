@@ -44,7 +44,11 @@ These rules apply to any AI agent working on the Envello codebase.
 - **Rule**: Supabase Auth transactional emails are powered by Resend custom SMTP. All email templates must be production-ready HTML, free of temporary beta markers, and reference the official hosted brand logo (`public/logo.png`).
 - **Context**: Delivers high deliverability, consistent typography, and cohesive branding across the full user lifecycle.
 
-## 10. Definition of Done
+## 10. Legal Compliance, Privacy Policies, & OAuth Routing
+- **Rule**: Envello must provide accessible, responsive Privacy Policy and Terms of Service interfaces accessible via direct URL routing (`/privacy`, `/terms`, `/#privacy`, `/#terms`). Auth forms must link to terms, and external OAuth reviewers must receive valid public endpoints.
+- **Context**: Required for Google OAuth verification, GDPR/CCPA compliance, and establishing clear legal boundaries (e.g. non-investment-advisor disclaimer) for a personal financial management tool.
+
+## 11. Definition of Done
 - **Rule**: A feature or fix is done ONLY after:
   `Plan -> Implement -> Lint (npm run lint) -> Build (npm run build) -> Verify`
   Never leave placeholder buttons, pretend actions, or unhandled errors.
