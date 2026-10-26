@@ -79,17 +79,19 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
 BEGIN
-  DELETE FROM public.recurring_rules WHERE user_id = target_user_id;
-  DELETE FROM public.monthly_targets WHERE user_id = target_user_id;
-  DELETE FROM public.actual_debts WHERE user_id = target_user_id;
-  DELETE FROM public.self_emis WHERE user_id = target_user_id;
-  DELETE FROM public.fixed_deposits WHERE user_id = target_user_id;
-  DELETE FROM public.credit_card_payments WHERE user_id = target_user_id;
-  DELETE FROM public.credit_cards WHERE user_id = target_user_id;
+  -- Delete dependent child rows first to satisfy foreign key constraints (RESTRICT)
+  DELETE FROM public.audit_logs WHERE user_id = target_user_id;
+  DELETE FROM public.transaction_entries WHERE user_id = target_user_id;
   DELETE FROM public.transactions WHERE user_id = target_user_id;
   DELETE FROM public.envelope_allocations WHERE user_id = target_user_id;
   DELETE FROM public.budget_periods WHERE user_id = target_user_id;
   DELETE FROM public.envelopes WHERE user_id = target_user_id;
+  DELETE FROM public.credit_card_statements WHERE user_id = target_user_id;
+  DELETE FROM public.credit_cards WHERE user_id = target_user_id;
+  DELETE FROM public.fixed_deposits WHERE user_id = target_user_id;
+  DELETE FROM public.self_emis WHERE user_id = target_user_id;
+  DELETE FROM public.actual_debts WHERE user_id = target_user_id;
+  DELETE FROM public.monthly_targets WHERE user_id = target_user_id;
   DELETE FROM public.accounts WHERE user_id = target_user_id;
   DELETE FROM public.profiles WHERE id = target_user_id;
   DELETE FROM auth.users WHERE id = target_user_id;
