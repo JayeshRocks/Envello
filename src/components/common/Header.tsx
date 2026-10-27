@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { user } = useAuth();
 
   return (
-    <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-40">
+    <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-40 w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center space-x-2.5 sm:space-x-3">

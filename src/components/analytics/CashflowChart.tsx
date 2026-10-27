@@ -85,7 +85,7 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
   }, [monthlyData]);
 
   return (
-    <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-5">
+    <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-5 max-w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-0.5">
           <div className="flex items-center space-x-2">

@@ -26,7 +26,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   onOpenExportModal,
 }) => {
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 max-w-full overflow-hidden">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-0.5">

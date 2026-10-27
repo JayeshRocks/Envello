@@ -102,7 +102,7 @@ export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ 
   }, [segments]);
 
   return (
-    <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-5">
+    <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-5 max-w-full overflow-hidden">
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <div className="flex items-center space-x-2">

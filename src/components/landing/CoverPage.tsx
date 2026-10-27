@@ -51,11 +51,11 @@ export const CoverPage: React.FC<CoverPageProps> = ({
   };
 
   return (
-    <div className="space-y-20 pb-16 animate-fade-in">
+    <div className="space-y-20 pb-16 animate-fade-in w-full max-w-full overflow-hidden">
       {/* 1. Hero Section */}
-      <section className="relative pt-6 pb-12 sm:pt-12 sm:pb-16 text-center space-y-6 max-w-4xl mx-auto px-4">
+      <section className="relative pt-6 pb-12 sm:pt-12 sm:pb-16 text-center space-y-6 max-w-4xl mx-auto px-4 overflow-hidden">
         {/* Glow backdrop */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-gradient-to-tr from-sky-500/15 via-indigo-500/15 to-purple-500/15 blur-3xl -z-10 pointer-events-none rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(500px,100%)] max-w-full h-[300px] bg-gradient-to-tr from-sky-500/15 via-indigo-500/15 to-purple-500/15 blur-3xl -z-10 pointer-events-none rounded-full" />
 
         <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 border border-sky-500/20 text-xs font-medium text-sky-300">
           <Sparkles className="w-3.5 h-3.5 text-sky-400" />

@@ -53,7 +53,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   });
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 max-w-full overflow-hidden">
       {/* Table Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

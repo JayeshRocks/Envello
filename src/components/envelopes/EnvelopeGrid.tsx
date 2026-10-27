@@ -36,7 +36,7 @@ export const EnvelopeGrid: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-5 max-w-full overflow-hidden">
       {/* Top Controls Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

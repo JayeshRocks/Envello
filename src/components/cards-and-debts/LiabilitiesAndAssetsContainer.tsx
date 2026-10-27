@@ -158,9 +158,9 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
   ];
 
   return (
-    <section className="glass-card rounded-2xl border border-white/10 p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <section className="glass-card rounded-2xl border border-white/10 p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-hidden">
       {/* Tab Navigation header */}
-      <div className="flex items-center gap-2 border-b border-white/5 pb-3 sm:pb-4 overflow-x-auto scrollbar-none flex-nowrap -mx-1 px-1 sm:mx-0 sm:px-0">
+      <div className="flex items-center gap-2 border-b border-white/5 pb-3 sm:pb-4 overflow-x-auto scrollbar-none flex-nowrap w-full min-w-0">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

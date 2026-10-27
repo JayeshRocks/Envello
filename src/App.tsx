@@ -306,7 +306,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col w-full max-w-full overflow-x-hidden relative">
       {/* Top Application Header */}
       <Header
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -330,7 +330,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-8 min-w-0 max-w-full overflow-x-hidden">
         {!user ? (
           <CoverPage
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -413,7 +413,7 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none flex-nowrap pb-1.5 sm:pb-0 w-full sm:w-auto -mx-1 px-1 sm:mx-0 sm:px-0">
+                <div className="flex items-center space-x-2 overflow-x-auto scrollbar-none flex-nowrap pb-1.5 sm:pb-0 w-full sm:w-auto">
                   <button
                     onClick={() => setIsExportModalOpen(true)}
                     className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95 shadow-sm"
@@ -900,7 +900,7 @@ export const App: React.FC = () => {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-4 pb-8 sm:pb-4 safe-padding-bottom text-center text-xs text-neutral-500 space-y-1.5">
+      <footer className="border-t border-white/5 py-4 pb-8 sm:pb-4 safe-padding-bottom text-center text-xs text-neutral-500 space-y-1.5 w-full max-w-full overflow-hidden">
         <div>Envello Personal Finance Platform &bull; Deterministic Accounting Engine</div>
         <div className="flex items-center justify-center space-x-3 text-[11px] text-neutral-400">
           <button
