@@ -69,10 +69,9 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
   return (
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in"
     >
-      <div className="max-w-md w-full glass-card rounded-t-3xl sm:rounded-2xl p-5 sm:p-7 space-y-4 sm:space-y-5 border-t sm:border border-white/10 shadow-2xl relative max-h-[92vh] sm:max-h-[90vh] overflow-y-auto modal-panel">
-        <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
+      <div className="max-w-md w-full glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto modal-panel">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"

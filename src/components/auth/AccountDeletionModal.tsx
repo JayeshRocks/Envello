@@ -152,15 +152,12 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
   return (
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="deletion-modal-title"
     >
-      <div className="max-w-lg w-full bg-neutral-900 rounded-t-3xl sm:rounded-2xl p-5 sm:p-8 space-y-5 border-t sm:border border-white/10 shadow-2xl relative modal-panel max-h-[94vh] sm:max-h-[90vh] overflow-y-auto">
-        {/* Mobile drag handle */}
-        <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
-
+      <div className="max-w-lg w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-5 border border-white/15 shadow-2xl relative modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
         {/* Decorative alert stripe */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 rounded-t-2xl" />
 

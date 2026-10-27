@@ -114,10 +114,9 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
   return (
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in"
     >
-      <div className="glass-card w-full max-w-md rounded-t-3xl sm:rounded-2xl border-t sm:border border-white/10 p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
-        <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-2 sm:hidden flex-shrink-0" />
+      <div className="glass-card w-full max-w-md rounded-2xl sm:rounded-3xl border border-white/15 p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
