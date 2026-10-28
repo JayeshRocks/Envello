@@ -13,7 +13,12 @@ import { SelfEmiSection } from './SelfEmiSection';
 import { ActualDebtsSection } from './ActualDebtsSection';
 import { MonthlyTargetsSection } from '@/components/targets/MonthlyTargetsSection';
 
+export type SubTabType = 'cards' | 'fds' | 'self_emis' | 'debts' | 'targets';
+
 interface LiabilitiesAndAssetsContainerProps {
+  activeTab?: SubTabType;
+  onTabChange?: (tab: SubTabType) => void;
+
   // Cards
   cards: CreditCardWithDetails[];
   totalCardOutstandingPaise: bigint;
@@ -89,8 +94,8 @@ interface LiabilitiesAndAssetsContainerProps {
   }) => Promise<void>;
   onPayDebt: (params: {
     debtId: string;
-    fromAccountId: string;
     amountPaise: number;
+    fromAccountId: string;
     paymentDate?: string;
     notes?: string;
   }) => Promise<void>;
@@ -114,10 +119,16 @@ interface LiabilitiesAndAssetsContainerProps {
   accounts: AccountItem[];
 }
 
-export type SubTabType = 'cards' | 'fds' | 'self_emis' | 'debts' | 'targets';
-
 export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContainerProps> = (props) => {
-  const [activeTab, setActiveTab] = useState<SubTabType>('cards');
+  const [internalActiveTab, setInternalActiveTab] = useState<SubTabType>('cards');
+  const currentTab = props.activeTab !== undefined ? props.activeTab : internalActiveTab;
+
+  const handleTabSelect = (tab: SubTabType) => {
+    setInternalActiveTab(tab);
+    if (props.onTabChange) {
+      props.onTabChange(tab);
+    }
+  };
 
   const tabs = [
     {
@@ -158,17 +169,20 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
   ];
 
   return (
-    <section className="glass-card rounded-2xl border border-white/10 p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-hidden">
+    <section
+      id="liabilities-and-assets"
+      className="glass-card rounded-2xl border border-white/10 p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-hidden scroll-mt-20"
+    >
       {/* Tab Navigation header */}
       <div className="flex items-center gap-2 border-b border-white/5 pb-3 sm:pb-4 overflow-x-auto scrollbar-none flex-nowrap w-full min-w-0">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = currentTab === tab.id;
 
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabSelect(tab.id)}
               className={`px-3.5 sm:px-4 py-2.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium flex items-center space-x-2 transition-all duration-200 active:scale-95 flex-shrink-0 whitespace-nowrap min-h-[44px] sm:min-h-[40px] ${
                 isActive
                   ? 'bg-neutral-800 text-white shadow-lg border border-white/10 font-semibold'
@@ -190,8 +204,8 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
       </div>
 
       {/* Active Tab Content */}
-      <div key={activeTab} className="animate-fade-in">
-        {activeTab === 'cards' && (
+      <div key={currentTab} className="animate-fade-in">
+        {currentTab === 'cards' && (
           <CreditCardSection
             cards={props.cards}
             accounts={props.accounts}
@@ -206,7 +220,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
           />
         )}
 
-        {activeTab === 'fds' && (
+        {currentTab === 'fds' && (
           <FixedDepositSection
             fixedDeposits={props.fixedDeposits}
             accounts={props.accounts}
@@ -218,7 +232,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
           />
         )}
 
-        {activeTab === 'self_emis' && (
+        {currentTab === 'self_emis' && (
           <SelfEmiSection
             selfEmis={props.selfEmis}
             totalRemainingPaise={props.totalSelfEmiRemainingPaise}
@@ -230,7 +244,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
           />
         )}
 
-        {activeTab === 'debts' && (
+        {currentTab === 'debts' && (
           <ActualDebtsSection
             actualDebts={props.actualDebts}
             accounts={props.accounts}
@@ -243,7 +257,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
           />
         )}
 
-        {activeTab === 'targets' && (
+        {currentTab === 'targets' && (
           <MonthlyTargetsSection
             targets={props.targets}
             totalTargetAmountPaise={props.totalTargetAmountPaise}

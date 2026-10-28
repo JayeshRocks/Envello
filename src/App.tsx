@@ -37,7 +37,7 @@ import { RecurringAlertBanner } from '@/components/recurring/RecurringAlertBanne
 import { RecurringRulesModal } from '@/components/recurring/RecurringRulesModal';
 import { useRecurringRules } from '@/hooks/useRecurringRules';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
-import { LiabilitiesAndAssetsContainer } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
+import { LiabilitiesAndAssetsContainer, type SubTabType } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { ExportDataModal } from '@/components/export/ExportDataModal';
 import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
@@ -74,6 +74,14 @@ export const App: React.FC = () => {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
   const [isCancelingDeletion, setIsCancelingDeletion] = useState(false);
+  const [liabilitiesActiveTab, setLiabilitiesActiveTab] = useState<SubTabType>('cards');
+
+  const scrollToSection = (elementId: string) => {
+    const el = document.getElementById(elementId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const handleQuickCancelDeletion = async () => {
     setIsCancelingDeletion(true);
@@ -461,13 +469,18 @@ export const App: React.FC = () => {
 
               {/* The 6 Pillars Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* 1. Spendable Cash */}
-                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                {/* 1. Liquid Funds */}
+                <button
+                  type="button"
+                  onClick={() => setIsAccountsModalOpen(true)}
+                  className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden text-left w-full cursor-pointer group active:scale-[0.98] transition-all"
+                  title="Manage Liquid Accounts & Cash"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                      1. Spendable Cash
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-sky-300 transition">
+                      1. Liquid Funds
                     </span>
-                    <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
+                    <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 group-hover:bg-sky-500/20 group-hover:scale-105 transition">
                       <Wallet className="w-5 h-5" />
                     </div>
                   </div>
@@ -475,17 +488,25 @@ export const App: React.FC = () => {
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums truncate">
                       {formatINR(effectiveSpendableCashPaise)}
                     </div>
-                    <div className="text-xs text-neutral-400 mt-1">Liquid Bank Accounts & Cash</div>
+                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                      <span>Liquid Bank Accounts & Cash</span>
+                      <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium">Manage &rarr;</span>
+                    </div>
                   </div>
-                </div>
+                </button>
 
                 {/* 2. Envelope Allocations */}
-                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('envelope-budgeting')}
+                  className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden text-left w-full cursor-pointer group active:scale-[0.98] transition-all"
+                  title="Scroll to Envelope Budgeting"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-indigo-300 transition">
                       2. Envelope Allocations
                     </span>
-                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:scale-105 transition">
                       <Mail className="w-5 h-5" />
                     </div>
                   </div>
@@ -493,17 +514,28 @@ export const App: React.FC = () => {
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-indigo-300 tabular-nums truncate">
                       {formatINR(effectiveEnvelopeAllocationsPaise)}
                     </div>
-                    <div className="text-xs text-neutral-400 mt-1">Allocated for Current Month Spending</div>
+                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                      <span>Allocated for Current Month Spending</span>
+                      <span className="text-[10px] text-indigo-400/80 group-hover:text-indigo-300 font-medium">Manage &rarr;</span>
+                    </div>
                   </div>
-                </div>
+                </button>
 
                 {/* 3. Savings & Fixed Deposits */}
-                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLiabilitiesActiveTab('fds');
+                    scrollToSection('liabilities-and-assets');
+                  }}
+                  className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden text-left w-full cursor-pointer group active:scale-[0.98] transition-all"
+                  title="Scroll to Fixed Deposits & Savings"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-amber-300 transition">
                       3. Savings & FDs
                     </span>
-                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 group-hover:scale-105 transition">
                       <PiggyBank className="w-5 h-5" />
                     </div>
                   </div>
@@ -511,17 +543,28 @@ export const App: React.FC = () => {
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums truncate">
                       {formatINR(effectiveSavingsAndFDsPaise)}
                     </div>
-                    <div className="text-xs text-neutral-400 mt-1">Fixed Deposits & Term Reserves</div>
+                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                      <span>Fixed Deposits & Term Reserves</span>
+                      <span className="text-[10px] text-amber-400/80 group-hover:text-amber-300 font-medium">Manage &rarr;</span>
+                    </div>
                   </div>
-                </div>
+                </button>
 
                 {/* 4. Credit Card Liabilities */}
-                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLiabilitiesActiveTab('cards');
+                    scrollToSection('liabilities-and-assets');
+                  }}
+                  className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden text-left w-full cursor-pointer group active:scale-[0.98] transition-all"
+                  title="Scroll to Credit Cards"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-purple-300 transition">
                       4. Card Liabilities
                     </span>
-                    <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+                    <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 group-hover:scale-105 transition">
                       <CreditCard className="w-5 h-5" />
                     </div>
                   </div>
@@ -532,26 +575,39 @@ export const App: React.FC = () => {
                     <div className="flex items-center space-x-2 text-xs mt-1">
                       <span className="text-neutral-400">Utilization:</span>
                       <span
-                        className={`font-semibold font-mono ${effectiveCardStatus === 'safe'
+                        className={`font-semibold font-mono ${
+                          effectiveCardStatus === 'safe'
                             ? 'text-emerald-400'
                             : effectiveCardStatus === 'warning'
                               ? 'text-amber-400'
                               : 'text-red-400'
-                          }`}
+                        }`}
                       >
                         {effectiveCardUtilization.toFixed(1)}% ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
                       </span>
                     </div>
+                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                      <span>Card balances & cycles</span>
+                      <span className="text-[10px] text-purple-400/80 group-hover:text-purple-300 font-medium">Manage &rarr;</span>
+                    </div>
                   </div>
-                </div>
+                </button>
 
                 {/* 5. Actual Debts */}
-                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLiabilitiesActiveTab('debts');
+                    scrollToSection('liabilities-and-assets');
+                  }}
+                  className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden text-left w-full cursor-pointer group active:scale-[0.98] transition-all"
+                  title="Scroll to Actual Debts"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-orange-300 transition">
                       5. Actual Debts
                     </span>
-                    <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
+                    <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 group-hover:bg-orange-500/20 group-hover:scale-105 transition">
                       <CalendarClock className="w-5 h-5" />
                     </div>
                   </div>
@@ -559,17 +615,28 @@ export const App: React.FC = () => {
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums truncate">
                       {formatINR(effectiveActualDebtsPaise)}
                     </div>
-                    <div className="text-xs text-neutral-400 mt-1">External Loans & Debts Owed</div>
+                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                      <span>External Loans & Debts Owed</span>
+                      <span className="text-[10px] text-orange-400/80 group-hover:text-orange-300 font-medium">Manage &rarr;</span>
+                    </div>
                   </div>
-                </div>
+                </button>
 
                 {/* 6. Monthly Targets */}
-                <div className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLiabilitiesActiveTab('targets');
+                    scrollToSection('liabilities-and-assets');
+                  }}
+                  className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden text-left w-full cursor-pointer group active:scale-[0.98] transition-all"
+                  title="Scroll to Monthly Targets"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-cyan-300 transition">
                       6. Monthly Targets
                     </span>
-                    <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+                    <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20 group-hover:scale-105 transition">
                       <Target className="w-5 h-5" />
                     </div>
                   </div>
@@ -577,9 +644,12 @@ export const App: React.FC = () => {
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-cyan-300 tabular-nums truncate">
                       {formatINR(effectiveMonthlyTargetsPaise)}
                     </div>
-                    <div className="text-xs text-neutral-400 mt-1">Planned Goals (Not Yet Deducted)</div>
+                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                      <span>Planned Goals (Not Yet Deducted)</span>
+                      <span className="text-[10px] text-cyan-400/80 group-hover:text-cyan-300 font-medium">Manage &rarr;</span>
+                    </div>
                   </div>
-                </div>
+                </button>
               </div>
             </section>
 
@@ -613,6 +683,8 @@ export const App: React.FC = () => {
 
             {/* Section: Liabilities, Locked Assets & Goals */}
             <LiabilitiesAndAssetsContainer
+              activeTab={liabilitiesActiveTab}
+              onTabChange={setLiabilitiesActiveTab}
               cards={cards}
               totalCardOutstandingPaise={totalCardOutstandingPaise}
               totalCardLimitPaise={totalCreditLimitPaise}
