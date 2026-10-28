@@ -451,12 +451,6 @@ export const App: React.FC = () => {
                     <Landmark className="w-3.5 h-3.5 text-sky-400" />
                     <span>{accounts.length} Accounts</span>
                   </button>
-                  <button
-                    onClick={() => setIsRecordTxModalOpen(true)}
-                    className="hidden sm:flex px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold shadow-lg shadow-sky-500/20 transition flex-shrink-0 whitespace-nowrap active:scale-95 items-center"
-                  >
-                    + Record Transaction
-                  </button>
                 </div>
               </div>
 

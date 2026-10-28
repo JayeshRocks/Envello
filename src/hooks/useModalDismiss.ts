@@ -9,14 +9,17 @@ import { useEffect, MouseEvent, TouchEvent } from 'react';
  */
 
 let activeModalsCount = 0;
+let savedScrollY = 0;
 
 export function useModalDismiss(isOpen: boolean, onClose: () => void) {
   useEffect(() => {
     if (!isOpen) return;
 
+    if (activeModalsCount === 0) {
+      savedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+      document.body.classList.add('modal-open');
+    }
     activeModalsCount++;
-    document.body.classList.add('modal-open');
-    document.documentElement.classList.add('modal-open');
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -31,7 +34,8 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
       if (activeModalsCount <= 0) {
         activeModalsCount = 0;
         document.body.classList.remove('modal-open');
-        document.documentElement.classList.remove('modal-open');
+        // Seamlessly restore scroll position without jumping to top
+        window.scrollTo({ top: savedScrollY, behavior: 'instant' as ScrollBehavior });
       }
     };
   }, [isOpen, onClose]);
