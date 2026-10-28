@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, AlertCircle, CheckCircle2, Loader2, X, ArrowRight, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { ModalPortal } from '@/components/common/ModalPortal';
 
 interface ChangeEmailModalProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ isOpen, onCl
     onClose();
   };
 
-  const { handleBackdropClick } = useModalDismiss(isOpen, handleDismiss);
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, handleDismiss);
 
   if (!isOpen) return null;
 
@@ -69,11 +70,13 @@ export const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div
-      onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
-    >
-      <div className="max-w-md w-full glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-4 sm:space-y-6 border border-white/15 shadow-2xl relative modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
+    <ModalPortal>
+      <div
+        onClick={handleBackdropClick}
+        onTouchMove={handleBackdropTouchMove}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+      >
+        <div className="max-w-md w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-4 sm:space-y-6 border border-white/15 shadow-2xl relative modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
         
         {/* Decorative glow header */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-sky-500 to-indigo-500" />
@@ -221,5 +224,6 @@ export const ChangeEmailModal: React.FC<ChangeEmailModalProps> = ({ isOpen, onCl
         )}
       </div>
     </div>
-  );
+  </ModalPortal>
+);
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Target, ShieldAlert } from 'lucide-react';
 import { toPaise } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { ModalPortal } from '@/components/common/ModalPortal';
 
 interface AddMonthlyTargetModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -75,11 +76,13 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
   };
 
   return (
-    <div
-      onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
-    >
-      <div className="glass-card w-full max-w-md rounded-2xl sm:rounded-3xl border border-white/15 p-6 space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
+    <ModalPortal>
+      <div
+        onClick={handleBackdropClick}
+        onTouchMove={handleBackdropTouchMove}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+      >
+        <div className="bg-neutral-900 border border-white/15 w-full max-w-md rounded-2xl sm:rounded-3xl p-6 space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -176,5 +179,6 @@ export const AddMonthlyTargetModal: React.FC<AddMonthlyTargetModalProps> = ({
         </form>
       </div>
     </div>
-  );
+  </ModalPortal>
+);
 };

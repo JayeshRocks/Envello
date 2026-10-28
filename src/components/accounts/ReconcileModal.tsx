@@ -16,6 +16,7 @@ import { calculateReconciliationDiscrepancy } from '@/lib/accounting/calculation
 import { useReconciliation } from '@/hooks/useReconciliation';
 import type { AccountItem } from '@/lib/api/accounts';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { ModalPortal } from '@/components/common/ModalPortal';
 
 interface ReconcileModalProps {
   accounts: AccountItem[];
@@ -43,7 +44,7 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
   const [reason, setReason] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'reconcile' | 'history'>('reconcile');
 
-  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 
   const {
     auditLogs,
@@ -116,11 +117,13 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
   };
 
   return (
-    <div
-      onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
-    >
-      <div className="max-w-xl w-full glass-card rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto modal-panel">
+    <ModalPortal>
+      <div
+        onClick={handleBackdropClick}
+        onTouchMove={handleBackdropTouchMove}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+      >
+        <div className="max-w-xl w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto modal-panel">
         <button
           onClick={onClose}
           aria-label="Close Reconciliation Modal"
@@ -404,5 +407,6 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
         )}
       </div>
     </div>
-  );
+  </ModalPortal>
+);
 };

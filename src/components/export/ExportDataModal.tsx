@@ -10,6 +10,7 @@ import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
 import type { RecurringRule } from '@/types/recurring.types';
 import { exportTransactionsToCSV, exportFullBackupToJSON } from '@/lib/export/dataExport';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
+import { ModalPortal } from '@/components/common/ModalPortal';
 
 interface ExportDataModalProps {
   isOpen: boolean;
@@ -38,7 +39,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
 }) => {
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
-  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -65,11 +66,13 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
   };
 
   return (
-    <div
-      onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
-    >
-      <div className="glass-card w-full max-w-md rounded-2xl sm:rounded-3xl border border-white/15 p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
+    <ModalPortal>
+      <div
+        onClick={handleBackdropClick}
+        onTouchMove={handleBackdropTouchMove}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+      >
+        <div className="bg-neutral-900 border border-white/15 w-full max-w-md rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
@@ -154,5 +157,6 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
         </div>
       </div>
     </div>
-  );
+  </ModalPortal>
+);
 };
