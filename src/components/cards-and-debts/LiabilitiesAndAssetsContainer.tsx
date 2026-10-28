@@ -7,13 +7,16 @@ import type { SelfEmiInsert } from '@/lib/api/selfEmis';
 import type { ActualDebtRow, ActualDebtInsert } from '@/lib/api/actualDebts';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
+import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring.types';
+import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { CreditCardSection } from './CreditCardSection';
 import { FixedDepositSection } from './FixedDepositSection';
+import { RecurringSection } from './RecurringSection';
 import { SelfEmiSection } from './SelfEmiSection';
 import { ActualDebtsSection } from './ActualDebtsSection';
 import { MonthlyTargetsSection } from '@/components/targets/MonthlyTargetsSection';
 
-export type SubTabType = 'cards' | 'fds' | 'self_emis' | 'debts' | 'targets';
+export type SubTabType = 'cards' | 'fds' | 'recurring' | 'self_emis' | 'debts' | 'targets';
 
 interface LiabilitiesAndAssetsContainerProps {
   activeTab?: SubTabType;
@@ -65,6 +68,20 @@ interface LiabilitiesAndAssetsContainerProps {
     liquidationDate?: string;
   }) => Promise<void>;
 
+  // Recurring Commitments (Standing Bills)
+  recurringRules: RecurringRule[];
+  dueRecurringRules: RecurringRule[];
+  totalRecurringDuePaise: bigint;
+  totalMonthlyRecurringPaise: bigint;
+  currentYearMonth: string;
+  envelopes: EnvelopeWithAllocation[];
+  isRecurringLoading?: boolean;
+  onAddRecurringRule: (params: CreateRecurringRuleParams) => Promise<void>;
+  onToggleRecurringRuleActive: (ruleId: string) => Promise<void>;
+  onDeleteRecurringRule: (ruleId: string) => Promise<void>;
+  onLogSingleRecurringRule: (rule: RecurringRule) => Promise<void>;
+  onLogAllDueRecurringRules: () => Promise<void>;
+
   // Self EMIs
   selfEmis: SelfEmiWithProgress[];
   totalSelfEmiRemainingPaise: bigint;
@@ -102,7 +119,7 @@ interface LiabilitiesAndAssetsContainerProps {
   onUpdateDebt?: (debtId: string, updates: Partial<ActualDebtInsert>) => Promise<void>;
   onDeleteDebt?: (debtId: string) => Promise<void>;
 
-  // Monthly Targets (Pillar 6)
+  // Target Goals (One-Time Major Purchases)
   targets: MonthlyTargetWithProgress[];
   totalTargetAmountPaise: bigint;
   totalContributedPaise: bigint;
@@ -146,6 +163,13 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
       badgeColor: 'text-emerald-400',
     },
     {
+      id: 'recurring' as const,
+      name: 'Recurring Costs',
+      icon: CalendarClock,
+      count: props.recurringRules.filter((r) => r.isActive).length,
+      badgeColor: props.dueRecurringRules.length > 0 ? 'text-amber-400 font-bold' : 'text-indigo-400',
+    },
+    {
       id: 'self_emis' as const,
       name: 'Self EMIs',
       icon: RefreshCw,
@@ -161,7 +185,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
     },
     {
       id: 'targets' as const,
-      name: 'Monthly Targets',
+      name: 'Target Goals',
       icon: Target,
       count: props.targets.filter((t) => !t.is_achieved).length,
       badgeColor: 'text-cyan-400',
@@ -229,6 +253,24 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             isLoading={props.isFdsLoading}
             onAddFD={props.onAddFD}
             onLiquidateFD={props.onLiquidateFD}
+          />
+        )}
+
+        {currentTab === 'recurring' && (
+          <RecurringSection
+            rules={props.recurringRules}
+            dueRules={props.dueRecurringRules}
+            totalDuePaise={props.totalRecurringDuePaise}
+            totalMonthlyPaise={props.totalMonthlyRecurringPaise}
+            currentYearMonth={props.currentYearMonth}
+            accounts={props.accounts}
+            envelopes={props.envelopes}
+            isLoading={props.isRecurringLoading}
+            onAddRule={props.onAddRecurringRule}
+            onToggleActive={props.onToggleRecurringRuleActive}
+            onDeleteRule={props.onDeleteRecurringRule}
+            onLogSingleRule={props.onLogSingleRecurringRule}
+            onLogAllDue={props.onLogAllDueRecurringRules}
           />
         )}
 

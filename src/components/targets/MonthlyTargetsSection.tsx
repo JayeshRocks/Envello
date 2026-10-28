@@ -64,7 +64,7 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h3 className="text-base font-semibold text-white">Monthly Targets & Planned Goals</h3>
+            <h3 className="text-base font-semibold text-white">Target Goals (One-Time Purchases)</h3>
             <span className="text-xs text-neutral-400">({activeTargets.length} active)</span>
           </div>
           <p className="text-xs text-neutral-400">
@@ -90,7 +90,7 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mx-auto">
             <Target className="w-5 h-5" />
           </div>
-          <div className="text-xs text-neutral-400">No monthly planning targets created yet.</div>
+          <div className="text-xs text-neutral-400">No target goals created yet. Set a savings goal for a major future purchase.</div>
           <button
             onClick={() => setIsAddOpen(true)}
             className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 border border-white/10 transition"

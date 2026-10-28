@@ -5,7 +5,7 @@ import {
   PiggyBank,
   CreditCard,
   CalendarClock,
-  Target,
+
   Landmark,
   Download,
   Scale,
@@ -254,7 +254,11 @@ export const App: React.FC = () => {
   const effectiveSavingsAndFDsPaise = totalPrincipalPaise;
   const effectiveCreditCardLiabilitiesPaise = totalCardOutstandingPaise;
   const effectiveActualDebtsPaise = totalRemainingDebtPaise;
-  const effectiveMonthlyTargetsPaise = totalTargetAmountPaise;
+
+  const totalMonthlyRecurringPaise = React.useMemo(() => {
+    return recurringRules.filter((r) => r.isActive).reduce((sum, r) => sum + r.amountPaise, 0n);
+  }, [recurringRules]);
+  const effectiveStandingMonthlyCostsPaise = totalMonthlyRecurringPaise;
 
   // Credit card utilization calculation
   const effectiveCardUtilization = overallUtilizationPercent;
@@ -447,17 +451,6 @@ export const App: React.FC = () => {
                     <span>Reconcile</span>
                   </button>
                   <button
-                    onClick={() => setIsRecurringModalOpen(true)}
-                    className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition relative flex-shrink-0 whitespace-nowrap active:scale-95 shadow-sm"
-                    title="Standing Recurring Schedules"
-                  >
-                    <CalendarClock className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Recurring</span>
-                    {dueRecurringRules.length > 0 && (
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse absolute -top-0.5 -right-0.5" />
-                    )}
-                  </button>
-                  <button
                     onClick={() => setIsAccountsModalOpen(true)}
                     className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition flex-shrink-0 whitespace-nowrap active:scale-95 shadow-sm"
                   >
@@ -622,31 +615,41 @@ export const App: React.FC = () => {
                   </div>
                 </button>
 
-                {/* 6. Monthly Targets */}
+                {/* 6. Standing Monthly Costs (Recurring Subscriptions & Bills) */}
                 <button
                   type="button"
                   onClick={() => {
-                    setLiabilitiesActiveTab('targets');
+                    setLiabilitiesActiveTab('recurring');
                     scrollToSection('liabilities-and-assets');
                   }}
                   className="glass-card glass-card-interactive rounded-2xl p-5 space-y-3 relative overflow-hidden text-left w-full cursor-pointer group active:scale-[0.98] transition-all"
-                  title="Scroll to Monthly Targets"
+                  title="Scroll to Standing Monthly Costs"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-cyan-300 transition">
-                      6. Monthly Targets
+                    <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider group-hover:text-amber-300 transition">
+                      6. Standing Monthly Costs
                     </span>
-                    <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20 group-hover:scale-105 transition">
-                      <Target className="w-5 h-5" />
+                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 group-hover:scale-105 transition">
+                      <CalendarClock className="w-5 h-5" />
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-cyan-300 tabular-nums truncate">
-                      {formatINR(effectiveMonthlyTargetsPaise)}
+                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums truncate">
+                      {formatINR(effectiveStandingMonthlyCostsPaise)}
+                      <span className="text-xs font-normal text-neutral-400 ml-1">/ mo</span>
                     </div>
                     <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Planned Goals (Not Yet Deducted)</span>
-                      <span className="text-[10px] text-cyan-400/80 group-hover:text-cyan-300 font-medium">Manage &rarr;</span>
+                      <span>
+                        {dueRecurringRules.length > 0 ? (
+                          <span className="text-amber-400 font-semibold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                            {dueRecurringRules.length} due ({formatINR(totalRecurringDuePaise)})
+                          </span>
+                        ) : (
+                          `${recurringRules.filter((r) => r.isActive).length} active subscriptions & bills`
+                        )}
+                      </span>
+                      <span className="text-[10px] text-amber-400/80 group-hover:text-amber-300 font-medium">Manage &rarr;</span>
                     </div>
                   </div>
                 </button>
@@ -675,7 +678,10 @@ export const App: React.FC = () => {
                 await handleTransactionRecorded();
                 showToast(`Logged ${count} recurring expenses into ledger`, 'success');
               }}
-              onOpenManageModal={() => setIsRecurringModalOpen(true)}
+              onOpenManageModal={() => {
+                setLiabilitiesActiveTab('recurring');
+                scrollToSection('liabilities-and-assets');
+              }}
             />
 
             {/* Section: Envelope Budgeting */}
@@ -685,6 +691,38 @@ export const App: React.FC = () => {
             <LiabilitiesAndAssetsContainer
               activeTab={liabilitiesActiveTab}
               onTabChange={setLiabilitiesActiveTab}
+              recurringRules={recurringRules}
+              dueRecurringRules={dueRecurringRules}
+              totalRecurringDuePaise={totalRecurringDuePaise}
+              totalMonthlyRecurringPaise={totalMonthlyRecurringPaise}
+              currentYearMonth={currentYearMonth}
+              envelopes={envelopes}
+              onAddRecurringRule={async (params) => {
+                await addRecurringRule(params);
+                showToast('Standing recurring rule added', 'success');
+              }}
+              onToggleRecurringRuleActive={async (ruleId) => {
+                await toggleRecurringRuleActive(ruleId);
+                showToast('Rule status updated', 'info');
+              }}
+              onDeleteRecurringRule={async (ruleId) => {
+                await removeRecurringRule(ruleId);
+                showToast('Standing rule deleted', 'info');
+              }}
+              onLogSingleRecurringRule={async (rule) => {
+                await logSingleRecurringRule(rule, async (params) => {
+                  await addExpense(params);
+                });
+                await handleTransactionRecorded();
+                showToast(`Recorded ${rule.title} into ledger`, 'success');
+              }}
+              onLogAllDueRecurringRules={async () => {
+                const count = await logAllDueRecurringRules(async (params) => {
+                  await addExpense(params);
+                });
+                await handleTransactionRecorded();
+                showToast(`Logged ${count} recurring expenses into ledger`, 'success');
+              }}
               cards={cards}
               totalCardOutstandingPaise={totalCardOutstandingPaise}
               totalCardLimitPaise={totalCreditLimitPaise}
