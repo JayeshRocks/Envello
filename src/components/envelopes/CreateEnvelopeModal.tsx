@@ -145,7 +145,7 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
                 Carry Forward (Keep unused funds in this envelope)
               </option>
               <option value="sweep_to_regular" className="bg-neutral-900 text-white">
-                Sweep to Regular (Return unused surplus to main pool)
+                Sweep to Spendable (Return unused surplus to main pool)
               </option>
               <option value="reset" className="bg-neutral-900 text-white">
                 Reset (Zero out balance at month boundary)

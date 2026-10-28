@@ -7,7 +7,7 @@ export type EnvelopeWithDetails = EnvelopeWithAllocation;
 
 export const DEFAULT_ENVELOPES_CONFIG = [
   {
-    name: 'Regular / Balance',
+    name: 'Spendable',
     slug: 'regular',
     icon: 'Mail',
     color: '#38bdf8', // sky-400
@@ -118,8 +118,13 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
     throw checkError;
   }
 
-  // If user already has envelopes, no seeding needed
+  // If user already has envelopes, ensure legacy "Regular / Balance" is renamed to "Spendable"
   if (existing && existing.length > 0) {
+    await supabase
+      .from('envelopes')
+      .update({ name: 'Spendable' })
+      .eq('user_id', userId)
+      .in('name', ['Regular / Balance', 'Regular/Balance']);
     return;
   }
 

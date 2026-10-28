@@ -284,7 +284,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
               </li>
               <li className="flex items-start space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
-                <span><strong>Sweep to Regular:</strong> Automatically sweep dining/entertainment surpluses back into your general balance.</span>
+                <span><strong>Sweep to Spendable:</strong> Automatically sweep dining/entertainment surpluses back into your Spendable envelope.</span>
               </li>
               <li className="flex items-start space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />

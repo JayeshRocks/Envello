@@ -76,7 +76,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       }
     }
     if (envelopes.length > 0 && !selectedEnvelopeId) {
-      const regularEnv = envelopes.find((e) => e.slug === 'regular');
+      const regularEnv = envelopes.find((e) => e.slug === 'regular' || e.slug === 'spendable');
       setSelectedEnvelopeId(regularEnv?.id || envelopes[0].id);
     }
   }, [accounts, envelopes, selectedAccountId, selectedEnvelopeId, isOpen]);
