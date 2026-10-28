@@ -62,7 +62,7 @@
     opacity: 0.6;
   }
 
-  /* Prevent iOS Safari from auto-zooming into inputs when focused (< 16px triggers zoom) */
+  /* Prevent iOS Safari from auto-zooming into inputs when focused (< 16px triggers zoom on mobiles and tablets in both portrait and landscape) */
   @media (max-width: 639px) {
     input[type="text"],
     input[type="email"],
@@ -73,6 +73,23 @@
     textarea {
       font-size: 16px !important;
     }
+  }
+
+  html[data-device="mobile-tablet"] input[type="text"],
+  html[data-device="mobile-tablet"] input[type="email"],
+  html[data-device="mobile-tablet"] input[type="password"],
+  html[data-device="mobile-tablet"] input[type="number"],
+  html[data-device="mobile-tablet"] input[type="date"],
+  html[data-device="mobile-tablet"] select,
+  html[data-device="mobile-tablet"] textarea,
+  html[data-touch="true"] input[type="text"],
+  html[data-touch="true"] input[type="email"],
+  html[data-touch="true"] input[type="password"],
+  html[data-touch="true"] input[type="number"],
+  html[data-touch="true"] input[type="date"],
+  html[data-touch="true"] select,
+  html[data-touch="true"] textarea {
+    font-size: 16px !important;
   }
 }
 

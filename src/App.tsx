@@ -16,6 +16,7 @@ import {
 import { formatINR } from '@/lib/accounting/currency';
 import { getCreditCardUtilizationStatus } from '@/lib/accounting/calculations';
 import { useAuth } from '@/hooks/useAuth';
+import { useDevice } from '@/hooks/useDevice';
 import { useToast } from '@/context/ToastContext';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
@@ -57,6 +58,7 @@ export const App: React.FC = () => {
     cancelAccountDeletion,
   } = useAuth();
   const { showToast } = useToast();
+  const { isMobileOrTablet, isLandscape } = useDevice();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
   const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
@@ -330,7 +332,10 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-8 min-w-0 max-w-full overflow-x-hidden">
+      <main
+        className={`flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 lg:p-8 min-w-0 max-w-full overflow-x-hidden ${isMobileOrTablet ? 'pb-28 sm:pb-28' : 'pb-8'
+          }`}
+      >
         {!user ? (
           <CoverPage
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -368,10 +373,10 @@ export const App: React.FC = () => {
                       <span className="font-semibold text-amber-200">
                         {scheduledDeletionAt
                           ? new Date(scheduledDeletionAt).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })
                           : 'the scheduled date'}
                       </span>
                       , all financial ledgers, envelopes, debts, and your profile will be permanently and irreversibly purged.
@@ -527,13 +532,12 @@ export const App: React.FC = () => {
                     <div className="flex items-center space-x-2 text-xs mt-1">
                       <span className="text-neutral-400">Utilization:</span>
                       <span
-                        className={`font-semibold font-mono ${
-                          effectiveCardStatus === 'safe'
+                        className={`font-semibold font-mono ${effectiveCardStatus === 'safe'
                             ? 'text-emerald-400'
                             : effectiveCardStatus === 'warning'
-                            ? 'text-amber-400'
-                            : 'text-red-400'
-                        }`}
+                              ? 'text-amber-400'
+                              : 'text-red-400'
+                          }`}
                       >
                         {effectiveCardUtilization.toFixed(1)}% ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
                       </span>
@@ -881,11 +885,15 @@ export const App: React.FC = () => {
         onOpenExport={() => setIsExportModalOpen(true)}
       />
 
-      {/* Mobile Floating Action Button (FAB) */}
-      {user && (
+
+      {/* Floating Action Button (FAB) for Mobile & Tablets (Unified Touch Surface for Vertical & Horizontal Orientations) */}
+      {user && isMobileOrTablet && (
         <button
           onClick={() => setIsRecordTxModalOpen(true)}
-          className="fixed bottom-5 right-5 safe-bottom-fab sm:hidden z-40 p-4 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-neutral-950 font-bold shadow-2xl shadow-sky-500/50 active:scale-90 transition-all duration-200 flex items-center justify-center border border-white/20 touch-manipulation"
+          className={`fixed safe-bottom-fab z-40 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-neutral-950 font-bold shadow-2xl shadow-sky-500/50 active:scale-90 transition-all duration-200 flex items-center justify-center border border-white/20 touch-manipulation min-h-[56px] min-w-[56px] ${isLandscape
+              ? 'bottom-5 right-6 sm:bottom-6 sm:right-8 p-4'
+              : 'bottom-5 right-5 p-4'
+            }`}
           title="Record Transaction"
           aria-label="Record Transaction"
         >

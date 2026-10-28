@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import { formatINR } from '@/lib/accounting/currency';
+import { useDevice } from '@/hooks/useDevice';
 
 interface TransactionTableProps {
   transactions: TransactionRecord[];
@@ -33,6 +34,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   onRecordTransactionClick,
   onDeleteTransaction,
 }) => {
+  const { isMobileOrTablet, isDesktop, isLandscape } = useDevice();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<'all' | 'this_month' | 'last_month'>('all');
@@ -109,7 +111,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </div>
 
           {/* Type Filter Pills */}
-          <div className="flex items-center p-1 rounded-xl bg-neutral-900 border border-white/10 text-xs sm:text-sm font-medium overflow-x-auto scrollbar-none">
+          <div className="flex items-center p-1 rounded-xl bg-neutral-900 border border-white/10 text-xs sm:text-sm font-medium overflow-x-auto scrollbar-none flex-nowrap">
             {[
               { id: 'all', label: 'All' },
               { id: 'expense', label: 'Expenses' },
@@ -130,330 +132,337 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             ))}
           </div>
 
-          <button
-            onClick={onRecordTransactionClick}
-            className="hidden sm:flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition shadow-sm active:scale-95 flex-shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Record</span>
-          </button>
+          {/* Desktop Record button */}
+          {isDesktop && (
+            <button
+              onClick={onRecordTransactionClick}
+              className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium transition shadow-sm active:scale-95 flex-shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Record</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Mobile Card View (< md) */}
-      <div className="block md:hidden space-y-2.5">
-        {isLoading && filteredTransactions.length === 0 ? (
-          [1, 2, 3].map((i) => (
-            <div key={i} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3 animate-pulse">
-              <div className="flex justify-between items-center">
-                <div className="w-32 h-4 bg-neutral-800 rounded" />
-                <div className="w-20 h-4 bg-neutral-800 rounded" />
-              </div>
-              <div className="w-48 h-3 bg-neutral-800 rounded" />
-            </div>
-          ))
-        ) : filteredTransactions.length === 0 ? (
-          <div className="glass-card rounded-2xl p-8 text-center text-neutral-400 border border-white/5">
-            <div className="w-10 h-10 rounded-xl bg-neutral-900 mx-auto flex items-center justify-center text-neutral-500 mb-2">
-              <Receipt className="w-5 h-5" />
-            </div>
-            <div className="text-sm font-medium text-white">No Transactions Recorded</div>
-            <p className="text-xs text-neutral-500 mt-1">
-              {searchQuery || periodFilter !== 'all'
-                ? 'No transactions match your search.'
-                : 'Tap + at bottom right to record a transaction.'}
-            </p>
-          </div>
-        ) : (
-          filteredTransactions.map((tx) => {
-            const isIncome = tx.type === 'income';
-            const isExpense = tx.type === 'expense';
-            const isTransfer = tx.type === 'transfer';
-
-            const envelopeEntry = tx.entries.find((e) => e.envelopeName);
-            const accountEntry = tx.entries.find((e) => e.accountName);
-
-            return (
-              <div
-                key={tx.id}
-                className="glass-card rounded-2xl p-4 border border-white/5 space-y-2.5 active:bg-white/[0.02] transition"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-white tracking-tight text-sm">
-                      {tx.description}
-                    </div>
-                    <div className="text-[11px] font-mono text-neutral-400 mt-0.5">
-                      {tx.transactionDate}
-                    </div>
-                  </div>
-                  <div
-                    className={`font-mono font-bold whitespace-nowrap tabular-nums text-base text-right ${
-                      isIncome
-                        ? 'text-emerald-400'
-                        : isExpense
-                        ? 'text-white'
-                        : 'text-indigo-300'
-                    }`}
-                  >
-                    {isIncome
-                      ? `+${formatINR(tx.totalAmountPaise)}`
-                      : isExpense
-                      ? `-${formatINR(tx.totalAmountPaise)}`
-                      : formatINR(tx.totalAmountPaise)}
-                  </div>
+      {/* Mobile & Tablet Card View (Unified Touch Surface for Phones & Tablets in Vertical & Horizontal Orientations) */}
+      {isMobileOrTablet && (
+        <div
+          className={
+            isLandscape
+              ? 'grid grid-cols-1 md:grid-cols-2 gap-3'
+              : 'space-y-2.5'
+          }
+        >
+          {isLoading && filteredTransactions.length === 0 ? (
+            [1, 2, 3, 4].map((i) => (
+              <div key={i} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3 animate-pulse">
+                <div className="flex justify-between items-center">
+                  <div className="w-32 h-4 bg-neutral-800 rounded" />
+                  <div className="w-20 h-4 bg-neutral-800 rounded" />
                 </div>
-
-                {tx.notes && (
-                  <p className="text-xs text-neutral-400 line-clamp-2">
-                    {tx.notes}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                  <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none flex-nowrap py-0.5">
-                    {/* Type Badge */}
-                    {isExpense && (
-                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-medium flex-shrink-0">
-                        <ArrowDownLeft className="w-2.5 h-2.5" />
-                        <span>Expense</span>
-                      </span>
-                    )}
-                    {isIncome && (
-                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium flex-shrink-0">
-                        <ArrowUpRight className="w-2.5 h-2.5" />
-                        <span>Income</span>
-                      </span>
-                    )}
-                    {isTransfer && (
-                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-medium flex-shrink-0">
-                        <ArrowRightLeft className="w-2.5 h-2.5" />
-                        <span>Transfer</span>
-                      </span>
-                    )}
-
-                    {envelopeEntry?.envelopeName && (
-                      <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[10px] flex-shrink-0">
-                        {envelopeEntry.envelopeName}
-                      </span>
-                    )}
-                    {accountEntry?.accountName && (
-                      <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 text-[10px] flex-shrink-0">
-                        {accountEntry.accountName}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Delete Action with 44px tap comfort */}
-                  {confirmDeleteId === tx.id ? (
-                    <div className="inline-flex items-center space-x-1.5 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
-                      <span className="text-[10px] text-red-300 font-medium">Revert?</span>
-                      <button
-                        onClick={async () => {
-                          if (!onDeleteTransaction) return;
-                          setIsDeleting(true);
-                          try {
-                            await onDeleteTransaction(tx.id);
-                          } finally {
-                            setIsDeleting(false);
-                            setConfirmDeleteId(null);
-                          }
-                        }}
-                        disabled={isDeleting}
-                        className="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition min-h-[36px]"
-                      >
-                        {isDeleting ? '...' : 'Yes'}
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        disabled={isDeleting}
-                        className="text-[11px] px-2.5 py-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white transition min-h-[36px]"
-                      >
-                        No
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDeleteId(tx.id)}
-                      title="Revert & Delete Transaction"
-                      className="p-2 sm:p-2.5 rounded-xl hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center active:scale-95"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                <div className="w-48 h-3 bg-neutral-800 rounded" />
               </div>
-            );
-          })
-        )}
-      </div>
+            ))
+          ) : filteredTransactions.length === 0 ? (
+            <div className="col-span-full glass-card rounded-2xl p-8 text-center text-neutral-400 border border-white/5">
+              <div className="w-10 h-10 rounded-xl bg-neutral-900 mx-auto flex items-center justify-center text-neutral-500 mb-2">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div className="text-sm font-medium text-white">No Transactions Recorded</div>
+              <p className="text-xs text-neutral-500 mt-1">
+                {searchQuery || periodFilter !== 'all'
+                  ? 'No transactions match your search.'
+                  : 'Tap + at bottom right to record a transaction.'}
+              </p>
+            </div>
+          ) : (
+            filteredTransactions.map((tx) => {
+              const isIncome = tx.type === 'income';
+              const isExpense = tx.type === 'expense';
+              const isTransfer = tx.type === 'transfer';
 
-      {/* Desktop / Tablet Table Surface (>= md) */}
-      <div className="hidden md:block glass-card rounded-2xl border border-white/5 overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-900/80 border-b border-white/5 text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Description / Payee</th>
-                <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4">Envelope / Account</th>
-                <th className="py-3 px-4 text-right">Amount</th>
-                <th className="py-3 px-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 text-neutral-300">
-              {isLoading && filteredTransactions.length === 0 ? (
-                [1, 2, 3, 4].map((i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="py-4 px-4"><div className="w-16 h-3 bg-neutral-800 rounded" /></td>
-                    <td className="py-4 px-4"><div className="w-32 h-3 bg-neutral-800 rounded" /></td>
-                    <td className="py-4 px-4"><div className="w-14 h-3 bg-neutral-800 rounded" /></td>
-                    <td className="py-4 px-4"><div className="w-24 h-3 bg-neutral-800 rounded" /></td>
-                    <td className="py-4 px-4 text-right"><div className="w-20 h-3 bg-neutral-800 rounded ml-auto" /></td>
-                    <td className="py-4 px-4 text-center"><div className="w-6 h-3 bg-neutral-800 rounded mx-auto" /></td>
-                  </tr>
-                ))
-              ) : filteredTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-neutral-400">
-                    <div className="w-10 h-10 rounded-xl bg-neutral-900 mx-auto flex items-center justify-center text-neutral-500 mb-2">
-                      <Receipt className="w-5 h-5" />
-                    </div>
-                    <div className="text-sm font-medium text-white">No Transactions Recorded</div>
-                    <p className="text-xs text-neutral-500 mt-0.5">
-                      {searchQuery || periodFilter !== 'all'
-                        ? 'No transactions matched your search or period filter.'
-                        : 'Record your first expense, income, or account transfer above.'}
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                filteredTransactions.map((tx) => {
-                  const isIncome = tx.type === 'income';
-                  const isExpense = tx.type === 'expense';
-                  const isTransfer = tx.type === 'transfer';
+              const envelopeEntry = tx.entries.find((e) => e.envelopeName);
+              const accountEntry = tx.entries.find((e) => e.accountName);
 
-                  const envelopeEntry = tx.entries.find((e) => e.envelopeName);
-                  const accountEntry = tx.entries.find((e) => e.accountName);
-
-                  return (
-                    <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
-                      {/* Date */}
-                      <td className="py-3.5 px-4 font-mono text-neutral-400 whitespace-nowrap">
+              return (
+                <div
+                  key={tx.id}
+                  className="glass-card rounded-2xl p-4 border border-white/5 space-y-2.5 active:bg-white/[0.02] transition"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-white tracking-tight text-sm truncate">
+                        {tx.description}
+                      </div>
+                      <div className="text-[11px] font-mono text-neutral-400 mt-0.5">
                         {tx.transactionDate}
-                      </td>
+                      </div>
+                    </div>
+                    <div
+                      className={`font-mono font-bold whitespace-nowrap tabular-nums text-base text-right flex-shrink-0 ${
+                        isIncome
+                          ? 'text-emerald-400'
+                          : isExpense
+                          ? 'text-white'
+                          : 'text-indigo-300'
+                      }`}
+                    >
+                      {isIncome
+                        ? `+${formatINR(tx.totalAmountPaise)}`
+                        : isExpense
+                        ? `-${formatINR(tx.totalAmountPaise)}`
+                        : formatINR(tx.totalAmountPaise)}
+                    </div>
+                  </div>
 
-                      {/* Payee / Description */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-white tracking-tight">
-                          {tx.description}
-                        </div>
-                        {tx.notes && (
-                          <div className="text-[11px] text-neutral-500 mt-0.5 truncate max-w-xs">
-                            {tx.notes}
-                          </div>
-                        )}
-                      </td>
+                  {tx.notes && (
+                    <p className="text-xs text-neutral-400 line-clamp-2">
+                      {tx.notes}
+                    </p>
+                  )}
 
+                  <div className="flex items-center justify-between pt-1 border-t border-white/5 gap-2">
+                    <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none flex-nowrap py-0.5 min-w-0">
                       {/* Type Badge */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        {isExpense && (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[11px] font-medium">
-                            <ArrowDownLeft className="w-3 h-3" />
-                            <span>Expense</span>
-                          </span>
-                        )}
-                        {isIncome && (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-medium">
-                            <ArrowUpRight className="w-3 h-3" />
-                            <span>Income</span>
-                          </span>
-                        )}
-                        {isTransfer && (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[11px] font-medium">
-                            <ArrowRightLeft className="w-3 h-3" />
-                            <span>Transfer</span>
-                          </span>
-                        )}
-                      </td>
+                      {isExpense && (
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-medium flex-shrink-0">
+                          <ArrowDownLeft className="w-2.5 h-2.5" />
+                          <span>Expense</span>
+                        </span>
+                      )}
+                      {isIncome && (
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium flex-shrink-0">
+                          <ArrowUpRight className="w-2.5 h-2.5" />
+                          <span>Income</span>
+                        </span>
+                      )}
+                      {isTransfer && (
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-medium flex-shrink-0">
+                          <ArrowRightLeft className="w-2.5 h-2.5" />
+                          <span>Transfer</span>
+                        </span>
+                      )}
 
-                      {/* Envelope / Account */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-1.5">
-                          {envelopeEntry?.envelopeName && (
-                            <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[11px]">
-                              {envelopeEntry.envelopeName}
-                            </span>
-                          )}
-                          {accountEntry?.accountName && (
-                            <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 text-[11px]">
-                              {accountEntry.accountName}
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                      {envelopeEntry?.envelopeName && (
+                        <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[10px] flex-shrink-0 max-w-[120px] truncate">
+                          {envelopeEntry.envelopeName}
+                        </span>
+                      )}
+                      {accountEntry?.accountName && (
+                        <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 text-[10px] flex-shrink-0 max-w-[120px] truncate">
+                          {accountEntry.accountName}
+                        </span>
+                      )}
+                    </div>
 
-                      {/* Amount */}
-                      <td
-                        className={`py-3.5 px-4 text-right font-mono font-bold whitespace-nowrap tabular-nums text-sm ${
-                          isIncome
-                            ? 'text-emerald-400'
-                            : isExpense
-                            ? 'text-white'
-                            : 'text-indigo-300'
-                        }`}
+                    {/* Delete Action with 44px tap comfort */}
+                    {confirmDeleteId === tx.id ? (
+                      <div className="inline-flex items-center space-x-1.5 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg flex-shrink-0">
+                        <span className="text-[10px] text-red-300 font-medium">Revert?</span>
+                        <button
+                          onClick={async () => {
+                            if (!onDeleteTransaction) return;
+                            setIsDeleting(true);
+                            try {
+                              await onDeleteTransaction(tx.id);
+                            } finally {
+                              setIsDeleting(false);
+                              setConfirmDeleteId(null);
+                            }
+                          }}
+                          disabled={isDeleting}
+                          className="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition min-h-[36px]"
+                        >
+                          {isDeleting ? '...' : 'Yes'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          disabled={isDeleting}
+                          className="text-[11px] px-2.5 py-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white transition min-h-[36px]"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDeleteId(tx.id)}
+                        title="Revert & Delete Transaction"
+                        className="p-2 sm:p-2.5 rounded-xl hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 flex-shrink-0"
                       >
-                        {isIncome ? `+${formatINR(tx.totalAmountPaise)}` : isExpense ? `-${formatINR(tx.totalAmountPaise)}` : formatINR(tx.totalAmountPaise)}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        {confirmDeleteId === tx.id ? (
-                          <div className="inline-flex items-center space-x-1 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
-                            <span className="text-[10px] text-red-300 font-medium">Revert?</span>
-                            <button
-                              onClick={async () => {
-                                if (!onDeleteTransaction) return;
-                                setIsDeleting(true);
-                                try {
-                                  await onDeleteTransaction(tx.id);
-                                } finally {
-                                  setIsDeleting(false);
-                                  setConfirmDeleteId(null);
-                                }
-                              }}
-                              disabled={isDeleting}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition"
-                            >
-                              {isDeleting ? '...' : 'Yes'}
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteId(null)}
-                              disabled={isDeleting}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 hover:text-white transition"
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDeleteId(tx.id)}
-                            title="Revert & Delete Transaction"
-                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Desktop Table Surface (Shown only on Desktop-class devices) */}
+      {isDesktop && (
+        <div className="glass-card rounded-2xl border border-white/5 overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-neutral-900/80 border-b border-white/5 text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
+                <tr>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Description / Payee</th>
+                  <th className="py-3 px-4">Type</th>
+                  <th className="py-3 px-4">Envelope / Account</th>
+                  <th className="py-3 px-4 text-right">Amount</th>
+                  <th className="py-3 px-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-neutral-300">
+                {isLoading && filteredTransactions.length === 0 ? (
+                  [1, 2, 3, 4].map((i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="py-4 px-4"><div className="w-16 h-3 bg-neutral-800 rounded" /></td>
+                      <td className="py-4 px-4"><div className="w-32 h-3 bg-neutral-800 rounded" /></td>
+                      <td className="py-4 px-4"><div className="w-14 h-3 bg-neutral-800 rounded" /></td>
+                      <td className="py-4 px-4"><div className="w-24 h-3 bg-neutral-800 rounded" /></td>
+                      <td className="py-4 px-4 text-right"><div className="w-20 h-3 bg-neutral-800 rounded ml-auto" /></td>
+                      <td className="py-4 px-4 text-center"><div className="w-6 h-3 bg-neutral-800 rounded mx-auto" /></td>
+                    </tr>
+                  ))
+                ) : filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-neutral-400">
+                      <div className="w-10 h-10 rounded-xl bg-neutral-900 mx-auto flex items-center justify-center text-neutral-500 mb-2">
+                        <Receipt className="w-5 h-5" />
+                      </div>
+                      <div className="text-sm font-medium text-white">No Transactions Recorded</div>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        {searchQuery || periodFilter !== 'all'
+                          ? 'No transactions match your search.'
+                          : 'Click Record Transaction in the header to get started.'}
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTransactions.map((tx) => {
+                    const isIncome = tx.type === 'income';
+                    const isExpense = tx.type === 'expense';
+                    const isTransfer = tx.type === 'transfer';
+
+                    const envelopeEntry = tx.entries.find((e) => e.envelopeName);
+                    const accountEntry = tx.entries.find((e) => e.accountName);
+
+                    return (
+                      <tr key={tx.id} className="hover:bg-white/[0.02] transition">
+                        {/* Date */}
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-neutral-400 whitespace-nowrap">
+                          {tx.transactionDate}
+                        </td>
+
+                        {/* Description */}
+                        <td className="py-3.5 px-4 font-medium text-white">
+                          <div className="max-w-xs truncate">{tx.description}</div>
+                          {tx.notes && <div className="text-[11px] text-neutral-500 truncate">{tx.notes}</div>}
+                        </td>
+
+                        {/* Type */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {isExpense && (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-medium">
+                              <ArrowDownLeft className="w-2.5 h-2.5" />
+                              <span>Expense</span>
+                            </span>
+                          )}
+                          {isIncome && (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium">
+                              <ArrowUpRight className="w-2.5 h-2.5" />
+                              <span>Income</span>
+                            </span>
+                          )}
+                          {isTransfer && (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-medium">
+                              <ArrowRightLeft className="w-2.5 h-2.5" />
+                              <span>Transfer</span>
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Envelope & Account */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-1.5">
+                            {envelopeEntry?.envelopeName && (
+                              <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[10px]">
+                                {envelopeEntry.envelopeName}
+                              </span>
+                            )}
+                            {accountEntry?.accountName && (
+                              <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 text-[10px]">
+                                {accountEntry.accountName}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Amount */}
+                        <td
+                          className={`py-3.5 px-4 text-right font-mono font-bold whitespace-nowrap tabular-nums ${
+                            isIncome
+                              ? 'text-emerald-400'
+                              : isExpense
+                              ? 'text-white'
+                              : 'text-indigo-300'
+                          }`}
+                        >
+                          {isIncome ? `+${formatINR(tx.totalAmountPaise)}` : isExpense ? `-${formatINR(tx.totalAmountPaise)}` : formatINR(tx.totalAmountPaise)}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          {confirmDeleteId === tx.id ? (
+                            <div className="inline-flex items-center space-x-1 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
+                              <span className="text-[10px] text-red-300 font-medium">Revert?</span>
+                              <button
+                                onClick={async () => {
+                                  if (!onDeleteTransaction) return;
+                                  setIsDeleting(true);
+                                  try {
+                                    await onDeleteTransaction(tx.id);
+                                  } finally {
+                                    setIsDeleting(false);
+                                    setConfirmDeleteId(null);
+                                  }
+                                }}
+                                disabled={isDeleting}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition"
+                              >
+                                {isDeleting ? '...' : 'Yes'}
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                disabled={isDeleting}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 hover:text-white transition"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmDeleteId(tx.id)}
+                              title="Revert & Delete Transaction"
+                              className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

@@ -1,16 +1,12 @@
 import React from 'react';
 import {
   Mail,
-  Database,
-  CheckCircle2,
-  AlertTriangle,
   PlusCircle,
   LogIn,
   Landmark,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { isSupabaseConfigured } from '@/lib/supabase/client';
-
+import { useDevice } from '@/hooks/useDevice';
 import { UserAccountDropdown } from '@/components/common/UserAccountDropdown';
 
 interface HeaderProps {
@@ -37,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTerms = () => {},
 }) => {
   const { user } = useAuth();
+  const { isDesktop } = useDevice();
 
   return (
     <header className="border-b border-white/10 bg-neutral-900/60 backdrop-blur-md sticky top-0 z-40 w-full max-w-full">
@@ -58,21 +55,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center space-x-1.5 sm:space-x-3">
-          {/* Supabase Status Pill */}
-          <div className="hidden md:flex items-center space-x-2 text-xs px-3 py-1.5 rounded-lg bg-neutral-800/80 border border-white/5">
-            <Database className="w-3.5 h-3.5 text-neutral-400" />
-            <span className="text-neutral-400">DB:</span>
-            {isSupabaseConfigured ? (
-              <span className="text-emerald-400 font-medium flex items-center">
-                <CheckCircle2 className="w-3 h-3 mr-1" /> Connected
-              </span>
-            ) : (
-              <span className="text-amber-400 font-medium flex items-center">
-                <AlertTriangle className="w-3 h-3 mr-1" /> Setup Required
-              </span>
-            )}
-          </div>
-
           {/* User Account Dropdown (Authenticated) or Sign In button */}
           {user ? (
             <UserAccountDropdown
@@ -93,11 +75,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Accounts Button (Authenticated only - Tablet & Desktop) */}
-          {user && onOpenAccountsModal && (
+          {/* Accounts Button (Authenticated only - Desktop view) */}
+          {user && onOpenAccountsModal && isDesktop && (
             <button
               onClick={onOpenAccountsModal}
-              className="hidden md:flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200 min-h-[44px] sm:min-h-[38px]"
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200 min-h-[44px] sm:min-h-[38px]"
               title="Manage Liquid Accounts"
             >
               <Landmark className="w-3.5 h-3.5 text-sky-400" />
@@ -105,11 +87,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Record Transaction Button (Authenticated only - Tablet & Desktop, mobile uses bottom FAB) */}
-          {user && (
+          {/* Record Transaction Button (Authenticated only - Desktop; mobiles & tablets use the bottom FAB) */}
+          {user && isDesktop && (
             <button
               onClick={onRecordTransactionClick}
-              className="hidden sm:flex items-center space-x-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm shadow-sky-500/30 active:scale-95 hover:shadow-sky-500/40 min-h-[44px] sm:min-h-[38px]"
+              className="flex items-center space-x-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 text-xs sm:text-sm font-semibold transition-all duration-200 shadow-sm shadow-sky-500/30 active:scale-95 hover:shadow-sky-500/40 min-h-[44px] sm:min-h-[38px]"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Record Transaction</span>
