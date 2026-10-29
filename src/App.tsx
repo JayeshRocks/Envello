@@ -45,6 +45,13 @@ import { SetNameModal } from '@/components/auth/SetNameModal';
 import { ChangeEmailModal } from '@/components/auth/ChangeEmailModal';
 import { AccountDeletionModal } from '@/components/auth/AccountDeletionModal';
 import { LegalModal, LegalTab } from '@/components/legal/LegalModal';
+import {
+  isEmailConfirmationUrl,
+  broadcastAuthEvent,
+  subscribeAuthEvents,
+  clearAuthUrlHash,
+} from '@/lib/authSync';
+import { EmailConfirmationScreen } from '@/components/auth/EmailConfirmationScreen';
 
 export const App: React.FC = () => {
   const {
@@ -59,6 +66,7 @@ export const App: React.FC = () => {
   } = useAuth();
   const { showToast } = useToast();
   const { isMobileOrTablet, isLandscape } = useDevice();
+  const [isEmailConfirmedLanding, setIsEmailConfirmedLanding] = useState(() => isEmailConfirmationUrl());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isRecordTxModalOpen, setIsRecordTxModalOpen] = useState(false);
   const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
@@ -119,6 +127,25 @@ export const App: React.FC = () => {
       window.removeEventListener('popstate', handleRouteCheck);
     };
   }, []);
+
+  // Broadcast email verification when landing on the confirmation callback URL
+  useEffect(() => {
+    if (isEmailConfirmedLanding) {
+      broadcastAuthEvent('EMAIL_CONFIRMED', user?.email || undefined);
+    }
+  }, [isEmailConfirmedLanding, user]);
+
+  // Listen for cross-tab auth confirmation events
+  useEffect(() => {
+    const unsubscribe = subscribeAuthEvents((event) => {
+      if (event.type === 'EMAIL_CONFIRMED') {
+        setIsAuthModalOpen(false);
+        showToast('Email verified successfully! Welcome to Envello.', 'success');
+      }
+    });
+
+    return unsubscribe;
+  }, [showToast]);
 
   // Auto-open auth modal if user arrives from a password recovery email
   useEffect(() => {
@@ -316,6 +343,19 @@ export const App: React.FC = () => {
           <span>Initializing secure session...</span>
         </div>
       </div>
+    );
+  }
+
+  // 2. Dedicated Email Confirmation Landing View
+  if (isEmailConfirmedLanding) {
+    return (
+      <EmailConfirmationScreen
+        userEmail={user?.email}
+        onContinue={() => {
+          clearAuthUrlHash();
+          setIsEmailConfirmedLanding(false);
+        }}
+      />
     );
   }
 

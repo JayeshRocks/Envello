@@ -13,8 +13,6 @@ import {
   LogIn,
   UserPlus,
   RefreshCw,
-  ChevronDown,
-  ChevronUp,
   Info,
   KeyRound,
 } from 'lucide-react';
@@ -38,6 +36,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onOpenTerms = () => {},
 }) => {
   const {
+    user,
     signInWithEmail,
     signUpWithEmail,
     sendMagicLink,
@@ -63,7 +62,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
-  const [showOwnerTip, setShowOwnerTip] = useState(false);
   const [isUnconfirmed, setIsUnconfirmed] = useState(false);
   const [accountExistsFromMagicLink, setAccountExistsFromMagicLink] = useState(false);
 
@@ -77,6 +75,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setValidationError(null);
     }
   }, [isPasswordRecovery, clearError]);
+
+  // Auto-close modal once user is authenticated (except during active password recovery)
+  useEffect(() => {
+    if (user && !isPasswordRecovery) {
+      onClose();
+    }
+  }, [user, isPasswordRecovery, onClose]);
 
   if (!isOpen) return null;
 
@@ -109,7 +114,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const formatAuthError = (msg?: string | null): string => {
     if (!msg) return 'An error occurred during authentication.';
     if (msg.toLowerCase().includes('rate limit')) {
-      return 'Email rate limit exceeded by Supabase (~3-4 emails/hour on free tier). Tip: Turn off "Confirm email" in Supabase Dashboard → Authentication → Providers → Email to sign up instantly without needing email verification!';
+      return 'Email rate limit reached. Please wait a few minutes before requesting another verification email.';
     }
     return msg;
   };
@@ -289,14 +294,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <h2 className="text-xl font-bold tracking-tight text-white">
             {isPasswordRecovery && 'Create Your New Password'}
             {!isPasswordRecovery && mode === 'signIn' && 'Sign in to your ledger'}
-            {!isPasswordRecovery && mode === 'signUp' && 'Create your owner account'}
+            {!isPasswordRecovery && mode === 'signUp' && 'Create your account'}
             {!isPasswordRecovery && mode === 'magicLink' && 'Sign in with Magic Link'}
             {!isPasswordRecovery && mode === 'resetPassword' && 'Set or Reset Password'}
           </h2>
           <p className="text-xs text-neutral-400">
             {isPasswordRecovery && 'Enter and confirm your new account password below.'}
             {!isPasswordRecovery && mode === 'signIn' && 'Enter your credentials to access your private budgeting workspace.'}
-            {!isPasswordRecovery && mode === 'signUp' && 'Register your email address for private beta access.'}
+            {!isPasswordRecovery && mode === 'signUp' && 'Register your email address to get started.'}
             {!isPasswordRecovery && mode === 'magicLink' && 'We will send a passwordless login link to your inbox.'}
             {!isPasswordRecovery &&
               mode === 'resetPassword' &&
@@ -445,15 +450,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Verification assistance card for unconfirmed / new signups */}
         {(isUnconfirmed || (error && error.toLowerCase().includes('email not confirmed'))) && (
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs space-y-2.5 animate-slide-down">
-            <div className="flex items-start space-x-2 text-amber-200">
-              <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400" />
+          <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-xs space-y-2.5 animate-slide-down">
+            <div className="flex items-start space-x-2 text-sky-200">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-sky-400" />
               <div className="space-y-1 text-left">
-                <p className="font-semibold text-amber-300">Didn&apos;t receive the confirmation email?</p>
-                <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                  Supabase emails may land in your <strong>Spam/Junk</strong> or <strong>Promotions</strong> folder.
+                <p className="font-semibold text-sky-300">Verification email sent</p>
+                <p className="text-[11px] text-sky-200/90 leading-relaxed">
+                  We sent a confirmation link to your email. Please check your inbox (or Spam/Promotions folder) and click the link to activate your account.
                 </p>
               </div>
+            </div>
+
+            {/* Live awaiting confirmation status */}
+            <div className="flex items-center space-x-2 text-[11px] text-sky-300/80 bg-black/30 p-2.5 rounded-lg">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+              </span>
+              <span>Waiting for email verification... This window will update automatically once confirmed.</span>
             </div>
 
             <div className="flex items-center justify-between pt-1">
@@ -461,42 +475,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 onClick={handleResendVerification}
                 disabled={isResending}
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold border border-amber-500/30 transition disabled:opacity-50"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 text-[11px] font-semibold border border-sky-500/30 transition disabled:opacity-50"
               >
                 <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
                 <span>{isResending ? 'Sending email...' : 'Resend Verification Email'}</span>
               </button>
-
-              <button
-                type="button"
-                onClick={() => setShowOwnerTip(!showOwnerTip)}
-                className="text-[11px] text-amber-400/90 hover:text-amber-300 underline flex items-center space-x-1"
-              >
-                <span>Owner Setup Tip</span>
-                {showOwnerTip ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              </button>
             </div>
-
-            {showOwnerTip && (
-              <div className="pt-2 border-t border-amber-500/20 text-[11px] text-neutral-300 space-y-1.5 leading-relaxed bg-black/40 p-2.5 rounded-lg text-left">
-                <p className="font-semibold text-white">🔧 Why isn&apos;t the email arriving?</p>
-                <p>
-                  Supabase&apos;s free tier uses a shared sender with strict hourly rate limits (~3/hr) and often gets spam-filtered by Google.
-                </p>
-                <p className="font-medium text-amber-300">To fix this in 10 seconds in Supabase:</p>
-                <ol className="list-decimal list-inside space-y-1 text-neutral-400 pl-1">
-                  <li>
-                    Go to <strong>Authentication &rarr; Providers &rarr; Email</strong>
-                  </li>
-                  <li>
-                    Toggle off <strong>&quot;Confirm email&quot;</strong> &rarr; Save (allows instant login)
-                  </li>
-                  <li>
-                    Or go to <strong>Authentication &rarr; Users</strong> &rarr; click <strong>...</strong> on the user &rarr; <strong>&quot;Confirm user&quot;</strong>
-                  </li>
-                </ol>
-              </div>
-            )}
           </div>
         )}
 
@@ -616,7 +600,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     : mode === 'signIn'
                     ? 'Sign In to Workspace'
                     : mode === 'signUp'
-                    ? 'Create Owner Account'
+                    ? 'Create Account'
                     : mode === 'resetPassword'
                     ? 'Send Password Setup Link'
                     : 'Send Passwordless Link'}
@@ -638,7 +622,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   onClick={() => handleModeSwitch('signUp')}
                   className="text-sky-400 hover:text-sky-300 font-semibold transition"
                 >
-                  Sign up for beta
+                  Sign up
                 </button>
               </span>
             ) : mode === 'signUp' ? (

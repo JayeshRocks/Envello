@@ -38,7 +38,7 @@ export const AccessRestricted: React.FC = () => {
           <div className="font-mono text-sm text-neutral-200 truncate">{user?.email || 'Unknown User'}</div>
         </div>
 
-        {/* Owner Instructions */}
+        {/* Authorization Instructions */}
         <div className="space-y-2">
           <div className="flex items-center space-x-1.5 text-xs font-semibold text-neutral-300">
             <Terminal className="w-3.5 h-3.5 text-sky-400" />
@@ -46,7 +46,7 @@ export const AccessRestricted: React.FC = () => {
           </div>
           <div className="p-3 rounded-lg bg-black/60 border border-white/5 text-[11px] font-mono text-neutral-300 leading-relaxed overflow-x-auto select-all">
             INSERT INTO public.allowed_users (email, granted_by)<br />
-            VALUES (&apos;{user?.email || 'your-email@example.com'}&apos;, &apos;owner&apos;);
+            VALUES (&apos;{user?.email || 'your-email@example.com'}&apos;, &apos;admin&apos;);
           </div>
           <p className="text-[11px] text-neutral-400">
             Run this single query in your Supabase SQL Editor, then click &ldquo;Re-check Access&rdquo; below.

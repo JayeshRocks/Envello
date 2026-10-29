@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState, useCallback } from 'react';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { subscribeAuthEvents } from '@/lib/authSync';
 
 export interface SignUpResult {
   error: AuthError | null;
@@ -170,8 +171,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
+    // 3. Cross-tab auth synchronization listener
+    const unsubscribeSync = subscribeAuthEvents(async (event) => {
+      if (event.type === 'EMAIL_CONFIRMED' || event.type === 'SIGN_IN') {
+        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+        setSession(refreshedSession);
+        setUser(refreshedSession?.user ?? null);
+        if (refreshedSession?.user) {
+          checkHasPassword(refreshedSession.user);
+          checkDeletionStatus(refreshedSession.user);
+        }
+        if (refreshedSession?.user?.email) {
+          await checkAllowlist(refreshedSession.user.email);
+        }
+        setIsLoading(false);
+      }
+    });
+
     return () => {
       subscription.unsubscribe();
+      unsubscribeSync();
     };
   }, [checkAllowlist, checkHasPassword, checkDeletionStatus]);
 
