@@ -231,7 +231,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         } else {
           // Genuine new signup awaiting email verification
           setIsUnconfirmed(true);
-          setSuccessMessage(`Account created for ${cleanEmail}! Supabase sent a verification link.`);
+          setSuccessMessage(`Account created for ${cleanEmail}! We sent a verification link to your email.`);
         }
       } else if (mode === 'magicLink') {
         const { error: err } = await sendMagicLink(cleanEmail);
@@ -275,7 +275,95 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Modal Header */}
+        {/* Dedicated "Check Your Inbox" Confirmation State (displaces form & create account button) */}
+        {isUnconfirmed ? (
+          <div className="py-2 space-y-5 text-center animate-fade-in">
+            {/* Animated mail envelope with glowing pulse */}
+            <div className="relative mx-auto w-16 h-16 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-2xl bg-sky-500/20 animate-ping opacity-30" />
+              <div className="w-16 h-16 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-xl shadow-sky-500/10">
+                <Mail className="w-8 h-8 text-sky-400" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5 text-center">
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Verification Required</span>
+              </div>
+              <h2 className="text-xl font-bold tracking-tight text-white">
+                Check Your Inbox
+              </h2>
+              <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed max-w-sm mx-auto">
+                We sent a confirmation link to <span className="font-semibold text-white">{email}</span>. Click the link to complete your registration.
+              </p>
+            </div>
+
+            {/* Live Cross-Tab Awaiting Status */}
+            <div className="p-3.5 rounded-xl bg-neutral-900/80 border border-sky-500/25 space-y-1.5 text-left">
+              <div className="flex items-center space-x-2 text-xs font-semibold text-sky-400">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                </span>
+                <span>Waiting for email confirmation...</span>
+              </div>
+              <p className="text-[11px] text-neutral-400 leading-relaxed">
+                Once you click the link in your email, this window will update and log you in automatically.
+              </p>
+            </div>
+
+            {resendSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-start space-x-2.5 text-left animate-slide-down">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
+                <span className="leading-relaxed">{resendSuccess}</span>
+              </div>
+            )}
+
+            {validationError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-xs flex items-start space-x-2.5 text-left animate-slide-down">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-400" />
+                <span className="leading-relaxed">{validationError}</span>
+              </div>
+            )}
+
+            <div className="space-y-3 pt-1">
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="w-full min-h-[44px] flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/30 text-xs sm:text-sm font-semibold transition active:scale-95 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
+                <span>{isResending ? 'Resending verification email...' : 'Resend Verification Email'}</span>
+              </button>
+
+              <div className="flex items-center justify-between text-xs pt-1 px-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUnconfirmed(false);
+                    setValidationError(null);
+                    setResendSuccess(null);
+                  }}
+                  className="text-neutral-400 hover:text-white transition"
+                >
+                  Use a different email
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleModeSwitch('signIn')}
+                  className="text-sky-400 hover:text-sky-300 font-semibold transition"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Modal Header */}
         <div className="space-y-1.5 text-left">
           <div className="inline-flex items-center space-x-2 text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
             {isPasswordRecovery || mode === 'resetPassword' ? (
@@ -443,42 +531,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 className="py-2 px-3 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold border border-white/10 transition text-center"
               >
                 Sign in with Magic Link
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Verification assistance card for unconfirmed / new signups */}
-        {(isUnconfirmed || (error && error.toLowerCase().includes('email not confirmed'))) && (
-          <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-xs space-y-2.5 animate-slide-down">
-            <div className="flex items-start space-x-2 text-sky-200">
-              <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-sky-400" />
-              <div className="space-y-1 text-left">
-                <p className="font-semibold text-sky-300">Verification email sent</p>
-                <p className="text-[11px] text-sky-200/90 leading-relaxed">
-                  We sent a confirmation link to your email. Please check your inbox (or Spam/Promotions folder) and click the link to activate your account.
-                </p>
-              </div>
-            </div>
-
-            {/* Live awaiting confirmation status */}
-            <div className="flex items-center space-x-2 text-[11px] text-sky-300/80 bg-black/30 p-2.5 rounded-lg">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-              </span>
-              <span>Waiting for email verification... This window will update automatically once confirmed.</span>
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={isResending}
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 text-[11px] font-semibold border border-sky-500/30 transition disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
-                <span>{isResending ? 'Sending email...' : 'Resend Verification Email'}</span>
               </button>
             </div>
           </div>
@@ -661,6 +713,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
           </div>
         )}
+          </>
+        )}
+
 
         {/* Regulatory & Terms Agreement Notice */}
         <div className="pt-2 border-t border-white/5 text-center">
