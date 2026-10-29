@@ -7,8 +7,10 @@ interface SerializedRecurringRule {
   userId: string;
   title: string;
   amountPaise: string; // Serialized BigInt
-  accountId: string;
-  envelopeId: string;
+  sourceType?: 'account' | 'card';
+  accountId?: string;
+  cardId?: string;
+  envelopeId?: string | null;
   dayOfMonth: number;
   isActive: boolean;
   lastLoggedYearMonth?: string;
@@ -23,14 +25,18 @@ function getStorageKey(userId: string): string {
 function deserializeRule(item: SerializedRecurringRule): RecurringRule {
   return {
     ...item,
+    sourceType: item.sourceType || 'account',
     amountPaise: BigInt(item.amountPaise),
+    envelopeId: item.envelopeId || null,
   };
 }
 
 function serializeRule(rule: RecurringRule): SerializedRecurringRule {
   return {
     ...rule,
+    sourceType: rule.sourceType || 'account',
     amountPaise: rule.amountPaise.toString(),
+    envelopeId: rule.envelopeId || null,
   };
 }
 
@@ -64,8 +70,10 @@ export async function createRecurringRule(
     userId,
     title: params.title.trim(),
     amountPaise: params.amountPaise,
+    sourceType: params.sourceType || 'account',
     accountId: params.accountId,
-    envelopeId: params.envelopeId,
+    cardId: params.cardId,
+    envelopeId: params.envelopeId || null,
     dayOfMonth: Math.min(31, Math.max(1, params.dayOfMonth)),
     isActive: true,
     createdAt: now,

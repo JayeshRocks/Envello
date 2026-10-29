@@ -47,8 +47,9 @@ export function useTransactions() {
   }, [loadTransactions]);
 
   const addExpense = async (params: {
-    accountId: string;
-    envelopeId: string;
+    accountId?: string | null;
+    cardId?: string | null;
+    envelopeId?: string | null;
     amountPaise: bigint;
     payee: string;
     date: string;

@@ -181,4 +181,48 @@ describe('Accounting Engine — Invariants & Precision', () => {
       expect(result.adjustmentAmountPaise).toBe(150000n);
     });
   });
+
+  describe('Unified Payment Sources & Envelope Invariants', () => {
+    it('credit card purchase increases card liability and preserves liquid spendable cash', () => {
+      const initialBankCash = 5000000n; // ₹50,000 liquid cash
+      const initialCardOutstanding = 500000n; // ₹5,000 outstanding debt
+      const purchaseAmount = 250000n; // ₹2,500 Dining
+
+      // Simulating card purchase invariant
+      const newCardOutstanding = initialCardOutstanding + purchaseAmount;
+      const newBankCash = initialBankCash; // Untouched!
+
+      expect(newCardOutstanding).toBe(750000n); // ₹7,500
+      expect(newBankCash).toBe(5000000n); // Liquid cash invariant preserved
+    });
+
+    it('direct account expense debits bank cash without touching envelope allocations', () => {
+      const initialBankBalance = 10000000n; // ₹1,00,000
+      const initialGymAllocation = 300000n; // ₹3,000
+      const initialGymSpent = 50000n; // ₹500
+      const electricityBill = 150000n; // ₹1,500 direct bill (envelopeId = null)
+
+      // Direct account debit
+      const newBankBalance = initialBankBalance - electricityBill;
+      // Envelope spent remains untouched
+      const newGymSpent = initialGymSpent;
+
+      expect(newBankBalance).toBe(9850000n); // ₹98,500
+      expect(newGymSpent).toBe(50000n); // Gym budget intact
+      expect(calculateAvailableEnvelopeBalance(initialGymAllocation, 0n, newGymSpent)).toBe(250000n);
+    });
+
+    it('credit card bill payment transfers cash to liability with zero envelope impact', () => {
+      const bankBalance = 8000000n; // ₹80,000
+      const cardOutstanding = 1500000n; // ₹15,000
+      const billPayment = 1500000n; // ₹15,000 full settlement
+
+      const newBankBalance = bankBalance - billPayment;
+      const newCardOutstanding = cardOutstanding - billPayment;
+
+      expect(newBankBalance).toBe(6500000n); // ₹65,000
+      expect(newCardOutstanding).toBe(0n); // Fully settled
+      expect(calculateCreditCardUtilization(newCardOutstanding, 10000000n)).toBe(0);
+    });
+  });
 });

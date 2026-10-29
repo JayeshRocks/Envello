@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import {
   CalendarClock,
   Plus,
+  CreditCard,
+  Landmark,
   CheckCircle2,
   Clock,
   Trash2,
   Power,
   Layers,
-  Landmark,
   Check,
   Calendar,
   AlertCircle,
@@ -15,6 +16,7 @@ import {
 import { formatINR, toPaise } from '@/lib/accounting/currency';
 import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring.types';
 import type { AccountItem } from '@/lib/api/accounts';
+import type { CreditCardRow } from '@/lib/api/creditCards';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 
 interface RecurringSectionProps {
@@ -24,6 +26,7 @@ interface RecurringSectionProps {
   totalMonthlyPaise: bigint;
   currentYearMonth: string;
   accounts: AccountItem[];
+  creditCards?: CreditCardRow[];
   envelopes: EnvelopeWithAllocation[];
   isLoading?: boolean;
   onAddRule: (params: CreateRecurringRuleParams) => Promise<void>;
@@ -40,6 +43,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   totalMonthlyPaise,
   currentYearMonth,
   accounts,
+  creditCards = [],
   envelopes,
   isLoading,
   onAddRule,
@@ -54,8 +58,10 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
-  const [accountId, setAccountId] = useState(activeAccounts[0]?.id || '');
-  const [envelopeId, setEnvelopeId] = useState(envelopes[0]?.id || '');
+  const [paymentSource, setPaymentSource] = useState(
+    activeAccounts[0] ? `account:${activeAccounts[0].id}` : (creditCards[0] ? `card:${creditCards[0].id}` : '')
+  );
+  const [envelopeId, setEnvelopeId] = useState('none');
   const [dayOfMonth, setDayOfMonth] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loggingRuleId, setLoggingRuleId] = useState<string | null>(null);
@@ -67,11 +73,11 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
     e.preventDefault();
     setError(null);
 
-    const effectiveAccId = accountId || activeAccounts[0]?.id;
-    const effectiveEnvId = envelopeId || envelopes[0]?.id;
+    const isCard = paymentSource.startsWith('card:');
+    const sourceId = paymentSource.replace(/^(account|card):/, '');
 
-    if (!title.trim() || !amountStr.trim() || !effectiveAccId || !effectiveEnvId) {
-      setError('Please fill in all required fields.');
+    if (!title.trim() || !amountStr.trim() || !sourceId) {
+      setError('Please provide a title, amount, and payment method.');
       return;
     }
 
@@ -81,8 +87,10 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
       await onAddRule({
         title: title.trim(),
         amountPaise,
-        accountId: effectiveAccId,
-        envelopeId: effectiveEnvId,
+        sourceType: isCard ? 'card' : 'account',
+        accountId: !isCard ? sourceId : undefined,
+        cardId: isCard ? sourceId : undefined,
+        envelopeId: envelopeId === 'none' || !envelopeId ? null : envelopeId,
         dayOfMonth: Number(dayOfMonth),
       });
 
@@ -90,7 +98,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
       setAmountStr('');
       setIsAdding(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create recurring rule.');
+      setError(err instanceof Error ? err.message : 'Failed to save recurring rule.');
     } finally {
       setIsSubmitting(false);
     }
@@ -114,28 +122,38 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
     }
   };
 
+  const handleDelete = async (ruleId: string) => {
+    await onDeleteRule(ruleId);
+    setDeleteConfirmId(null);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Top Banner / Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+        <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <h3 className="text-base font-semibold text-white">Standing Monthly Costs & Bills</h3>
-            <span className="text-xs text-neutral-400">({activeRules.length} active)</span>
+            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+              <CalendarClock className="w-5 h-5 text-indigo-400" />
+              <span>Standing Monthly Costs & SIs</span>
+            </h3>
+            {activeRules.length > 0 && (
+              <span className="text-xs font-mono font-medium text-neutral-400">
+                ({formatINR(totalMonthlyPaise)}/mo)
+              </span>
+            )}
+            {dueRules.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                {dueRules.length} due ({formatINR(totalDuePaise)})
+              </span>
+            )}
           </div>
           <p className="text-xs text-neutral-400">
-            Total Monthly Commitment:{' '}
-            <span className="font-mono text-indigo-400 font-semibold">{formatINR(totalMonthlyPaise)}</span> / mo
-            {dueRules.length > 0 && (
-              <>
-                {' '}• Due this cycle:{' '}
-                <span className="font-mono text-amber-400 font-semibold">{formatINR(totalDuePaise)}</span> ({dueRules.length} pending)
-              </>
-            )}
+            Automated recurring bills (Rent, Utilities, Subscriptions, Maid). Due rules can be logged with 1-click.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center space-x-2 self-start sm:self-auto">
           {dueRules.length > 0 && (
             <button
               onClick={handleLogAll}
@@ -149,8 +167,9 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
 
           <button
             onClick={() => {
-              if (!accountId && activeAccounts[0]) setAccountId(activeAccounts[0].id);
-              if (!envelopeId && envelopes[0]) setEnvelopeId(envelopes[0].id);
+              if (!paymentSource) {
+                setPaymentSource(activeAccounts[0] ? `account:${activeAccounts[0].id}` : (creditCards[0] ? `card:${creditCards[0].id}` : ''));
+              }
               setIsAdding(!isAdding);
             }}
             className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-medium shadow-lg shadow-indigo-600/20 flex items-center space-x-1.5 transition active:scale-95 min-h-[38px]"
@@ -230,32 +249,43 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
 
             <div>
               <label className="block text-neutral-400 text-xs font-medium mb-1">
-                Pay From (Bank Account)
+                Payment Method
               </label>
               <select
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
+                value={paymentSource}
+                onChange={(e) => setPaymentSource(e.target.value)}
                 className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                 required
               >
-                {activeAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({a.institution})
-                  </option>
-                ))}
+                <optgroup label="🏦 Bank Accounts & Cash">
+                  {activeAccounts.map((a) => (
+                    <option key={a.id} value={`account:${a.id}`}>
+                      {a.name} ({a.institution})
+                    </option>
+                  ))}
+                </optgroup>
+                {creditCards && creditCards.length > 0 && (
+                  <optgroup label="💳 Credit Cards">
+                    {creditCards.map((c) => (
+                      <option key={c.id} value={`card:${c.id}`}>
+                        {c.card_name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
 
             <div>
               <label className="block text-neutral-400 text-xs font-medium mb-1">
-                Assign to Envelope
+                Assign to Envelope (Optional)
               </label>
               <select
                 value={envelopeId}
                 onChange={(e) => setEnvelopeId(e.target.value)}
                 className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
-                required
               >
+                <option value="none">None (Direct Bill / No Envelope)</option>
                 {envelopes.map((env) => (
                   <option key={env.id} value={env.id}>
                     {env.name}
@@ -297,11 +327,12 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
           </div>
           <button
             onClick={() => {
-              if (!accountId && activeAccounts[0]) setAccountId(activeAccounts[0].id);
-              if (!envelopeId && envelopes[0]) setEnvelopeId(envelopes[0].id);
+              if (!paymentSource) {
+                setPaymentSource(activeAccounts[0] ? `account:${activeAccounts[0].id}` : (creditCards[0] ? `card:${creditCards[0].id}` : ''));
+              }
               setIsAdding(true);
             }}
-            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 border border-white/10 transition active:scale-95"
+            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 border border-white/10 transition active:scale-95 min-h-[38px]"
           >
             Create Your First Recurring Rule
           </button>
@@ -311,8 +342,10 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
           {rules.map((rule) => {
             const isLoggedThisMonth = rule.lastLoggedYearMonth === currentYearMonth;
             const isDue = rule.isActive && !isLoggedThisMonth;
-            const envelope = envelopes.find((e) => e.id === rule.envelopeId);
-            const account = accounts.find((a) => a.id === rule.accountId);
+            const isCard = rule.sourceType === 'card';
+            const envelope = rule.envelopeId ? envelopes.find((e) => e.id === rule.envelopeId) : null;
+            const account = !isCard ? accounts.find((a) => a.id === rule.accountId) : null;
+            const card = isCard ? creditCards.find((c) => c.id === rule.cardId) : null;
 
             return (
               <div
@@ -353,88 +386,90 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
 
                 {/* Tags row: Account & Envelope */}
                 <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none flex-nowrap text-[10px]">
-                  {envelope && (
+                  {envelope ? (
                     <span className="px-2 py-0.5 rounded-md bg-neutral-800/80 text-sky-400 border border-white/5 flex items-center space-x-1 flex-shrink-0">
                       <Layers className="w-2.5 h-2.5" />
                       <span className="truncate max-w-[100px]">{envelope.name}</span>
                     </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-md bg-neutral-800/40 text-neutral-400 border border-white/5 flex items-center space-x-1 flex-shrink-0">
+                      <span>Direct Bill</span>
+                    </span>
                   )}
-                  {account && (
+                  {isCard ? (
+                    <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center space-x-1 flex-shrink-0">
+                      <CreditCard className="w-2.5 h-2.5" />
+                      <span className="truncate max-w-[100px]">{card ? card.card_name : 'Card'}</span>
+                    </span>
+                  ) : account ? (
                     <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 flex items-center space-x-1 flex-shrink-0">
                       <Landmark className="w-2.5 h-2.5" />
                       <span className="truncate max-w-[100px]">{account.name}</span>
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Status & Actions footer */}
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
-                  <div>
+                  <div className="flex items-center space-x-1.5">
                     {isLoggedThisMonth ? (
-                      <span className="inline-flex items-center space-x-1 text-[11px] text-emerald-400 font-medium">
+                      <span className="inline-flex items-center space-x-1 text-emerald-400 text-xs font-medium">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Logged ({currentYearMonth})</span>
-                      </span>
-                    ) : isDue ? (
-                      <span className="inline-flex items-center space-x-1 text-[11px] text-amber-400 font-medium">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Due this month</span>
+                        <span>Logged for {currentYearMonth}</span>
                       </span>
                     ) : (
-                      <span className="text-[11px] text-neutral-500">Inactive</span>
+                      <span className="inline-flex items-center space-x-1 text-amber-400 text-xs font-medium">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Pending for {currentYearMonth}</span>
+                      </span>
                     )}
                   </div>
 
-                  <div className="flex items-center space-x-1.5">
-                    {/* Log button */}
+                  <div className="flex items-center space-x-1">
                     {isDue && (
                       <button
                         onClick={() => handleLogSingle(rule)}
                         disabled={loggingRuleId === rule.id}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center space-x-1 transition active:scale-95 disabled:opacity-50 min-h-[32px]"
+                        className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition active:scale-95 disabled:opacity-50 flex items-center space-x-1"
+                        title="Log this expense into ledger"
                       >
-                        <Check className="w-3 h-3 stroke-[2.5]" />
+                        <Check className="w-3 h-3" />
                         <span>{loggingRuleId === rule.id ? 'Logging...' : 'Log'}</span>
                       </button>
                     )}
 
-                    {/* Pause/Activate toggle */}
                     <button
                       onClick={() => onToggleActive(rule.id)}
-                      title={rule.isActive ? 'Pause Rule' : 'Activate Rule'}
-                      className={`p-1.5 rounded-lg border text-xs transition active:scale-95 min-h-[32px] min-w-[32px] flex items-center justify-center ${
+                      className={`p-1.5 rounded-lg border transition ${
                         rule.isActive
-                          ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-white/5'
-                          : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'
+                          ? 'border-white/5 text-neutral-400 hover:text-amber-400 hover:bg-white/5'
+                          : 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10'
                       }`}
+                      title={rule.isActive ? 'Pause rule' : 'Resume rule'}
                     >
                       <Power className="w-3.5 h-3.5" />
                     </button>
 
-                    {/* Delete rule */}
                     {deleteConfirmId === rule.id ? (
-                      <div className="inline-flex items-center space-x-1 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded-lg">
+                      <div className="flex items-center space-x-1 bg-red-500/10 border border-red-500/30 rounded-lg p-0.5">
                         <button
-                          onClick={async () => {
-                            await onDeleteRule(rule.id);
-                            setDeleteConfirmId(null);
-                          }}
-                          className="text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white font-semibold hover:bg-red-600 transition"
+                          onClick={() => handleDelete(rule.id)}
+                          className="px-1.5 py-0.5 text-[10px] font-semibold text-red-300 hover:text-white"
                         >
-                          Yes
+                          Confirm
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(null)}
-                          className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 hover:text-white transition"
+                          className="px-1 py-0.5 text-[10px] text-neutral-400 hover:text-white"
                         >
-                          No
+                          ✕
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setDeleteConfirmId(rule.id)}
-                        title="Delete Standing Rule"
-                        className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 border border-transparent transition active:scale-95 min-h-[32px] min-w-[32px] flex items-center justify-center"
+                        className="p-1.5 rounded-lg border border-white/5 text-neutral-400 hover:text-red-400 hover:bg-white/5 transition"
+                        title="Delete rule"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -449,4 +484,3 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
     </div>
   );
 };
-

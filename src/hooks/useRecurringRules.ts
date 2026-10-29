@@ -79,13 +79,15 @@ export function useRecurringRules() {
   };
 
   /**
-   * Logs a single recurring rule into the ledger as an expense and marks it as logged for the month.
+   * Logs a single recurring rule into the ledger as an expense or credit card purchase
+   * and marks it as logged for the month.
    */
   const logSingleRule = async (
     rule: RecurringRule,
     recordExpenseFn: (params: {
-      accountId: string;
-      envelopeId: string;
+      accountId?: string | null;
+      cardId?: string | null;
+      envelopeId?: string | null;
       amountPaise: bigint;
       payee: string;
       date: string;
@@ -95,13 +97,16 @@ export function useRecurringRules() {
     if (!user) throw new Error('Authentication required.');
 
     const todayDate = new Date().toISOString().split('T')[0];
+    const isCard = rule.sourceType === 'card' || Boolean(rule.cardId);
+
     await recordExpenseFn({
-      accountId: rule.accountId,
-      envelopeId: rule.envelopeId,
+      accountId: !isCard ? rule.accountId : undefined,
+      cardId: isCard ? rule.cardId : undefined,
+      envelopeId: rule.envelopeId || null,
       amountPaise: rule.amountPaise,
       payee: rule.title,
       date: todayDate,
-      notes: `Standing recurring expense (Scheduled for day ${rule.dayOfMonth} of month)`,
+      notes: `Standing Instruction (Day ${rule.dayOfMonth})`,
     });
 
     await markRecurringRuleAsLogged(user.id, rule.id, currentYearMonth);
@@ -115,8 +120,9 @@ export function useRecurringRules() {
    */
   const logAllDueRules = async (
     recordExpenseFn: (params: {
-      accountId: string;
-      envelopeId: string;
+      accountId?: string | null;
+      cardId?: string | null;
+      envelopeId?: string | null;
       amountPaise: bigint;
       payee: string;
       date: string;

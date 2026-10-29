@@ -9,10 +9,13 @@ import {
   AlertCircle,
   Loader2,
   Calendar,
+  CreditCard,
+  Landmark,
 } from 'lucide-react';
 import { formatINR, toPaise } from '@/lib/accounting/currency';
 import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring.types';
 import type { AccountItem } from '@/lib/api/accounts';
+import type { CreditCardRow } from '@/lib/api/creditCards';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
@@ -22,6 +25,7 @@ interface RecurringRulesModalProps {
   onClose: () => void;
   rules: RecurringRule[];
   accounts: AccountItem[];
+  creditCards?: CreditCardRow[];
   envelopes: EnvelopeWithAllocation[];
   currentYearMonth: string;
   onAddRule: (params: CreateRecurringRuleParams) => Promise<void>;
@@ -35,6 +39,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
   onClose,
   rules,
   accounts,
+  creditCards = [],
   envelopes,
   currentYearMonth,
   onAddRule,
@@ -47,8 +52,10 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
-  const [accountId, setAccountId] = useState(activeAccounts[0]?.id || '');
-  const [envelopeId, setEnvelopeId] = useState(envelopes[0]?.id || '');
+  const [paymentSource, setPaymentSource] = useState(
+    activeAccounts[0] ? `account:${activeAccounts[0].id}` : (creditCards[0] ? `card:${creditCards[0].id}` : '')
+  );
+  const [envelopeId, setEnvelopeId] = useState('none');
   const [dayOfMonth, setDayOfMonth] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loggingRuleId, setLoggingRuleId] = useState<string | null>(null);
@@ -62,7 +69,10 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!title.trim() || !amountStr.trim() || !accountId || !envelopeId) {
+    const isCard = paymentSource.startsWith('card:');
+    const sourceId = paymentSource.replace(/^(account|card):/, '');
+
+    if (!title.trim() || !amountStr.trim() || !sourceId) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -73,8 +83,10 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
       await onAddRule({
         title: title.trim(),
         amountPaise,
-        accountId,
-        envelopeId,
+        sourceType: isCard ? 'card' : 'account',
+        accountId: !isCard ? sourceId : undefined,
+        cardId: isCard ? sourceId : undefined,
+        envelopeId: envelopeId === 'none' || !envelopeId ? null : envelopeId,
         dayOfMonth: Number(dayOfMonth),
       });
 
@@ -117,25 +129,25 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
         <div className="space-y-1">
           <div className="inline-flex items-center space-x-1.5 text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">
             <CalendarClock className="w-3.5 h-3.5" />
-            <span>Standing Schedules & Recurring Rules</span>
+            <span>Automated Budgeting</span>
           </div>
-          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Monthly Recurring Expenses</h2>
+          <h3 className="text-lg font-bold text-white tracking-tight">Monthly Standing Costs & SIs</h3>
           <p className="text-xs text-neutral-400">
-            Define recurring expenses like Rent, WiFi, and Gym. Envello tracks them monthly and provides 1-click recording into your ledger.
+            Define recurring expenses, utility bills, or subscriptions. Log them into your ledger with 1-click every month.
           </p>
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start space-x-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Existing Rules List */}
-        <div className="space-y-2.5">
+        {/* Rules List */}
+        <div className="space-y-2.5 max-h-[42vh] overflow-y-auto pr-1">
           {rules.length === 0 ? (
-            <div className="p-8 text-center rounded-xl bg-neutral-900/30 border border-white/5 space-y-2">
+            <div className="p-8 text-center border border-dashed border-white/10 rounded-2xl space-y-2">
               <CalendarClock className="w-8 h-8 text-neutral-600 mx-auto" />
               <p className="text-xs font-medium text-neutral-300">No recurring rules configured</p>
               <p className="text-[11px] text-neutral-500">
@@ -144,8 +156,10 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
             </div>
           ) : (
             rules.map((rule) => {
-              const account = accounts.find((a) => a.id === rule.accountId);
-              const envelope = envelopes.find((e) => e.id === rule.envelopeId);
+              const isCard = rule.sourceType === 'card';
+              const account = !isCard ? accounts.find((a) => a.id === rule.accountId) : null;
+              const card = isCard ? creditCards.find((c) => c.id === rule.cardId) : null;
+              const envelope = rule.envelopeId ? envelopes.find((e) => e.id === rule.envelopeId) : null;
               const isLoggedThisMonth = rule.lastLoggedYearMonth === currentYearMonth;
               const isLogging = loggingRuleId === rule.id;
 
@@ -173,9 +187,23 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                     <div className="text-[11px] text-neutral-400 flex flex-wrap items-center gap-1.5">
                       <span>Day {rule.dayOfMonth} of month</span>
                       <span>•</span>
-                      <span>{account ? account.name : 'Unknown Account'}</span>
+                      <span className="inline-flex items-center space-x-1">
+                        {isCard ? (
+                          <>
+                            <CreditCard className="w-3 h-3 text-purple-400 inline" />
+                            <span className="text-purple-300">{card ? card.card_name : 'Credit Card'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Landmark className="w-3 h-3 text-sky-400 inline" />
+                            <span className="text-sky-300">{account ? account.name : 'Account'}</span>
+                          </>
+                        )}
+                      </span>
                       <span>→</span>
-                      <span className="text-neutral-300 font-medium">{envelope ? envelope.name : 'Envelope'}</span>
+                      <span className="text-neutral-300 font-medium">
+                        {envelope ? envelope.name : 'Direct (No Envelope)'}
+                      </span>
                     </div>
                   </div>
 
@@ -251,7 +279,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Apartment Rent, WiFi"
+                  placeholder="e.g. Apartment Rent, WiFi, Netflix"
                   className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
@@ -273,18 +301,29 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-neutral-300">Source Account</label>
+                <label className="text-[11px] font-medium text-neutral-300">Payment Method</label>
                 <select
-                  value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
+                  value={paymentSource}
+                  onChange={(e) => setPaymentSource(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
                   required
                 >
-                  {activeAccounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
+                  <optgroup label="🏦 Bank Accounts & Cash">
+                    {activeAccounts.map((a) => (
+                      <option key={a.id} value={`account:${a.id}`}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {creditCards && creditCards.length > 0 && (
+                    <optgroup label="💳 Credit Cards">
+                      {creditCards.map((c) => (
+                        <option key={c.id} value={`card:${c.id}`}>
+                          {c.card_name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
@@ -294,8 +333,8 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
                   value={envelopeId}
                   onChange={(e) => setEnvelopeId(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl bg-neutral-950 border border-white/10 text-base sm:text-sm text-white focus:outline-none focus:border-indigo-500"
-                  required
                 >
+                  <option value="none">None (Direct Bill / No Envelope)</option>
                   {envelopes.map((e) => (
                     <option key={e.id} value={e.id}>
                       {e.name}
@@ -345,15 +384,16 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
           <button
             type="button"
             onClick={() => {
-              if (activeAccounts.length === 0) {
-                setError('Please create a liquid account first before adding recurring rules.');
+              if (activeAccounts.length === 0 && creditCards.length === 0) {
+                setError('Please create an account or add a credit card first before adding recurring rules.');
                 return;
               }
-              if (!accountId && activeAccounts[0]) setAccountId(activeAccounts[0].id);
-              if (!envelopeId && envelopes[0]) setEnvelopeId(envelopes[0].id);
+              if (!paymentSource) {
+                setPaymentSource(activeAccounts[0] ? `account:${activeAccounts[0].id}` : `card:${creditCards[0].id}`);
+              }
               setIsAdding(true);
             }}
-            className="w-full py-2.5 rounded-xl border border-dashed border-white/15 hover:border-indigo-400/50 hover:bg-white/5 text-neutral-300 hover:text-white text-xs font-medium transition flex items-center justify-center space-x-1.5"
+            className="w-full py-2.5 rounded-xl border border-dashed border-white/15 hover:border-indigo-400/50 hover:bg-white/5 text-neutral-300 hover:text-white text-xs font-medium transition flex items-center justify-center space-x-1.5 min-h-[44px]"
           >
             <Plus className="w-4 h-4 text-indigo-400" />
             <span>Add Standing Rule</span>

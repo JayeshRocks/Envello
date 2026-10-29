@@ -264,6 +264,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
             totalMonthlyPaise={props.totalMonthlyRecurringPaise}
             currentYearMonth={props.currentYearMonth}
             accounts={props.accounts}
+            creditCards={props.cards}
             envelopes={props.envelopes}
             isLoading={props.isRecurringLoading}
             onAddRule={props.onAddRecurringRule}

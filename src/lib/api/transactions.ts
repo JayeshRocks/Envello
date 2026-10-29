@@ -36,122 +36,264 @@ export interface TransactionRecord {
 
 export type TransactionWithEntries = TransactionRecord;
 
+export interface RecordExpenseParams {
+  accountId?: string | null;
+  cardId?: string | null;
+  envelopeId?: string | null;
+  amountPaise: bigint;
+  payee: string;
+  date: string; // YYYY-MM-DD
+  notes?: string;
+}
+
 /**
- * Records an Expense transaction:
- * - Inserts master transaction (type: 'expense')
- * - Inserts debit entry for envelope & credit entry for bank account
- * - Debits liquid account balance
- * - Increments envelope spent_paise for the corresponding budget period
+ * Records an Expense or Credit Card Purchase transaction:
+ * - If paid via Card (cardId):
+ *   - Inserts master transaction (type: 'credit_card_purchase')
+ *   - Increments credit_cards.outstanding_balance_paise
+ *   - If envelopeId provided: increments envelope spent_paise and logs debit entry
+ *   - If envelopeId is null/'none': direct card purchase without envelope deduction
+ * - If paid via Account (accountId):
+ *   - Inserts master transaction (type: 'expense')
+ *   - Debits liquid account balance
+ *   - If envelopeId provided: increments envelope spent_paise and logs debit entry
+ *   - If envelopeId is null/'none': direct account expense without envelope deduction
  */
 export async function recordExpenseTransaction(
   userId: string,
-  params: {
-    accountId: string;
-    envelopeId: string;
-    amountPaise: bigint;
-    payee: string;
-    date: string; // YYYY-MM-DD
-    notes?: string;
-  }
+  params: RecordExpenseParams
 ): Promise<string> {
   if (params.amountPaise <= 0n) {
     throw new Error('Expense amount must be greater than zero.');
   }
 
+  const isCard = Boolean(params.cardId);
+  if (!isCard && !params.accountId) {
+    throw new Error('Please select a payment account or credit card.');
+  }
+
   const numAmount = Number(params.amountPaise);
+  const hasEnvelope = Boolean(params.envelopeId && params.envelopeId !== 'none');
 
-  // 1. Insert master transaction
-  const { data: tx, error: txError } = await supabase
-    .from('transactions')
-    .insert({
-      user_id: userId,
-      transaction_date: params.date,
-      type: 'expense',
-      total_amount_paise: numAmount,
-      description: params.payee.trim(),
-      notes: params.notes?.trim() || null,
-    })
-    .select('id')
-    .single();
+  if (isCard) {
+    // 1. Credit Card Purchase
+    const { data: cardData, error: cardError } = await supabase
+      .from('credit_cards')
+      .select('id, card_name, issuer, outstanding_balance_paise')
+      .eq('id', params.cardId!)
+      .eq('user_id', userId)
+      .single();
 
-  if (txError || !tx) {
-    console.error('[Envello Transactions API] Error inserting transaction:', txError?.message);
-    throw txError || new Error('Transaction creation failed.');
-  }
+    if (cardError || !cardData) {
+      throw new Error('Selected credit card not found.');
+    }
 
-  // 2. Insert transaction entries (Debit envelope, Credit account)
-  const entries = [
-    {
-      transaction_id: tx.id,
-      user_id: userId,
-      envelope_id: params.envelopeId,
-      account_id: null,
-      direction: 'debit' as const,
-      amount_paise: numAmount,
-    },
-    {
-      transaction_id: tx.id,
-      user_id: userId,
-      account_id: params.accountId,
-      envelope_id: null,
-      direction: 'credit' as const,
-      amount_paise: numAmount,
-    },
-  ];
+    const userNotes = params.notes?.trim() || '';
+    const systemNotes = `[card:${cardData.id}] Paid via ${cardData.card_name}${userNotes ? ` • ${userNotes}` : ''}`;
 
-  const { error: entriesError } = await supabase.from('transaction_entries').insert(entries);
-  if (entriesError) {
-    console.error('[Envello Transactions API] Error inserting entries:', entriesError.message);
-    throw entriesError;
-  }
+    const { data: tx, error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: userId,
+        transaction_date: params.date,
+        type: 'credit_card_purchase',
+        total_amount_paise: numAmount,
+        description: params.payee.trim(),
+        notes: systemNotes,
+      })
+      .select('id')
+      .single();
 
-  // 3. Deduct cash from account
-  const { data: accData } = await supabase
-    .from('accounts')
-    .select('balance_paise')
-    .eq('id', params.accountId)
-    .single();
+    if (txError || !tx) {
+      console.error('[Envello Transactions API] Error inserting card purchase:', txError?.message);
+      throw txError || new Error('Transaction creation failed.');
+    }
 
-  const currentBalance = accData?.balance_paise ?? 0;
-  await supabase
-    .from('accounts')
-    .update({
-      balance_paise: currentBalance - numAmount,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', params.accountId);
-
-  // 4. Increment envelope spent_paise for the budget period
-  const periodKey = params.date.slice(0, 7); // YYYY-MM
-  const periodId = await getOrCreateBudgetPeriod(userId, periodKey);
-
-  const { data: allocData } = await supabase
-    .from('envelope_allocations')
-    .select('id, spent_paise')
-    .eq('envelope_id', params.envelopeId)
-    .eq('period_id', periodId)
-    .maybeSingle();
-
-  if (allocData?.id) {
+    // Increment card outstanding balance
+    const currentOutstanding = cardData.outstanding_balance_paise || 0;
     await supabase
-      .from('envelope_allocations')
+      .from('credit_cards')
       .update({
-        spent_paise: (allocData.spent_paise || 0) + numAmount,
+        outstanding_balance_paise: currentOutstanding + numAmount,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', allocData.id);
-  } else {
-    await supabase.from('envelope_allocations').insert({
-      envelope_id: params.envelopeId,
-      period_id: periodId,
-      user_id: userId,
-      allocated_paise: 0,
-      carried_over_paise: 0,
-      spent_paise: numAmount,
-    });
-  }
+      .eq('id', cardData.id)
+      .eq('user_id', userId);
 
-  return tx.id;
+    // Entries:
+    const entries: {
+      transaction_id: string;
+      user_id: string;
+      account_id: string | null;
+      envelope_id: string | null;
+      direction: 'debit' | 'credit';
+      amount_paise: number;
+    }[] = [];
+
+    if (hasEnvelope) {
+      entries.push({
+        transaction_id: tx.id,
+        user_id: userId,
+        account_id: null,
+        envelope_id: params.envelopeId!,
+        direction: 'debit',
+        amount_paise: numAmount,
+      });
+
+      const periodKey = params.date.slice(0, 7);
+      const periodId = await getOrCreateBudgetPeriod(userId, periodKey);
+
+      const { data: allocData } = await supabase
+        .from('envelope_allocations')
+        .select('id, spent_paise')
+        .eq('envelope_id', params.envelopeId!)
+        .eq('period_id', periodId)
+        .maybeSingle();
+
+      if (allocData?.id) {
+        await supabase
+          .from('envelope_allocations')
+          .update({
+            spent_paise: (allocData.spent_paise || 0) + numAmount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', allocData.id);
+      } else {
+        await supabase.from('envelope_allocations').insert({
+          envelope_id: params.envelopeId!,
+          period_id: periodId,
+          user_id: userId,
+          allocated_paise: 0,
+          carried_over_paise: 0,
+          spent_paise: numAmount,
+        });
+      }
+    } else {
+      // Direct card purchase without envelope
+      entries.push({
+        transaction_id: tx.id,
+        user_id: userId,
+        account_id: null,
+        envelope_id: null,
+        direction: 'debit',
+        amount_paise: numAmount,
+      });
+    }
+
+    const { error: entriesError } = await supabase.from('transaction_entries').insert(entries);
+    if (entriesError) {
+      console.error('[Envello Transactions API] Error inserting card entries:', entriesError.message);
+    }
+
+    return tx.id;
+  } else {
+    // 2. Bank Account / Cash Expense
+    const { data: accData, error: accError } = await supabase
+      .from('accounts')
+      .select('balance_paise')
+      .eq('id', params.accountId!)
+      .eq('user_id', userId)
+      .single();
+
+    if (accError || !accData) {
+      throw new Error('Selected payment account not found.');
+    }
+
+    const { data: tx, error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: userId,
+        transaction_date: params.date,
+        type: 'expense',
+        total_amount_paise: numAmount,
+        description: params.payee.trim(),
+        notes: params.notes?.trim() || null,
+      })
+      .select('id')
+      .single();
+
+    if (txError || !tx) {
+      console.error('[Envello Transactions API] Error inserting transaction:', txError?.message);
+      throw txError || new Error('Transaction creation failed.');
+    }
+
+    // Deduct cash from account
+    const currentBalance = accData.balance_paise ?? 0;
+    await supabase
+      .from('accounts')
+      .update({
+        balance_paise: currentBalance - numAmount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', params.accountId!)
+      .eq('user_id', userId);
+
+    const entries: {
+      transaction_id: string;
+      user_id: string;
+      account_id: string | null;
+      envelope_id: string | null;
+      direction: 'debit' | 'credit';
+      amount_paise: number;
+    }[] = [
+      {
+        transaction_id: tx.id,
+        user_id: userId,
+        account_id: params.accountId!,
+        envelope_id: null,
+        direction: 'credit',
+        amount_paise: numAmount,
+      },
+    ];
+
+    if (hasEnvelope) {
+      entries.push({
+        transaction_id: tx.id,
+        user_id: userId,
+        account_id: null,
+        envelope_id: params.envelopeId!,
+        direction: 'debit',
+        amount_paise: numAmount,
+      });
+
+      const periodKey = params.date.slice(0, 7);
+      const periodId = await getOrCreateBudgetPeriod(userId, periodKey);
+
+      const { data: allocData } = await supabase
+        .from('envelope_allocations')
+        .select('id, spent_paise')
+        .eq('envelope_id', params.envelopeId!)
+        .eq('period_id', periodId)
+        .maybeSingle();
+
+      if (allocData?.id) {
+        await supabase
+          .from('envelope_allocations')
+          .update({
+            spent_paise: (allocData.spent_paise || 0) + numAmount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', allocData.id);
+      } else {
+        await supabase.from('envelope_allocations').insert({
+          envelope_id: params.envelopeId!,
+          period_id: periodId,
+          user_id: userId,
+          allocated_paise: 0,
+          carried_over_paise: 0,
+          spent_paise: numAmount,
+        });
+      }
+    }
+
+    const { error: entriesError } = await supabase.from('transaction_entries').insert(entries);
+    if (entriesError) {
+      console.error('[Envello Transactions API] Error inserting entries:', entriesError.message);
+      throw entriesError;
+    }
+
+    return tx.id;
+  }
 }
 
 /**
@@ -479,6 +621,32 @@ export async function deleteTransaction(transactionId: string, userId: string): 
           })
           .eq('id', entry.account_id)
           .eq('user_id', userId);
+      }
+    }
+
+    // Reversal for credit card purchases if card was charged
+    if (tx.type === 'credit_card_purchase') {
+      const cardMatch = tx.notes?.match(/\[card:([a-f0-9-]+)\]/);
+      if (cardMatch && cardMatch[1]) {
+        const cardId = cardMatch[1];
+        const { data: card } = await supabase
+          .from('credit_cards')
+          .select('outstanding_balance_paise')
+          .eq('id', cardId)
+          .eq('user_id', userId)
+          .single();
+
+        if (card) {
+          const newOutstanding = Math.max(0, card.outstanding_balance_paise - tx.total_amount_paise);
+          await supabase
+            .from('credit_cards')
+            .update({
+              outstanding_balance_paise: newOutstanding,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', cardId)
+            .eq('user_id', userId);
+        }
       }
     }
 

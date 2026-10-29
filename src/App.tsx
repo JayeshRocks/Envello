@@ -613,13 +613,12 @@ export const App: React.FC = () => {
                     <div className="flex items-center space-x-2 text-xs mt-1">
                       <span className="text-neutral-400">Utilization:</span>
                       <span
-                        className={`font-semibold font-mono ${
-                          effectiveCardStatus === 'safe'
+                        className={`font-semibold font-mono ${effectiveCardStatus === 'safe'
                             ? 'text-emerald-400'
                             : effectiveCardStatus === 'warning'
                               ? 'text-amber-400'
                               : 'text-red-400'
-                        }`}
+                          }`}
                       >
                         {effectiveCardUtilization.toFixed(1)}% ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
                       </span>
@@ -890,6 +889,7 @@ export const App: React.FC = () => {
       <RecordTransactionModal
         isOpen={isRecordTxModalOpen}
         accounts={accounts}
+        creditCards={cards}
         envelopes={envelopes}
         onClose={() => setIsRecordTxModalOpen(false)}
         onRecordExpense={async (params) => {
@@ -951,6 +951,7 @@ export const App: React.FC = () => {
         onClose={() => setIsRecurringModalOpen(false)}
         rules={recurringRules}
         accounts={accounts}
+        creditCards={cards}
         envelopes={envelopes}
         currentYearMonth={currentYearMonth}
         onAddRule={async (params) => {
@@ -1046,8 +1047,8 @@ export const App: React.FC = () => {
         <button
           onClick={() => setIsRecordTxModalOpen(true)}
           className={`fixed safe-bottom-fab z-40 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-neutral-950 font-bold shadow-2xl shadow-sky-500/50 active:scale-90 transition-all duration-200 flex items-center justify-center border border-white/20 touch-manipulation min-h-[56px] min-w-[56px] ${isLandscape
-              ? 'bottom-5 right-6 sm:bottom-6 sm:right-8 p-4'
-              : 'bottom-5 right-5 p-4'
+            ? 'bottom-5 right-6 sm:bottom-6 sm:right-8 p-4'
+            : 'bottom-5 right-5 p-4'
             }`}
           title="Record Transaction"
           aria-label="Record Transaction"

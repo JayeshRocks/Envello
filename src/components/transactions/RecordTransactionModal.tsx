@@ -7,8 +7,11 @@ import {
   AlertCircle,
   ArrowRight,
   Calendar,
+  CreditCard,
+  Wallet,
 } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
+import type { CreditCardRow } from '@/lib/api/creditCards';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
@@ -17,11 +20,13 @@ import { ModalPortal } from '@/components/common/ModalPortal';
 interface RecordTransactionModalProps {
   isOpen: boolean;
   accounts: AccountItem[];
+  creditCards?: CreditCardRow[];
   envelopes: EnvelopeWithAllocation[];
   onClose: () => void;
   onRecordExpense: (params: {
-    accountId: string;
-    envelopeId: string;
+    accountId?: string | null;
+    cardId?: string | null;
+    envelopeId?: string | null;
     amountPaise: bigint;
     payee: string;
     date: string;
@@ -48,6 +53,7 @@ type TxMode = 'expense' | 'income' | 'transfer';
 export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   isOpen,
   accounts,
+  creditCards = [],
   envelopes,
   onClose,
   onRecordExpense,
@@ -58,6 +64,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const [amountRupees, setAmountRupees] = useState('');
   const [payeeOrSource, setPayeeOrSource] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [selectedPaymentSource, setSelectedPaymentSource] = useState('');
   const [selectedEnvelopeId, setSelectedEnvelopeId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -75,11 +82,18 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         setToAccountId(accounts[1].id);
       }
     }
+    if (!selectedPaymentSource) {
+      if (accounts.length > 0) {
+        setSelectedPaymentSource('account:' + accounts[0].id);
+      } else if (creditCards && creditCards.length > 0) {
+        setSelectedPaymentSource('card:' + creditCards[0].id);
+      }
+    }
     if (envelopes.length > 0 && !selectedEnvelopeId) {
       const regularEnv = envelopes.find((e) => e.slug === 'regular' || e.slug === 'spendable');
-      setSelectedEnvelopeId(regularEnv?.id || envelopes[0].id);
+      setSelectedEnvelopeId(regularEnv?.id || 'none');
     }
-  }, [accounts, envelopes, selectedAccountId, selectedEnvelopeId, isOpen]);
+  }, [accounts, creditCards, envelopes, selectedAccountId, selectedPaymentSource, selectedEnvelopeId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -102,13 +116,16 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     setIsSubmitting(true);
     try {
       if (mode === 'expense') {
-        if (!selectedEnvelopeId) {
-          setError('Please select a budget envelope.');
+        const isCard = selectedPaymentSource.startsWith('card:');
+        const sourceId = selectedPaymentSource.replace(/^(account|card):/, '');
+        if (!sourceId) {
+          setError('Please select a payment method.');
           return;
         }
         await onRecordExpense({
-          accountId: selectedAccountId,
-          envelopeId: selectedEnvelopeId,
+          accountId: !isCard ? sourceId : undefined,
+          cardId: isCard ? sourceId : undefined,
+          envelopeId: selectedEnvelopeId === 'none' || !selectedEnvelopeId ? null : selectedEnvelopeId,
           amountPaise: currentEnteredPaise,
           payee: payeeOrSource.trim() || 'Expense',
           date,
@@ -310,38 +327,73 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             />
           </div>
 
-          {/* Expense: Category Envelope & Paid From Account */}
+          {/* Expense: Payment Method (Account or Card) & Optional Envelope */}
           {mode === 'expense' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-neutral-300">Budget Envelope</label>
-                <select
-                  value={selectedEnvelopeId}
-                  onChange={(e) => setSelectedEnvelopeId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
-                >
-                  {envelopes.map((env) => (
-                    <option key={env.id} value={env.id} className="bg-neutral-900 text-white">
-                      {env.name} ({formatINR(env.availablePaise)})
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-neutral-300">Payment Method</label>
+                  <select
+                    value={selectedPaymentSource}
+                    onChange={(e) => setSelectedPaymentSource(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  >
+                    <optgroup label="🏦 Bank Accounts & Cash">
+                      {accounts.map((acc) => (
+                        <option key={acc.id} value={`account:${acc.id}`} className="bg-neutral-900 text-white">
+                          {acc.name} ({formatINR(acc.balancePaise)})
+                        </option>
+                      ))}
+                    </optgroup>
+                    {creditCards && creditCards.length > 0 && (
+                      <optgroup label="💳 Credit Cards">
+                        {creditCards.map((card) => {
+                          const availablePaise = BigInt(card.credit_limit_paise) - BigInt(card.outstanding_balance_paise);
+                          return (
+                            <option key={card.id} value={`card:${card.id}`} className="bg-neutral-900 text-white">
+                              {card.card_name} ({formatINR(availablePaise)} available)
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    )}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-neutral-300">Budget Envelope</label>
+                    <span className="text-[10px] text-neutral-400">Optional for direct bills</span>
+                  </div>
+                  <select
+                    value={selectedEnvelopeId}
+                    onChange={(e) => setSelectedEnvelopeId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  >
+                    <option value="none" className="bg-neutral-900 text-neutral-400 font-medium">
+                      None (Direct Account / Card Bill)
                     </option>
-                  ))}
-                </select>
+                    {envelopes.map((env) => (
+                      <option key={env.id} value={env.id} className="bg-neutral-900 text-white">
+                        {env.name} ({formatINR(env.availablePaise)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-neutral-300">Paid From Account</label>
-                <select
-                  value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
-                >
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id} className="bg-neutral-900 text-white">
-                      {acc.name} ({formatINR(acc.balancePaise)})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Dynamic Payment Impact Pill */}
+              {selectedPaymentSource.startsWith('card:') ? (
+                <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs flex items-center space-x-2">
+                  <CreditCard className="w-4 h-4 flex-shrink-0 text-purple-400" />
+                  <span>Charged to Credit Card. Increases card outstanding debt; liquid cash is untouched.</span>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs flex items-center space-x-2">
+                  <Wallet className="w-4 h-4 flex-shrink-0 text-sky-400" />
+                  <span>Paid from Liquid Cash. Directly debits your bank account balance.</span>
+                </div>
+              )}
             </div>
           )}
 
