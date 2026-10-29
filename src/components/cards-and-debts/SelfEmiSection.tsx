@@ -42,14 +42,23 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
   const activeEmis = selfEmis.filter((e) => !e.is_completed);
 
   const handleReimburse = async (emi: SelfEmiWithProgress) => {
-    const amt = parseFloat(customAmountRupees) || (emi.monthly_reimbursement_paise / 100);
+    const remainingPaise = emi.total_funded_paise - emi.total_reimbursed_paise;
+    const defaultDuePaise = emi.monthly_reimbursement_paise > 0
+      ? Math.min(emi.monthly_reimbursement_paise, remainingPaise)
+      : remainingPaise;
+    const amt = parseFloat(customAmountRupees) || (defaultDuePaise / 100);
     if (isNaN(amt) || amt <= 0) return;
+
+    const amountPaise = Number(toPaise(amt));
+    if (amountPaise > remainingPaise) {
+      return;
+    }
 
     try {
       setIsSubmitting(true);
       await onPayEmi({
         emiId: emi.id,
-        amountPaise: Number(toPaise(amt)),
+        amountPaise,
       });
       setReimbursingEmiId(null);
       setCustomAmountRupees('');
@@ -200,7 +209,12 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
                       <button
                         onClick={() => {
                           setReimbursingEmiId(emi.id);
-                          setCustomAmountRupees((emi.monthly_reimbursement_paise / 100).toString());
+                          const remainingPaise = emi.total_funded_paise - emi.total_reimbursed_paise;
+                          const defaultDuePaise = emi.monthly_reimbursement_paise > 0
+                            ? Math.min(emi.monthly_reimbursement_paise, remainingPaise)
+                            : remainingPaise;
+                          const amt = defaultDuePaise / 100;
+                          setCustomAmountRupees(Number.isInteger(amt) ? amt.toString() : amt.toFixed(2));
                         }}
                         className="text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 font-medium flex items-center space-x-1 py-2 px-3.5 rounded-xl hover:bg-indigo-500/10 min-h-[44px] sm:min-h-[38px] transition active:scale-95"
                       >

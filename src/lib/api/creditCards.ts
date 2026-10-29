@@ -130,6 +130,13 @@ export async function recordCreditCardPayment(
   const card = cardRes.data;
   const account = accountRes.data;
 
+  // Invariant enforcement: payment cannot exceed outstanding liability
+  if (amountPaise > card.outstanding_balance_paise) {
+    throw new Error(
+      `Payment amount (₹${(amountPaise / 100).toFixed(2)}) cannot exceed card outstanding balance of ₹${(card.outstanding_balance_paise / 100).toFixed(2)}.`
+    );
+  }
+
   // 2. Insert master transaction
   const { data: tx, error: txError } = await supabase
     .from('transactions')

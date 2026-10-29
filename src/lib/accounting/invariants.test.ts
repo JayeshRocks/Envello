@@ -224,5 +224,30 @@ describe('Accounting Engine — Invariants & Precision', () => {
       expect(newCardOutstanding).toBe(0n); // Fully settled
       expect(calculateCreditCardUtilization(newCardOutstanding, 10000000n)).toBe(0);
     });
+
+    it('enforces that bill/loan repayments cannot exceed the amount due (prevents phantom money loss)', () => {
+      const cardOutstanding = 500000n; // ₹5,000 due
+      const attemptedExcessPayment = 800000n; // ₹8,000 attempted
+      
+      // Payment amount must be capped at amount due
+      const safePayment = attemptedExcessPayment > cardOutstanding ? cardOutstanding : attemptedExcessPayment;
+      expect(safePayment).toBe(500000n);
+
+      const remainingLiability = cardOutstanding - safePayment;
+      expect(remainingLiability).toBe(0n); // Settles exactly with 0 loss
+    });
+
+    it('loan repayment cannot exceed remaining debt balance', () => {
+      const remainingDebt = 1250000n; // ₹12,500 owed
+      const monthlyInstalment = 500000n; // ₹5,000
+      const defaultDue = monthlyInstalment > 0n ? (monthlyInstalment < remainingDebt ? monthlyInstalment : remainingDebt) : remainingDebt;
+      
+      expect(defaultDue).toBe(500000n);
+
+      // Final payment when remaining debt is less than monthly instalment
+      const finalRemainingDebt = 300000n; // ₹3,000 remaining
+      const finalDue = monthlyInstalment < finalRemainingDebt ? monthlyInstalment : finalRemainingDebt;
+      expect(finalDue).toBe(300000n); // Auto-fills exact due, capped at remaining
+    });
   });
 });

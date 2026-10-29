@@ -49,15 +49,23 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
 
   const handlePay = async (debt: ActualDebtRow) => {
     if (!destAccountId) return;
-    const amt = parseFloat(customAmountRupees) || (debt.monthly_instalment_paise / 100);
+    const defaultDuePaise = debt.monthly_instalment_paise > 0
+      ? Math.min(debt.monthly_instalment_paise, debt.remaining_debt_paise)
+      : debt.remaining_debt_paise;
+    const amt = parseFloat(customAmountRupees) || (defaultDuePaise / 100);
     if (isNaN(amt) || amt <= 0) return;
+
+    const amountPaise = Number(toPaise(amt));
+    if (amountPaise > debt.remaining_debt_paise) {
+      return;
+    }
 
     try {
       setIsSubmitting(true);
       await onPayDebt({
         debtId: debt.id,
         fromAccountId: destAccountId,
-        amountPaise: Number(toPaise(amt)),
+        amountPaise,
       });
       setPayingDebtId(null);
       setCustomAmountRupees('');
@@ -228,7 +236,11 @@ export const ActualDebtsSection: React.FC<ActualDebtsSectionProps> = ({
                           onClick={() => {
                             setPayingDebtId(debt.id);
                             if (accounts[0]) setDestAccountId(accounts[0].id);
-                            setCustomAmountRupees((debt.monthly_instalment_paise / 100).toString());
+                            const defaultDuePaise = debt.monthly_instalment_paise > 0
+                              ? Math.min(debt.monthly_instalment_paise, debt.remaining_debt_paise)
+                              : debt.remaining_debt_paise;
+                            const amt = defaultDuePaise / 100;
+                            setCustomAmountRupees(Number.isInteger(amt) ? amt.toString() : amt.toFixed(2));
                           }}
                           className="text-xs sm:text-sm text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1 py-2 px-3.5 rounded-xl hover:bg-orange-500/10 min-h-[44px] sm:min-h-[38px] transition active:scale-95"
                         >

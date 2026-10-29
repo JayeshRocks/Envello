@@ -93,6 +93,13 @@ export async function recordDebtPayment(
   const debt = debtRes.data;
   const account = accRes.data;
 
+  // Invariant enforcement: payment cannot exceed remaining debt liability
+  if (amountPaise > debt.remaining_debt_paise) {
+    throw new Error(
+      `Payment amount (₹${(amountPaise / 100).toFixed(2)}) cannot exceed remaining debt of ₹${(debt.remaining_debt_paise / 100).toFixed(2)}.`
+    );
+  }
+
   // Insert master transaction
   const { data: tx, error: txError } = await supabase
     .from('transactions')

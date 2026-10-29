@@ -91,6 +91,13 @@ export async function recordSelfEmiPayment(
 
   if (emiErr || !emi) throw new Error('Self EMI record not found');
 
+  const remainingPaise = emi.total_funded_paise - emi.total_reimbursed_paise;
+  if (amountPaise > remainingPaise) {
+    throw new Error(
+      `Reimbursement amount (₹${(amountPaise / 100).toFixed(2)}) cannot exceed remaining balance of ₹${(remainingPaise / 100).toFixed(2)}.`
+    );
+  }
+
   const newReimbursed = emi.total_reimbursed_paise + amountPaise;
   const isCompleted = newReimbursed >= emi.total_funded_paise;
 
