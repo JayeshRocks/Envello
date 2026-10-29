@@ -4,6 +4,7 @@
  */
 
 export interface AuthSyncPayload {
+  id: string;
   type: 'EMAIL_CONFIRMED' | 'SIGN_IN' | 'SIGN_OUT';
   email?: string;
   timestamp: number;
@@ -11,6 +12,9 @@ export interface AuthSyncPayload {
 
 const BROADCAST_CHANNEL_NAME = 'envello_auth_channel';
 const STORAGE_KEY = 'envello_auth_broadcast';
+
+// Global cache to prevent duplicate processing of the same event across BroadcastChannel and StorageEvent
+const processedEventIds = new Set<string>();
 
 /**
  * Checks whether the current URL contains Supabase email confirmation hash or query params
@@ -47,11 +51,16 @@ export function isEmailConfirmationUrl(): boolean {
  * Broadcasts an authentication event to all other open tabs on this origin
  */
 export function broadcastAuthEvent(type: AuthSyncPayload['type'], email?: string): void {
+  const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const payload: AuthSyncPayload = {
+    id: eventId,
     type,
     email,
     timestamp: Date.now(),
   };
+
+  // Mark our own sent event as processed so this tab never re-processes it
+  processedEventIds.add(eventId);
 
   // 1. BroadcastChannel (modern browsers, instantaneous)
   if (typeof BroadcastChannel !== 'undefined') {
@@ -73,17 +82,35 @@ export function broadcastAuthEvent(type: AuthSyncPayload['type'], email?: string
 }
 
 /**
- * Subscribes to authentication events emitted by other tabs
+ * Subscribes to authentication events emitted by other tabs with automatic deduplication
  */
 export function subscribeAuthEvents(callback: (payload: AuthSyncPayload) => void): () => void {
   let channel: BroadcastChannel | null = null;
+
+  const handleIncomingPayload = (payload: AuthSyncPayload) => {
+    if (!payload || !payload.id || !payload.type) return;
+
+    // Deduplicate: If this event was already processed within the last 10 seconds, ignore it
+    if (processedEventIds.has(payload.id)) {
+      return;
+    }
+
+    processedEventIds.add(payload.id);
+    // Cleanup old IDs periodically
+    if (processedEventIds.size > 100) {
+      const ids = Array.from(processedEventIds);
+      ids.slice(0, 50).forEach((id) => processedEventIds.delete(id));
+    }
+
+    callback(payload);
+  };
 
   if (typeof BroadcastChannel !== 'undefined') {
     try {
       channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
       channel.onmessage = (event: MessageEvent<AuthSyncPayload>) => {
-        if (event.data && event.data.type) {
-          callback(event.data);
+        if (event.data) {
+          handleIncomingPayload(event.data);
         }
       };
     } catch {
@@ -95,9 +122,7 @@ export function subscribeAuthEvents(callback: (payload: AuthSyncPayload) => void
     if (e.key === STORAGE_KEY && e.newValue) {
       try {
         const payload = JSON.parse(e.newValue) as AuthSyncPayload;
-        if (payload && payload.type) {
-          callback(payload);
-        }
+        handleIncomingPayload(payload);
       } catch {
         // Ignore JSON parse errors
       }
@@ -130,4 +155,3 @@ export function clearAuthUrlHash(): void {
     // Ignore history replace state errors
   }
 }
-

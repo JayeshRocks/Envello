@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Mail,
   Lock,
@@ -64,6 +64,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
   const [isUnconfirmed, setIsUnconfirmed] = useState(false);
   const [accountExistsFromMagicLink, setAccountExistsFromMagicLink] = useState(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  // Clear all form inputs, passwords, errors, and unconfirmed states when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+      setValidationError(null);
+      setSuccessMessage(null);
+      setResendSuccess(null);
+      setIsUnconfirmed(false);
+      setAccountExistsFromMagicLink(false);
+      clearError();
+    }
+  }, [isOpen, clearError]);
+
+  // Auto-focus email input whenever the modal is opened
+  useEffect(() => {
+    if (isOpen && !isPasswordRecovery) {
+      const timer = setTimeout(() => {
+        emailInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, isPasswordRecovery, mode]);
 
   const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 

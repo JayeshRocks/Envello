@@ -128,17 +128,22 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Broadcast email verification when landing on the confirmation callback URL
+  const hasBroadcastedConfirmationRef = React.useRef(false);
+  const hasShownConfirmationToastRef = React.useRef(false);
+
+  // Broadcast email verification when landing on the confirmation callback URL (ONCE only)
   useEffect(() => {
-    if (isEmailConfirmedLanding) {
+    if (isEmailConfirmedLanding && !hasBroadcastedConfirmationRef.current) {
+      hasBroadcastedConfirmationRef.current = true;
       broadcastAuthEvent('EMAIL_CONFIRMED', user?.email || undefined);
     }
   }, [isEmailConfirmedLanding, user]);
 
-  // Listen for cross-tab auth confirmation events
+  // Listen for cross-tab auth confirmation events (ONCE only)
   useEffect(() => {
     const unsubscribe = subscribeAuthEvents((event) => {
-      if (event.type === 'EMAIL_CONFIRMED') {
+      if (event.type === 'EMAIL_CONFIRMED' && !hasShownConfirmationToastRef.current) {
+        hasShownConfirmationToastRef.current = true;
         setIsAuthModalOpen(false);
         showToast('Email verified successfully! Welcome to Envello.', 'success');
       }
