@@ -13,15 +13,19 @@ export interface AppEnv {
   VITE_ENABLE_AUDIT_LOGGING: boolean;
 }
 
-function validateUrl(url: string, fieldName: string): string {
+function sanitizeUrl(rawUrl: string): string {
+  const trimmed = (rawUrl || '').trim();
+  if (!trimmed || trimmed === 'true' || trimmed === 'false' || trimmed.includes('your-project-ref')) {
+    return 'https://placeholder.supabase.co';
+  }
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(trimmed);
     if (!['http:', 'https:'].includes(parsed.protocol)) {
-      throw new Error(`Invalid protocol for ${fieldName}. Expected http: or https:`);
+      return 'https://placeholder.supabase.co';
     }
-    return url;
-  } catch (err) {
-    throw new Error(`[Envello Security] Invalid ${fieldName}: "${url}". ${err instanceof Error ? err.message : ''}`);
+    return trimmed;
+  } catch {
+    return 'https://placeholder.supabase.co';
   }
 }
 
@@ -52,14 +56,11 @@ export function loadEnv(): AppEnv {
     }
   }
 
-  const isConfigured = Boolean(
-    rawUrl &&
-    rawAnonKey &&
-    rawUrl !== 'https://your-project-ref.supabase.co'
-  );
-
-  const supabaseUrl = isConfigured ? validateUrl(rawUrl, 'VITE_SUPABASE_URL') : (rawUrl || 'https://placeholder.supabase.co');
-  const supabaseAnonKey = rawAnonKey || 'placeholder-key';
+  const supabaseUrl = sanitizeUrl(rawUrl);
+  const supabaseAnonKey =
+    !rawAnonKey || rawAnonKey === 'true' || rawAnonKey === 'false'
+      ? 'placeholder-anon-key'
+      : rawAnonKey;
 
   const appEnv: AppEnv = {
     VITE_SUPABASE_URL: supabaseUrl,
@@ -80,5 +81,6 @@ export const isSupabaseConfigured = Boolean(
   env.VITE_SUPABASE_ANON_KEY &&
   env.VITE_SUPABASE_URL !== 'https://your-project-ref.supabase.co' &&
   env.VITE_SUPABASE_URL !== 'https://placeholder.supabase.co' &&
-  env.VITE_SUPABASE_ANON_KEY !== 'placeholder-key'
+  env.VITE_SUPABASE_ANON_KEY !== 'placeholder-key' &&
+  env.VITE_SUPABASE_ANON_KEY !== 'placeholder-anon-key'
 );

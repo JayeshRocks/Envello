@@ -12,7 +12,9 @@ describe('rateLimiter', () => {
 
   beforeEach(() => {
     resetRateLimit(testKey);
-    sessionStorage.clear();
+    if (typeof sessionStorage !== 'undefined' && typeof sessionStorage.clear === 'function') {
+      sessionStorage.clear();
+    }
   });
 
   it('allows requests when within attempt threshold', () => {
