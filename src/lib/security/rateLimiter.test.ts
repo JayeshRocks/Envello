@@ -5,16 +5,15 @@ import {
   resetRateLimit,
   getCooldownRemaining,
   setCooldown,
+  clearRateLimitStorage,
 } from './rateLimiter';
 
 describe('rateLimiter', () => {
   const testKey = 'test_user_rate_limit';
 
   beforeEach(() => {
+    clearRateLimitStorage();
     resetRateLimit(testKey);
-    if (typeof sessionStorage !== 'undefined' && typeof sessionStorage.clear === 'function') {
-      sessionStorage.clear();
-    }
   });
 
   it('allows requests when within attempt threshold', () => {

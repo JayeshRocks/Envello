@@ -2,6 +2,8 @@
  * Client-Side Rate Limiter & Cooldown Guard
  * Prevents rapid-fire brute forcing, auth credential stuffing,
  * and email sending abuse from the browser.
+ * Uses an in-memory fallback store with sessionStorage synchronization
+ * for full compatibility with browsers, private modes, and headless test runners.
  */
 
 export interface RateLimitStatus {
@@ -17,9 +19,57 @@ interface AttemptRecord {
 
 const STORAGE_PREFIX = 'envello_rl_';
 
+// In-memory fallback map for environments without sessionStorage (e.g. Node.js CI, private browsing)
+const memoryStore = new Map<string, string>();
+
+function getRawItem(key: string): string | null {
+  try {
+    if (typeof sessionStorage !== 'undefined' && typeof sessionStorage.getItem === 'function') {
+      const val = sessionStorage.getItem(key);
+      if (val !== null) return val;
+    }
+  } catch {
+    // Fall back to memoryStore
+  }
+  return memoryStore.get(key) ?? null;
+}
+
+function setRawItem(key: string, value: string): void {
+  memoryStore.set(key, value);
+  try {
+    if (typeof sessionStorage !== 'undefined' && typeof sessionStorage.setItem === 'function') {
+      sessionStorage.setItem(key, value);
+    }
+  } catch {
+    // In-memory storage is already populated
+  }
+}
+
+function removeRawItem(key: string): void {
+  memoryStore.delete(key);
+  try {
+    if (typeof sessionStorage !== 'undefined' && typeof sessionStorage.removeItem === 'function') {
+      sessionStorage.removeItem(key);
+    }
+  } catch {
+    // In-memory storage is already cleared
+  }
+}
+
+export function clearRateLimitStorage(): void {
+  memoryStore.clear();
+  try {
+    if (typeof sessionStorage !== 'undefined' && typeof sessionStorage.clear === 'function') {
+      sessionStorage.clear();
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 function getStorageRecord(key: string): AttemptRecord {
   try {
-    const raw = sessionStorage.getItem(`${STORAGE_PREFIX}${key}`);
+    const raw = getRawItem(`${STORAGE_PREFIX}${key}`);
     if (!raw) return { attempts: [] };
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed.attempts)) {
@@ -32,11 +82,7 @@ function getStorageRecord(key: string): AttemptRecord {
 }
 
 function setStorageRecord(key: string, record: AttemptRecord): void {
-  try {
-    sessionStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(record));
-  } catch {
-    // Ignore storage quota errors
-  }
+  setRawItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(record));
 }
 
 /**
@@ -94,11 +140,7 @@ export function recordAttempt(
  * Clears recorded attempts on successful action (e.g. successful login).
  */
 export function resetRateLimit(key: string): void {
-  try {
-    sessionStorage.removeItem(`${STORAGE_PREFIX}${key}`);
-  } catch {
-    // Ignore
-  }
+  removeRawItem(`${STORAGE_PREFIX}${key}`);
 }
 
 /**
@@ -106,7 +148,7 @@ export function resetRateLimit(key: string): void {
  */
 export function getCooldownRemaining(key: string, cooldownSeconds: number = 60): number {
   try {
-    const raw = sessionStorage.getItem(`${STORAGE_PREFIX}cd_${key}`);
+    const raw = getRawItem(`${STORAGE_PREFIX}cd_${key}`);
     if (!raw) return 0;
     const lastTrigger = Number(raw);
     const elapsedSeconds = Math.floor((Date.now() - lastTrigger) / 1000);
@@ -117,9 +159,5 @@ export function getCooldownRemaining(key: string, cooldownSeconds: number = 60):
 }
 
 export function setCooldown(key: string): void {
-  try {
-    sessionStorage.setItem(`${STORAGE_PREFIX}cd_${key}`, String(Date.now()));
-  } catch {
-    // Ignore
-  }
+  setRawItem(`${STORAGE_PREFIX}cd_${key}`, String(Date.now()));
 }
