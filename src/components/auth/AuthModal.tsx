@@ -19,6 +19,10 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
+import { sanitizeEmail } from '@/lib/security/sanitization';
+import { checkRateLimit, recordAttempt, resetRateLimit, getCooldownRemaining, setCooldown } from '@/lib/security/rateLimiter';
+import { PasswordSchema, getFirstZodError } from '@/lib/validation/schemas';
+import { logSecurityEvent } from '@/lib/security/auditLogger';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -141,14 +145,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const formatAuthError = (msg?: string | null): string => {
     if (!msg) return 'An error occurred during authentication.';
-    if (msg.toLowerCase().includes('rate limit')) {
+    const lower = msg.toLowerCase();
+    if (lower.includes('rate limit')) {
       return 'Email rate limit reached. Please wait a few minutes before requesting another verification email.';
+    }
+    if (lower.includes('expired') || lower.includes('invalid link')) {
+      return 'Your password reset or verification link has expired. Please request a new link below.';
     }
     return msg;
   };
 
   const handleResendVerification = async () => {
-    const cleanEmail = email.trim();
+    const cleanEmail = sanitizeEmail(email);
+    const cooldownRemaining = getCooldownRemaining(`resend_${cleanEmail}`, 60);
+    if (cooldownRemaining > 0) {
+      setValidationError(`Please wait ${cooldownRemaining}s before requesting another verification email.`);
+      return;
+    }
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setValidationError('Please enter a valid email address first.');
       return;
@@ -163,6 +176,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setValidationError(formatAuthError(resendErr.message));
       } else {
         setResendSuccess(`Verification email sent to ${cleanEmail}! Please check your Inbox and Spam/Junk folder.`);
+        setCooldown(`resend_${cleanEmail}`);
       }
     } catch (err: unknown) {
       setValidationError(formatAuthError(err instanceof Error ? err.message : null));
@@ -179,12 +193,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setResendSuccess(null);
     setAccountExistsFromMagicLink(false);
 
-    const cleanEmail = email.trim();
+    const cleanEmail = sanitizeEmail(email);
+    const rlKey = `auth_${cleanEmail || 'anon'}`;
+    const rateLimit = checkRateLimit(rlKey, 5, 15 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      setValidationError(`Too many login attempts. Please wait ${rateLimit.retryAfterSeconds}s.`);
+      logSecurityEvent({
+        action: 'AUTH_RATE_LIMITED',
+        details: { email: cleanEmail, retryAfterSeconds: rateLimit.retryAfterSeconds },
+      });
+      return;
+    }
 
     // If currently fulfilling a Password Recovery flow (updating password directly)
     if (isPasswordRecovery) {
-      if (!password || password.length < 6) {
-        setValidationError('Password must be at least 6 characters.');
+      const pwResult = PasswordSchema.safeParse(password);
+      if (!pwResult.success) {
+        setValidationError(getFirstZodError(pwResult.error));
         return;
       }
       if (password !== confirmPassword) {
@@ -195,7 +220,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       try {
         const { error: updateErr } = await updatePassword(password);
         if (updateErr) {
-          setValidationError(updateErr.message);
+          setValidationError(formatAuthError(updateErr.message));
         } else {
           setIsPasswordRecovery(false);
           setSuccessMessage('Password saved successfully! You are now logged in.');
@@ -214,16 +239,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (mode === 'signIn' || mode === 'signUp') {
-      if (!password || password.length < 6) {
-        setValidationError('Password must be at least 6 characters.');
+    if (mode === 'signUp') {
+      const pwResult = PasswordSchema.safeParse(password);
+      if (!pwResult.success) {
+        setValidationError(getFirstZodError(pwResult.error));
         return;
       }
-    }
-
-    if (mode === 'signUp') {
       if (password !== confirmPassword) {
         setValidationError('Passwords do not match.');
+        return;
+      }
+    } else if (mode === 'signIn') {
+      if (!password || password.length < 8) {
+        setValidationError('Password must be at least 8 characters.');
         return;
       }
     }
@@ -234,14 +262,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (mode === 'signIn') {
         const { error: err } = await signInWithEmail(cleanEmail, password);
         if (!err) {
+          resetRateLimit(rlKey);
+          logSecurityEvent({ action: 'AUTH_LOGIN_SUCCESS', details: { email: cleanEmail } });
           onClose();
-        } else if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
-          setIsUnconfirmed(true);
-          setValidationError('Your email has not been confirmed yet.');
-        } else if (err.message && err.message.toLowerCase().includes('invalid login credentials')) {
-          setValidationError(
-            'Invalid login credentials. If you originally logged in with a Magic Link, your account does not have a password yet — click "Set or Reset Password" below.'
-          );
+        } else {
+          recordAttempt(rlKey, 15 * 60 * 1000);
+          logSecurityEvent({ action: 'AUTH_LOGIN_FAILURE', details: { email: cleanEmail, error: err.message } });
+          if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
+            setIsUnconfirmed(true);
+            setValidationError('Your email has not been confirmed yet.');
+          } else if (err.message && err.message.toLowerCase().includes('invalid login credentials')) {
+            setValidationError(
+              'Invalid login credentials. If you originally logged in with a Magic Link, your account does not have a password yet — click "Set or Reset Password" below.'
+            );
+          } else {
+            setValidationError(formatAuthError(err.message));
+          }
         }
       } else if (mode === 'signUp') {
         const result = await signUpWithEmail(cleanEmail, password);

@@ -1,0 +1,14 @@
+# Envello Robots.txt
+# Disallow search engine scrapers and AI training scrapers from private user application paths
+
+User-agent: *
+Disallow: /auth/
+Disallow: /api/
+Disallow: /app/
+Disallow: /dashboard/
+Allow: /$
+Allow: /privacy
+Allow: /terms
+
+# Sitemaps
+# Sitemap: https://envello.app/sitemap.xml

@@ -17,7 +17,7 @@ These rules apply to any AI agent working on the Envello codebase.
 - **Context**: Conflating locked savings or card limits with spendable cash leads to overdrafts and financial mistakes.
 
 ## 3. Row Level Security & Zero Trust Client IDs
-- **Rule**: Enable RLS on every table without exception. Never accept a `user_id` from the client request body or query params to establish data ownership. All RLS policies must strictly enforce `auth.uid() = user_id`.
+- **Rule**: Enable RLS on every table without exception. Never accept a `user_id` from the client request body or query params to establish data ownership. All RLS policies must strictly enforce `auth.uid() = user_id`. All PostgreSQL functions must follow least-privilege grants (`REVOKE EXECUTE FROM PUBLIC, anon`) and assert caller identity in `SECURITY DEFINER` functions.
 - **Context**: Even if the frontend application is publicly accessible, private financial data must remain 100% inaccessible to unauthorized users.
 
 ## 4. Private Beta Gating

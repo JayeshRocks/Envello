@@ -49,7 +49,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {this.state.error?.message && (
               <div className="p-3 rounded-xl bg-neutral-900 border border-white/5 text-[11px] font-mono text-neutral-300 text-left overflow-x-auto">
-                {this.state.error.message}
+                {import.meta.env.DEV
+                  ? this.state.error.message
+                  : 'An internal application state error occurred. Details have been logged securely.'}
               </div>
             )}
 

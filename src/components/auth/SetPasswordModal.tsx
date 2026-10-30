@@ -3,6 +3,7 @@ import { KeyRound, Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, X, Spa
 import { useAuth } from '@/hooks/useAuth';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
+import { PasswordSchema, getFirstZodError } from '@/lib/validation/schemas';
 
 interface SetPasswordModalProps {
   isOpen: boolean;
@@ -39,8 +40,9 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ isOpen, onCl
     setError(null);
     setSuccess(null);
 
-    if (!password || password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    const pwCheck = PasswordSchema.safeParse(password);
+    if (!pwCheck.success) {
+      setError(getFirstZodError(pwCheck.error));
       return;
     }
 

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: {
     alias: {
@@ -15,6 +15,7 @@ export default defineConfig({
     strictPort: true,
   },
   build: {
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -26,5 +27,8 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 600,
   },
-  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
-});
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
+  envPrefix: ['VITE_'],
+}));
