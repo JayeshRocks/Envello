@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS public.credit_card_statements (
 );
 ```
 
-### 3.6 `fixed_deposits` (Savings, FDs & RDs Assets)
+### 3.6 `fixed_deposits` (Fixed Deposits & Recurring Deposits)
 ```sql
 CREATE TABLE IF NOT EXISTS public.fixed_deposits (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS public.fixed_deposits (
     start_date DATE NOT NULL,
     maturity_date DATE NOT NULL,
     maturity_amount_paise BIGINT NOT NULL,
-    deposit_type TEXT NOT NULL DEFAULT 'fd' CHECK (deposit_type IN ('fd', 'rd', 'savings')),
+    deposit_type TEXT NOT NULL DEFAULT 'fd' CHECK (deposit_type IN ('fd', 'rd')),
     monthly_deposit_paise BIGINT DEFAULT 0 CHECK (monthly_deposit_paise >= 0),
     is_liquidated BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
@@ -353,5 +353,5 @@ $$;
 | `20261027000001_account_deletion_grace_period.sql` | Implements 30-day account closure grace period, restoration RPC, and automated purge sweeping. |
 | `20261029000000_rename_regular_to_spendable_and_trim_default_envelopes.sql` | Refines envelope taxonomy to match Spendable Cash pillar. |
 | `20261031000000_security_hardening.sql` | Security hardening: caller identity assertions (`auth.uid() = target_user_id`) in `purge_user_data`, `REVOKE EXECUTE FROM PUBLIC, anon` on sensitive RPCs, and string length check constraints across all tables. |
-| `20261102000000_savings_and_deposits_types.sql` | Expands `fixed_deposits` table with `deposit_type` (`fd`, `rd`, `savings`) and `monthly_deposit_paise` for recurring deposits. |
+| `20261102000000_savings_and_deposits_types.sql` | Expands `fixed_deposits` table with `deposit_type` (`fd`, `rd`) and `monthly_deposit_paise` for recurring deposits. |
 

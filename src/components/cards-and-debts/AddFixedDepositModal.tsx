@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Landmark, ShieldAlert, Sparkles, RotateCcw, PiggyBank } from 'lucide-react';
+import { X, Landmark, ShieldAlert, Sparkles, RotateCcw } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { DepositType } from '@/lib/api/fixedDeposits';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
@@ -45,7 +45,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Calculate estimated maturity date & compound interest estimate for FD, RD, and Savings
+  // Calculate estimated maturity date & compound interest estimate for FD & RD
   const handleAutoEstimateMaturity = () => {
     const r = parseFloat(interestRate);
     if (isNaN(r) || r <= 0) return;
@@ -66,13 +66,6 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
         const interest = m * ((tenureMonths * (tenureMonths + 1)) / 24) * (r / 100);
         setPrincipalRupees(Math.round(totalInvested).toString());
         setMaturityRupees(Math.round(totalInvested + interest).toString());
-      }
-    } else if (depositType === 'savings') {
-      const p = parseFloat(principalRupees);
-      if (!isNaN(p) && p > 0) {
-        // 1-year projected balance with simple interest
-        const a = p * (1 + (r * tenureMonths) / 1200);
-        setMaturityRupees(Math.round(a).toString());
       }
     }
   };
@@ -113,12 +106,14 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
       const estInterest = mVal * ((tenureMonths * (tenureMonths + 1)) / 24) * (rate / 100);
       m = parseFloat(maturityRupees) || Math.round(p + estInterest);
     } else {
-      p = parseFloat(principalRupees);
-      if (isNaN(p) || p <= 0) {
+      const pVal = parseFloat(principalRupees);
+      if (isNaN(pVal) || pVal <= 0) {
         setError('Please enter a valid principal balance.');
         return;
       }
-      m = parseFloat(maturityRupees) || Math.round(p * (1 + (rate * tenureMonths) / 1200));
+      p = pVal;
+      const t = tenureMonths / 12;
+      m = parseFloat(maturityRupees) || Math.round(p * Math.pow(1 + rate / 100, t));
     }
 
     try {
@@ -143,7 +138,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
       setMaturityRupees('');
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to create instrument';
+      const msg = err instanceof Error ? err.message : 'Failed to create term deposit';
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -165,8 +160,8 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 <Landmark className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Add Savings Instrument</h3>
-                <p className="text-xs text-neutral-400">Fixed Deposits, Recurring Deposits & Bank Savings Reserves</p>
+                <h3 className="text-base font-semibold text-white">Add Term Deposit</h3>
+                <p className="text-xs text-neutral-400">Fixed Deposits (FD) & Recurring Deposits (RD)</p>
               </div>
             </div>
             <button
@@ -178,20 +173,20 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
           </div>
 
           {/* Instrument Type Selector Tabs */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-neutral-950 border border-white/10 text-xs font-medium">
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-neutral-950 border border-white/10 text-xs font-medium">
             <button
               type="button"
               onClick={() => {
                 setDepositType('fd');
                 setInterestRate('7.5');
               }}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-2 rounded-lg transition-all active:scale-95 cursor-pointer min-h-[40px] sm:min-h-[34px] ${
+              className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-lg transition-all active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] ${
                 depositType === 'fd'
                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shadow-sm'
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <Landmark className="w-3.5 h-3.5" />
+              <Landmark className="w-4 h-4" />
               <span>Fixed Deposit (FD)</span>
             </button>
             <button
@@ -200,29 +195,14 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 setDepositType('rd');
                 setInterestRate('7.1');
               }}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-2 rounded-lg transition-all active:scale-95 cursor-pointer min-h-[40px] sm:min-h-[34px] ${
+              className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-lg transition-all active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] ${
                 depositType === 'rd'
                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shadow-sm'
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Recurring (RD)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDepositType('savings');
-                setInterestRate('4.0');
-              }}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-2 rounded-lg transition-all active:scale-95 cursor-pointer min-h-[40px] sm:min-h-[34px] ${
-                depositType === 'savings'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shadow-sm'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <PiggyBank className="w-3.5 h-3.5" />
-              <span>Bank Savings</span>
+              <RotateCcw className="w-4 h-4" />
+              <span>Recurring Deposit (RD)</span>
             </button>
           </div>
 
@@ -237,10 +217,8 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
             <div>
               <label className="block text-neutral-400 font-medium mb-1">
                 {depositType === 'fd'
-                  ? 'Bank / FD Issuer'
-                  : depositType === 'rd'
-                  ? 'Bank / Post Office / RD Provider'
-                  : 'Bank / Savings Institution'}
+                  ? 'Bank / NBFC Issuer'
+                  : 'Bank / Post Office / RD Provider'}
               </label>
               <input
                 type="text"
@@ -249,9 +227,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 placeholder={
                   depositType === 'fd'
                     ? 'e.g. HDFC Bank, SBI, ICICI, Bajaj Finance, Stable Money'
-                    : depositType === 'rd'
-                    ? 'e.g. State Bank of India RD, India Post RD, Kotak RD'
-                    : 'e.g. HDFC High-Yield Savings, Axis Wealth Reserve, Kotak 811'
+                    : 'e.g. State Bank of India RD, India Post RD, Kotak RD'
                 }
                 className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500"
                 required
@@ -299,7 +275,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-neutral-400 font-medium mb-1">
-                    {depositType === 'savings' ? 'Current Savings Balance (₹)' : 'Principal Amount (₹)'}
+                    Principal Amount (₹)
                   </label>
                   <input
                     type="number"
@@ -318,7 +294,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                     step="0.01"
                     value={interestRate}
                     onChange={(e) => setInterestRate(e.target.value)}
-                    placeholder={depositType === 'savings' ? '4.00' : '7.50'}
+                    placeholder="7.50"
                     className="w-full bg-neutral-900 border border-white/10 rounded-xl px-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 font-mono"
                     required
                   />
@@ -364,7 +340,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-neutral-400 font-medium">
-                  {depositType === 'savings' ? 'Projected 1-Year Balance (₹)' : 'Target Maturity Amount (₹)'}
+                  Target Maturity Amount (₹)
                 </label>
                 <button
                   type="button"
@@ -426,8 +402,6 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                   ? 'Saving...'
                   : depositType === 'rd'
                   ? 'Add Recurring Deposit'
-                  : depositType === 'savings'
-                  ? 'Add Savings Reserve'
                   : 'Add Fixed Deposit'}
               </button>
             </div>

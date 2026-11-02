@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Wallet,
   Mail,
-  PiggyBank,
   CreditCard,
   CalendarClock,
 
@@ -575,10 +574,10 @@ export const App: React.FC = () => {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider group-hover:text-amber-300 transition-colors">
-                      3. Savings, FDs & RDs
+                      3. Fixed Deposits & RDs
                     </span>
                     <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500/20 group-hover:scale-105 transition-all">
-                      <PiggyBank className="w-5 h-5" />
+                      <Landmark className="w-5 h-5" />
                     </div>
                   </div>
                   <div>
@@ -586,7 +585,7 @@ export const App: React.FC = () => {
                       {formatINR(effectiveSavingsAndFDsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Fixed Deposits, RDs & Bank Savings</span>
+                      <span>Term Deposits & Growth</span>
                       <span className="text-[10px] text-amber-400/80 group-hover:text-amber-300 font-medium transition-colors">Manage &rarr;</span>
                     </div>
                   </div>

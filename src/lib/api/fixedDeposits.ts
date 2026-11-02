@@ -3,10 +3,10 @@ import type { Database } from '@/types/database.types';
 
 export type FixedDepositRow = Database['public']['Tables']['fixed_deposits']['Row'];
 export type FixedDepositInsert = Database['public']['Tables']['fixed_deposits']['Insert'];
-export type DepositType = 'fd' | 'rd' | 'savings';
+export type DepositType = 'fd' | 'rd';
 
 /**
- * Fetch all fixed deposits, RDs, and savings term assets for a user
+ * Fetch all fixed deposits and RDs for a user
  */
 export async function fetchFixedDeposits(
   userId: string,

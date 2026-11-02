@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Landmark, Plus, CheckCircle2, PiggyBank } from 'lucide-react';
+import { Landmark, Plus, CheckCircle2 } from 'lucide-react';
 import type { FixedDepositRow, DepositType } from '@/lib/api/fixedDeposits';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
@@ -40,7 +40,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
   onLiquidateFD,
 }) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [filterType, setFilterType] = useState<'all' | 'fd' | 'rd' | 'savings'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'fd' | 'rd'>('all');
   const [liquidatingFdId, setLiquidatingFdId] = useState<string | null>(null);
   const [destAccountId, setDestAccountId] = useState<string>(accounts[0]?.id || '');
   const [isLiquidating, setIsLiquidating] = useState(false);
@@ -48,15 +48,6 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
   const activeFDs = useMemo(() => {
     return fixedDeposits.filter((fd) => !fd.is_liquidated);
   }, [fixedDeposits]);
-
-  // Bank savings accounts from accounts list
-  const bankSavingsAccounts = useMemo(() => {
-    return accounts.filter((acc) => acc.isActive && acc.accountType === 'savings');
-  }, [accounts]);
-
-  const totalBankSavingsPaise = useMemo(() => {
-    return bankSavingsAccounts.reduce((sum, acc) => sum + acc.balancePaise, 0n);
-  }, [bankSavingsAccounts]);
 
   const fdsList = useMemo(() => {
     return activeFDs.filter((fd) => fd.deposit_type === 'fd' || !fd.deposit_type);
@@ -66,12 +57,12 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
     return activeFDs.filter((fd) => fd.deposit_type === 'rd');
   }, [activeFDs]);
 
-  const savingsDepositsList = useMemo(() => {
-    return activeFDs.filter((fd) => fd.deposit_type === 'savings');
-  }, [activeFDs]);
-
   const totalFdPrincipalPaise = useMemo(() => {
     return fdsList.reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  }, [fdsList]);
+
+  const totalFdMaturityPaise = useMemo(() => {
+    return fdsList.reduce((sum, fd) => sum + BigInt(fd.maturity_amount_paise), 0n);
   }, [fdsList]);
 
   const totalRdMonthlyPaise = useMemo(() => {
@@ -86,9 +77,8 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
     if (filterType === 'all') return activeFDs;
     if (filterType === 'fd') return fdsList;
     if (filterType === 'rd') return rdsList;
-    if (filterType === 'savings') return savingsDepositsList;
     return activeFDs;
-  }, [filterType, activeFDs, fdsList, rdsList, savingsDepositsList]);
+  }, [filterType, activeFDs, fdsList, rdsList]);
 
   const handleConfirmLiquidation = async (fdId: string) => {
     if (!destAccountId) return;
@@ -110,13 +100,13 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h3 className="text-base font-semibold text-white">Savings, Fixed Deposits & RDs</h3>
+            <h3 className="text-base font-semibold text-white">Fixed Deposits & Recurring Deposits</h3>
             <span className="text-xs text-neutral-400">
-              ({activeFDs.length + bankSavingsAccounts.length} wealth & term assets)
+              ({activeFDs.length} active term deposits)
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Locked principal, recurring deposits, and dedicated bank savings reserves isolated from daily spending.
+            Locked principal and disciplined monthly recurring deposits isolated from daily spending.
           </p>
         </div>
 
@@ -125,7 +115,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
           className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs sm:text-sm shadow-sm flex items-center space-x-1.5 self-start sm:self-auto transition active:scale-95 min-h-[44px] sm:min-h-[38px] cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Add Savings / Deposit</span>
+          <span>Add Term Deposit</span>
         </button>
       </div>
 
@@ -145,7 +135,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
             {formatINR(totalFdPrincipalPaise)}
           </div>
           <div className="text-[10px] text-neutral-500 font-mono">
-            Maturity: <span className="text-emerald-400 font-medium">{formatINR(totalMaturityPaise)}</span>
+            Maturity: <span className="text-emerald-400 font-medium">{formatINR(totalFdMaturityPaise)}</span>
           </div>
         </div>
 
@@ -167,39 +157,39 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
           </div>
         </div>
 
-        {/* Bank Savings Accounts Metric */}
+        {/* Total Locked Principal */}
         <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-4">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-              Bank Savings
-            </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              {bankSavingsAccounts.length} accounts
-            </span>
-          </div>
-          <div className="text-lg font-bold font-mono tracking-tight text-emerald-400 tabular-nums">
-            {formatINR(totalBankSavingsPaise)}
-          </div>
-          <div className="text-[10px] text-neutral-500 font-mono">
-            Official liquid savings accounts
-          </div>
-        </div>
-
-        {/* Total Combined Pillar 3 Assets */}
-        <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-              Total Wealth Assets
+              Total Locked Principal
             </span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-neutral-400 border border-white/10">
-              Combined
+              Principal
             </span>
           </div>
           <div className="text-lg font-bold font-mono tracking-tight text-amber-300 tabular-nums">
-            {formatINR(totalPrincipalPaise + totalBankSavingsPaise)}
+            {formatINR(totalPrincipalPaise)}
           </div>
           <div className="text-[10px] text-neutral-500 font-mono">
-            FDs + RDs + Bank Reserves
+            FD Principal + Total RD Targets
+          </div>
+        </div>
+
+        {/* Total Projected Maturity */}
+        <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+              Combined Maturity
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Maturity
+            </span>
+          </div>
+          <div className="text-lg font-bold font-mono tracking-tight text-emerald-400 tabular-nums">
+            {formatINR(totalMaturityPaise)}
+          </div>
+          <div className="text-[10px] text-neutral-500 font-mono">
+            Total Expected Payout
           </div>
         </div>
       </div>
@@ -214,7 +204,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
               : 'text-neutral-400 hover:text-white'
           }`}
         >
-          All Assets ({activeFDs.length + (filterType === 'all' ? bankSavingsAccounts.length : 0)})
+          All Deposits ({activeFDs.length})
         </button>
         <button
           onClick={() => setFilterType('fd')}
@@ -236,94 +226,38 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
         >
           Recurring Deposits ({rdsList.length})
         </button>
-        <button
-          onClick={() => setFilterType('savings')}
-          className={`px-3 py-1.5 rounded-lg transition active:scale-95 cursor-pointer min-h-[36px] sm:min-h-[30px] ${
-            filterType === 'savings'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold shadow-sm'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          Bank Savings ({bankSavingsAccounts.length + savingsDepositsList.length})
-        </button>
       </div>
 
-      {/* Grid of Instruments */}
+      {/* Grid of Deposits */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading savings instruments...</div>
-      ) : filteredDeposits.length === 0 && (filterType !== 'all' && filterType !== 'savings' || bankSavingsAccounts.length === 0) ? (
+        <div className="p-8 text-center text-xs text-neutral-500">Loading term deposits...</div>
+      ) : filteredDeposits.length === 0 ? (
         <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3 bg-white/[0.01]">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20">
             <Landmark className="w-5 h-5" />
           </div>
-          <div className="text-xs font-semibold text-white">No Instruments In This Category</div>
+          <div className="text-xs font-semibold text-white">No Term Deposits Found</div>
           <p className="text-[11px] text-neutral-400 max-w-sm mx-auto">
-            Track your Fixed Deposits, Recurring Deposits (RD), or dedicated Bank Savings to monitor long-term wealth growth.
+            Track your Fixed Deposits (FD) or Recurring Deposits (RD) to monitor your long-term wealth growth deterministically.
           </p>
           <button
             onClick={() => setIsAddOpen(true)}
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm"
           >
-            + Add First Instrument
+            + Add First Deposit
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Bank Savings Accounts (shown when filter is 'all' or 'savings') */}
-          {(filterType === 'all' || filterType === 'savings') &&
-            bankSavingsAccounts.map((acc) => (
-              <div
-                key={`acc-${acc.id}`}
-                className="glass-card glass-card-interactive rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-emerald-500/30 group"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                        Bank Savings Account
-                      </span>
-                    </div>
-                    <div className="text-sm font-semibold text-white group-hover:text-emerald-300 transition pt-1">
-                      {acc.name}
-                    </div>
-                    <div className="text-[11px] text-neutral-400">{acc.institution}</div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    <PiggyBank className="w-4 h-4" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-[11px] text-neutral-400">Current Savings Balance</div>
-                  <div className="text-xl font-bold font-mono tracking-tight text-emerald-400 tabular-nums">
-                    {formatINR(acc.balancePaise)}
-                  </div>
-                  <div className="text-[10px] text-neutral-500 font-mono">
-                    Official liquid bank account marked as savings
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-neutral-400">
-                  <span className="flex items-center space-x-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Active Account</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-neutral-500">Pillar 1/3 Reserve</span>
-                </div>
-              </div>
-            ))}
-
-          {/* Fixed Deposits & Recurring Deposits */}
           {filteredDeposits.map((fd) => {
             const isTargetedForLiquidation = liquidatingFdId === fd.id;
             const isRD = fd.deposit_type === 'rd';
-            const isSavingsReserve = fd.deposit_type === 'savings';
 
             return (
               <div
                 key={fd.id}
                 className={`glass-card glass-card-interactive rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 group ${
-                  isRD ? 'hover:border-indigo-500/30' : isSavingsReserve ? 'hover:border-emerald-500/30' : 'hover:border-amber-500/30'
+                  isRD ? 'hover:border-indigo-500/30' : 'hover:border-amber-500/30'
                 }`}
               >
                 {/* Top Info */}
@@ -334,12 +268,10 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                         className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-medium ${
                           isRD
                             ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                            : isSavingsReserve
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                             : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}
                       >
-                        {isRD ? 'Recurring Deposit (RD)' : isSavingsReserve ? 'Savings Reserve' : 'Fixed Deposit (FD)'}
+                        {isRD ? 'Recurring Deposit (RD)' : 'Fixed Deposit (FD)'}
                       </span>
                     </div>
                     <div className="text-sm font-semibold text-white group-hover:text-amber-200 transition pt-1">

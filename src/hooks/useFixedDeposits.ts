@@ -56,10 +56,22 @@ export function useFixedDeposits() {
       .reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
   }, [activeDeposits]);
 
+  const totalFdMaturityPaise = useMemo(() => {
+    return activeDeposits
+      .filter((fd) => fd.deposit_type === 'fd' || !fd.deposit_type)
+      .reduce((sum, fd) => sum + BigInt(fd.maturity_amount_paise), 0n);
+  }, [activeDeposits]);
+
   const totalRdPrincipalPaise = useMemo(() => {
     return activeDeposits
       .filter((fd) => fd.deposit_type === 'rd')
       .reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  }, [activeDeposits]);
+
+  const totalRdMaturityPaise = useMemo(() => {
+    return activeDeposits
+      .filter((fd) => fd.deposit_type === 'rd')
+      .reduce((sum, fd) => sum + BigInt(fd.maturity_amount_paise), 0n);
   }, [activeDeposits]);
 
   const totalRdMonthlyPaise = useMemo(() => {
@@ -101,7 +113,9 @@ export function useFixedDeposits() {
     totalPrincipalPaise,
     totalMaturityPaise,
     totalFdPrincipalPaise,
+    totalFdMaturityPaise,
     totalRdPrincipalPaise,
+    totalRdMaturityPaise,
     totalRdMonthlyPaise,
     isLoading,
     error,

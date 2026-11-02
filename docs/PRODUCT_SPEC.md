@@ -16,9 +16,9 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
    - Represents money that is actually available to be spent or allocated.
 2. **Envelope Allocations (Assigned Money)**:
    - Funds from spendable cash that have been budgeted into active spending categories for the current month.
-3. **Savings, FDs & RDs (Non-Spendable Assets)**:
-   - Long-term reserves, bank fixed deposits (FDs), recurring deposits (RDs) with monthly contributions, and dedicated bank savings accounts.
-   - Explicitly excluded from spendable cash to prevent accidental spending.
+3. **Fixed Deposits & RDs (Term Assets)**:
+   - Long-term reserves, bank fixed deposits (FDs), and recurring deposits (RDs) with monthly contributions.
+   - Explicitly excluded from spendable cash to prevent accidental spending. Bank savings accounts are tracked under Pillar 1 (Liquid Accounts), with interest earned recorded as Income or via Reconciliation.
 4. **Credit Card Liabilities (Unsettled Debt)**:
    - Total outstanding balances across all active credit cards.
    - Tracked alongside available credit limits and statement due dates.
