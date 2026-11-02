@@ -61,7 +61,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
       creditCards,
       fixedDeposits,
       actualDebts,
-  debtsLoans,
+      debtsLoans,
       monthlyTargets,
       recurringRules,
     });
@@ -77,90 +77,90 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
         className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
       >
         <div className="bg-neutral-900 border border-white/15 w-full max-w-md rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
-              <Download className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-white">Export & Backup Data</h3>
-              <p className="text-xs text-neutral-400">Download your personal financial records</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {downloadSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center space-x-2 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{downloadSuccess}</span>
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {/* CSV Option */}
-          <div className="p-4 rounded-xl bg-neutral-900/60 border border-white/5 hover:border-white/10 transition flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-                <FileSpreadsheet className="w-5 h-5" />
+              <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
+                <Download className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">Transactions CSV</div>
-                <div className="text-xs text-neutral-400">
-                  {transactions.length} transactions for Excel / Google Sheets
-                </div>
+                <h3 className="text-base font-semibold text-white">Export & Backup Data</h3>
+                <p className="text-xs text-neutral-400">Download your personal financial records</p>
               </div>
             </div>
             <button
-              onClick={handleExportCSV}
-              className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-emerald-400 font-medium border border-emerald-500/20 transition"
+              onClick={onClose}
+              className="p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
             >
-              Export CSV
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* JSON Option */}
-          <div className="p-4 rounded-xl bg-neutral-900/60 border border-white/5 hover:border-white/10 transition flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
-                <FileJson className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-white">Complete Workspace JSON</div>
-                <div className="text-xs text-neutral-400">
-                  Full snapshot of accounts, envelopes, debts & cards
+          {downloadSuccess && (
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center space-x-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <span>{downloadSuccess}</span>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {/* CSV Option */}
+            <div className="p-4 rounded-xl bg-neutral-900/60 border border-white/5 hover:border-white/10 transition flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Transactions CSV</div>
+                  <div className="text-xs text-neutral-400">
+                    {transactions.length} transactions for Excel / Google Sheets
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={handleExportCSV}
+                className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-emerald-400 font-medium border border-emerald-500/20 transition"
+              >
+                Export CSV
+              </button>
             </div>
+
+            {/* JSON Option */}
+            <div className="p-4 rounded-xl bg-neutral-900/60 border border-white/5 hover:border-white/10 transition flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
+                  <FileJson className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Complete Workspace JSON</div>
+                  <div className="text-xs text-neutral-400">
+                    Full snapshot of accounts, envelopes, debts & cards
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleExportJSON}
+                className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-indigo-400 font-medium border border-indigo-500/20 transition"
+              >
+                Export JSON
+              </button>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-neutral-900/40 border border-white/5 text-[11px] text-neutral-400 flex items-center space-x-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>Your data is exported client-side directly from your active session.</span>
+          </div>
+
+          <div className="pt-2 flex justify-end">
             <button
-              onClick={handleExportJSON}
-              className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-indigo-400 font-medium border border-indigo-500/20 transition"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-300 transition"
             >
-              Export JSON
+              Close
             </button>
           </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-neutral-900/40 border border-white/5 text-[11px] text-neutral-400 flex items-center space-x-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span>Your data is exported client-side directly from your active session.</span>
-        </div>
-
-        <div className="pt-2 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-300 transition"
-          >
-            Close
-          </button>
         </div>
       </div>
-    </div>
-  </ModalPortal>
-);
+    </ModalPortal>
+  );
 };
