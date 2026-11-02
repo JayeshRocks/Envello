@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { DeviceProvider } from './context/DeviceContext';
@@ -14,6 +15,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
         <AuthProvider>
           <ToastProvider>
             <App />
+            <Analytics />
           </ToastProvider>
         </AuthProvider>
       </DeviceProvider>
