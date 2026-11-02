@@ -3,9 +3,10 @@ import type { Database } from '@/types/database.types';
 
 export type FixedDepositRow = Database['public']['Tables']['fixed_deposits']['Row'];
 export type FixedDepositInsert = Database['public']['Tables']['fixed_deposits']['Insert'];
+export type DepositType = 'fd' | 'rd' | 'savings';
 
 /**
- * Fetch all fixed deposits for a user
+ * Fetch all fixed deposits, RDs, and savings term assets for a user
  */
 export async function fetchFixedDeposits(
   userId: string,
@@ -27,11 +28,15 @@ export async function fetchFixedDeposits(
     throw error;
   }
 
-  return data || [];
+  return (data || []).map((fd: any) => ({
+    ...fd,
+    deposit_type: fd.deposit_type || (fd.institution?.toLowerCase().includes('rd') ? 'rd' : 'fd'),
+    monthly_deposit_paise: fd.monthly_deposit_paise ?? 0,
+  }));
 }
 
 /**
- * Create a new fixed deposit.
+ * Create a new fixed deposit, recurring deposit (RD), or term savings reserve.
  * Optionally debits a liquid account if funding is selected.
  */
 export async function createFixedDeposit(
@@ -43,6 +48,8 @@ export async function createFixedDeposit(
     start_date: string;
     maturity_date: string;
     maturity_amount_paise: number;
+    deposit_type?: DepositType;
+    monthly_deposit_paise?: number;
     funding_account_id?: string;
   }
 ): Promise<FixedDepositRow> {
@@ -53,22 +60,28 @@ export async function createFixedDeposit(
     start_date,
     maturity_date,
     maturity_amount_paise,
+    deposit_type = 'fd',
+    monthly_deposit_paise = 0,
     funding_account_id,
   } = params;
 
-  // 1. Create the FD record
+  // 1. Create the deposit record
+  const insertPayload: any = {
+    user_id: userId,
+    institution,
+    principal_paise,
+    interest_rate_percent,
+    start_date,
+    maturity_date,
+    maturity_amount_paise,
+    is_liquidated: false,
+    deposit_type,
+    monthly_deposit_paise,
+  };
+
   const { data: fd, error: fdError } = await supabase
     .from('fixed_deposits')
-    .insert({
-      user_id: userId,
-      institution,
-      principal_paise,
-      interest_rate_percent,
-      start_date,
-      maturity_date,
-      maturity_amount_paise,
-      is_liquidated: false,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 

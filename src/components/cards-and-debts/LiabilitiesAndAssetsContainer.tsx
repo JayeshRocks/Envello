@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CreditCard, Landmark, RefreshCw, CalendarClock, Target } from 'lucide-react';
 import type { CreditCardWithDetails, CreditCardRow } from '@/lib/api/creditCards';
-import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
+import type { FixedDepositRow, DepositType } from '@/lib/api/fixedDeposits';
 import type { SelfEmiWithProgress } from '@/hooks/useSelfEmis';
 import type { SelfEmiInsert } from '@/lib/api/selfEmis';
 import type { ActualDebtRow, ActualDebtInsert } from '@/lib/api/actualDebts';
@@ -59,6 +59,8 @@ interface LiabilitiesAndAssetsContainerProps {
     start_date: string;
     maturity_date: string;
     maturity_amount_paise: number;
+    deposit_type?: DepositType;
+    monthly_deposit_paise?: number;
     funding_account_id?: string;
   }) => Promise<void>;
   onLiquidateFD: (params: {
@@ -157,10 +159,10 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
     },
     {
       id: 'fds' as const,
-      name: 'Savings & FDs',
+      name: 'Savings, FDs & RDs',
       icon: Landmark,
       count: props.fixedDeposits.filter((f) => !f.is_liquidated).length,
-      badgeColor: 'text-emerald-400',
+      badgeColor: 'text-amber-400',
     },
     {
       id: 'recurring' as const,

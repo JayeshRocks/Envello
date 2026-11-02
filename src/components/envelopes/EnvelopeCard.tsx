@@ -17,6 +17,7 @@ import {
   Plane,
   Utensils,
   Book,
+  Sparkles,
 } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { formatINR } from '@/lib/accounting/currency';
@@ -68,6 +69,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
 }) => {
   const IconComp = getIconComponent(envelope.icon);
   const isEmergency = envelope.slug === 'emergency';
+  const isSpendable = envelope.slug === 'regular' || envelope.slug === 'spendable';
 
   // Calculate percentage spent of allocation (if any allocated)
   const percentSpent =
@@ -102,6 +104,15 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                 >
                   <ShieldCheck className="w-2.5 h-2.5" />
                   <span>Reserve</span>
+                </span>
+              )}
+              {isSpendable && (
+                <span
+                  title="Primary Spendable Clearinghouse"
+                  className="inline-flex items-center space-x-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono"
+                >
+                  <Sparkles className="w-2.5 h-2.5" />
+                  <span>Primary</span>
                 </span>
               )}
             </div>

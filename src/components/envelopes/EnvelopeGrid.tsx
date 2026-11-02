@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, FolderPlus, RefreshCw, Layers, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, FolderPlus, RefreshCw, Layers, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 import { EnvelopeCard } from './EnvelopeCard';
 import { BudgetPeriodSelector } from './BudgetPeriodSelector';
@@ -38,6 +38,19 @@ export const EnvelopeGrid: React.FC = () => {
   const [editingEnvelope, setEditingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
+
+  // Segregate mandatory system envelopes (Spendable & Emergency) from user-created categories
+  const systemEnvelopes = useMemo(() => {
+    return envelopes.filter(
+      (env) => env.isSystemReserved || env.slug === 'regular' || env.slug === 'emergency' || env.slug === 'spendable'
+    );
+  }, [envelopes]);
+
+  const customEnvelopes = useMemo(() => {
+    return envelopes.filter(
+      (env) => !env.isSystemReserved && env.slug !== 'regular' && env.slug !== 'emergency' && env.slug !== 'spendable'
+    );
+  }, [envelopes]);
 
   const handleUndoAllocation = useCallback(async () => {
     if (!canUndoAllocation || isUndoing) return;
@@ -167,7 +180,7 @@ export const EnvelopeGrid: React.FC = () => {
         </div>
       </div>
 
-      {/* Envelope Cards Grid */}
+      {/* Envelope Cards Section (Segregated into Mandatory Core Reserves vs Custom User Categories) */}
       {isLoading && envelopes.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -201,16 +214,112 @@ export const EnvelopeGrid: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {envelopes.map((env) => (
-            <EnvelopeCard
-              key={env.id}
-              envelope={env}
-              onAllocate={() => setAllocatingEnvelope(env)}
-              onTransfer={() => setTransferringEnvelopeId(env.id)}
-              onEdit={() => setEditingEnvelope(env)}
-            />
-          ))}
+        <div className="space-y-6">
+          {/* Section 1: Core & Mandatory Envelopes (Primary Flow & Emergency Reserve) */}
+          {systemEnvelopes.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-xs sm:text-sm font-semibold text-white tracking-tight">Core System Envelopes</h3>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
+                        Mandatory
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      Primary liquid spending pool and protected emergency reserve. Permanent system compartments.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {systemEnvelopes.map((env) => (
+                  <EnvelopeCard
+                    key={env.id}
+                    envelope={env}
+                    onAllocate={() => setAllocatingEnvelope(env)}
+                    onTransfer={() => setTransferringEnvelopeId(env.id)}
+                    onEdit={() => setEditingEnvelope(env)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Clean Visual Separator */}
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/5" />
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-wider font-mono text-neutral-500 bg-[#08090a] px-3">
+              Custom Lifestyle & Budget Categories
+            </div>
+          </div>
+
+          {/* Section 2: Custom User Categories */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center space-x-2">
+                <div className="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-xs sm:text-sm font-semibold text-white tracking-tight">Custom Categories</h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/10 font-medium">
+                      {customEnvelopes.length} {customEnvelopes.length === 1 ? 'category' : 'categories'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-neutral-400">
+                    Flexible envelopes tailored for your bills, hobbies, and monthly discretionary targets.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white text-xs font-medium transition self-start sm:self-auto active:scale-95 cursor-pointer min-h-[38px] sm:min-h-[32px]"
+              >
+                <Plus className="w-3.5 h-3.5 text-sky-400" />
+                <span>New Category</span>
+              </button>
+            </div>
+
+            {customEnvelopes.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 p-6 sm:p-8 text-center space-y-2.5 bg-white/[0.01]">
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 text-neutral-400 mx-auto flex items-center justify-center">
+                  <FolderPlus className="w-5 h-5" />
+                </div>
+                <div className="text-xs sm:text-sm font-semibold text-white">No Custom Categories Configured</div>
+                <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+                  Compartmentalize your monthly budget by creating custom envelopes for Groceries, Dining, Gym, or Vacation.
+                </p>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm"
+                >
+                  + Create Your First Category
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {customEnvelopes.map((env) => (
+                  <EnvelopeCard
+                    key={env.id}
+                    envelope={env}
+                    onAllocate={() => setAllocatingEnvelope(env)}
+                    onTransfer={() => setTransferringEnvelopeId(env.id)}
+                    onEdit={() => setEditingEnvelope(env)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

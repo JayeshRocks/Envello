@@ -16,8 +16,8 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
    - Represents money that is actually available to be spent or allocated.
 2. **Envelope Allocations (Assigned Money)**:
    - Funds from spendable cash that have been budgeted into active spending categories for the current month.
-3. **Savings & Fixed Deposits (Non-Spendable Assets)**:
-   - Long-term reserves, bank fixed deposits, term deposits, and recurring deposits.
+3. **Savings, FDs & RDs (Non-Spendable Assets)**:
+   - Long-term reserves, bank fixed deposits (FDs), recurring deposits (RDs) with monthly contributions, and dedicated bank savings accounts.
    - Explicitly excluded from spendable cash to prevent accidental spending.
 4. **Credit Card Liabilities (Unsettled Debt)**:
    - Total outstanding balances across all active credit cards.
@@ -33,32 +33,18 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
 ### 2.2 Envelope Budgeting System
 Envello utilizes zero-based envelope budgeting principles: every rupee of spendable cash has a designated role.
 
-#### Initial Envelope Categories:
-1. **Regular / Balance**:
-   - The default spending envelope.
-   - When no specific category is assigned, or for general discretionary transactions, funds are drawn from Regular.
-   - Persistent account balances remain separate from monthly allocations.
-2. **Emergency**:
-   - High-security reserve reserved solely for unforeseen crises (medical, urgent repairs).
-   - **Protection Rule**: Never automatically deduct or transfer money from Emergency to cover Regular or category deficits.
-   - Any withdrawal from Emergency requires explicit user confirmation.
-3. **Gym**:
-   - Health and fitness subscriptions, trainer fees, equipment.
-4. **Essentials**:
-   - Core utility bills, groceries, rent, medications.
-   - Maintained as an independent envelope (never merged with Gym).
-5. **Outing**:
-   - Dining out, weekend activities, entertainment.
-6. **Birthdays**:
-   - Gifts, celebratory meals, social events.
-7. **Savings & Fixed Deposits**:
-   - Tracked separately as non-spendable asset balances.
-8. **Credit Cards**:
-   - Tracking envelope for holding money reserved to pay off card statements.
-9. **EMI(s)**:
-   - Allocations earmarked for monthly debt and instalment repayments.
-10. **Monthly Targets**:
-    - Planning pool for recurring purchase goals.
+#### Visual & Functional Envelope Architecture:
+To prevent cognitive overload and maintain absolute structural clarity, the UI visually segregates envelopes into two distinct tiers:
+
+1. **Mandatory Core System Envelopes**:
+   - **Spendable (`spendable` / `regular`)**: The foundational clearinghouse envelope. Discretionary expenses and general transactions draw from here when unassigned. Cannot be deleted.
+   - **Emergency Reserve (`emergency`)**: Protected capital reserve reserved solely for unforeseen crises (medical, urgent repairs). Protected against automatic sweeps or balance deficit coverage.
+   - **Visual Presentation**: Grouped at the top with a dedicated header, `ShieldCheck` icon, `Mandatory` badges, and distinct visual treatment.
+
+2. **Custom User Categories**:
+   - User-defined lifestyle envelopes (`Essentials`, `Gym`, `Dining`, `Birthdays`, `Utilities`, etc.).
+   - Arranged in an adaptive multi-column grid with an inline `+ New Category` action button and individual category counters.
+   - Fully customizable, deletable, and reallocatable.
 
 #### Rollover & Month Transition Rules:
 - Envelopes support configurable rollover behavior (roll surplus into next month vs sweep back to Regular/Savings).

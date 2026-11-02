@@ -403,6 +403,8 @@ export interface Database {
           maturity_date: string;
           maturity_amount_paise: number;
           is_liquidated: boolean;
+          deposit_type: 'fd' | 'rd' | 'savings';
+          monthly_deposit_paise?: number;
           created_at: string;
           updated_at: string;
         };
@@ -416,6 +418,8 @@ export interface Database {
           maturity_date: string;
           maturity_amount_paise: number;
           is_liquidated?: boolean;
+          deposit_type?: 'fd' | 'rd' | 'savings';
+          monthly_deposit_paise?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -429,6 +433,8 @@ export interface Database {
           maturity_date?: string;
           maturity_amount_paise?: number;
           is_liquidated?: boolean;
+          deposit_type?: 'fd' | 'rd' | 'savings';
+          monthly_deposit_paise?: number;
           created_at?: string;
           updated_at?: string;
         };

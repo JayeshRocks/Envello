@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Landmark, Plus, CheckCircle2 } from 'lucide-react';
-import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
+import React, { useState, useMemo } from 'react';
+import { Landmark, Plus, CheckCircle2, PiggyBank } from 'lucide-react';
+import type { FixedDepositRow, DepositType } from '@/lib/api/fixedDeposits';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { AddFixedDepositModal } from './AddFixedDepositModal';
@@ -18,6 +18,8 @@ interface FixedDepositSectionProps {
     start_date: string;
     maturity_date: string;
     maturity_amount_paise: number;
+    deposit_type?: DepositType;
+    monthly_deposit_paise?: number;
     funding_account_id?: string;
   }) => Promise<void>;
   onLiquidateFD: (params: {
@@ -38,11 +40,55 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
   onLiquidateFD,
 }) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'fd' | 'rd' | 'savings'>('all');
   const [liquidatingFdId, setLiquidatingFdId] = useState<string | null>(null);
   const [destAccountId, setDestAccountId] = useState<string>(accounts[0]?.id || '');
   const [isLiquidating, setIsLiquidating] = useState(false);
 
-  const activeFDs = fixedDeposits.filter((fd) => !fd.is_liquidated);
+  const activeFDs = useMemo(() => {
+    return fixedDeposits.filter((fd) => !fd.is_liquidated);
+  }, [fixedDeposits]);
+
+  // Bank savings accounts from accounts list
+  const bankSavingsAccounts = useMemo(() => {
+    return accounts.filter((acc) => acc.isActive && acc.accountType === 'savings');
+  }, [accounts]);
+
+  const totalBankSavingsPaise = useMemo(() => {
+    return bankSavingsAccounts.reduce((sum, acc) => sum + acc.balancePaise, 0n);
+  }, [bankSavingsAccounts]);
+
+  const fdsList = useMemo(() => {
+    return activeFDs.filter((fd) => fd.deposit_type === 'fd' || !fd.deposit_type);
+  }, [activeFDs]);
+
+  const rdsList = useMemo(() => {
+    return activeFDs.filter((fd) => fd.deposit_type === 'rd');
+  }, [activeFDs]);
+
+  const savingsDepositsList = useMemo(() => {
+    return activeFDs.filter((fd) => fd.deposit_type === 'savings');
+  }, [activeFDs]);
+
+  const totalFdPrincipalPaise = useMemo(() => {
+    return fdsList.reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  }, [fdsList]);
+
+  const totalRdMonthlyPaise = useMemo(() => {
+    return rdsList.reduce((sum, fd) => sum + BigInt(fd.monthly_deposit_paise || 0), 0n);
+  }, [rdsList]);
+
+  const totalRdTargetPaise = useMemo(() => {
+    return rdsList.reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  }, [rdsList]);
+
+  const filteredDeposits = useMemo(() => {
+    if (filterType === 'all') return activeFDs;
+    if (filterType === 'fd') return fdsList;
+    if (filterType === 'rd') return rdsList;
+    if (filterType === 'savings') return savingsDepositsList;
+    return activeFDs;
+  }, [filterType, activeFDs, fdsList, rdsList, savingsDepositsList]);
 
   const handleConfirmLiquidation = async (fdId: string) => {
     if (!destAccountId) return;
@@ -64,74 +110,272 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h3 className="text-base font-semibold text-white">Savings & Fixed Deposits</h3>
-            <span className="text-xs text-neutral-400">({activeFDs.length} locked assets)</span>
+            <h3 className="text-base font-semibold text-white">Savings, Fixed Deposits & RDs</h3>
+            <span className="text-xs text-neutral-400">
+              ({activeFDs.length + bankSavingsAccounts.length} wealth & term assets)
+            </span>
           </div>
-          <p className="text-xs text-neutral-400">
-            Total Principal: <span className="font-mono text-emerald-400 font-semibold">{formatINR(totalPrincipalPaise)}</span> • Estimated Maturity:{' '}
-            <span className="font-mono text-emerald-300 font-semibold">{formatINR(totalMaturityPaise)}</span>
+          <p className="text-xs text-neutral-400 mt-0.5">
+            Locked principal, recurring deposits, and dedicated bank savings reserves isolated from daily spending.
           </p>
         </div>
 
         <button
           onClick={() => setIsAddOpen(true)}
-          className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs sm:text-sm text-white font-medium shadow-lg shadow-emerald-600/20 flex items-center space-x-1.5 self-start sm:self-auto transition active:scale-95 min-h-[44px] sm:min-h-[38px]"
+          className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs sm:text-sm shadow-sm flex items-center space-x-1.5 self-start sm:self-auto transition active:scale-95 min-h-[44px] sm:min-h-[38px] cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Fixed Deposit</span>
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Add Savings / Deposit</span>
         </button>
       </div>
 
-      {/* Grid */}
+      {/* Metric Cards Strip (Watermelon UI Metric Blocks) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 sm:p-5 rounded-2xl bg-[#0f1011] border border-white/10 shadow-lg">
+        {/* Fixed Deposits Metric */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+              Fixed Deposits (FD)
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              {fdsList.length} active
+            </span>
+          </div>
+          <div className="text-lg font-bold font-mono tracking-tight text-white tabular-nums">
+            {formatINR(totalFdPrincipalPaise)}
+          </div>
+          <div className="text-[10px] text-neutral-500 font-mono">
+            Maturity: <span className="text-emerald-400 font-medium">{formatINR(totalMaturityPaise)}</span>
+          </div>
+        </div>
+
+        {/* Recurring Deposits Metric */}
+        <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+              Recurring Deposits (RD)
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              {rdsList.length} active
+            </span>
+          </div>
+          <div className="text-lg font-bold font-mono tracking-tight text-indigo-300 tabular-nums">
+            {formatINR(totalRdMonthlyPaise)} <span className="text-xs font-normal text-neutral-400">/ mo</span>
+          </div>
+          <div className="text-[10px] text-neutral-500 font-mono">
+            Target: <span className="text-indigo-400 font-medium">{formatINR(totalRdTargetPaise)}</span>
+          </div>
+        </div>
+
+        {/* Bank Savings Accounts Metric */}
+        <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+              Bank Savings
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              {bankSavingsAccounts.length} accounts
+            </span>
+          </div>
+          <div className="text-lg font-bold font-mono tracking-tight text-emerald-400 tabular-nums">
+            {formatINR(totalBankSavingsPaise)}
+          </div>
+          <div className="text-[10px] text-neutral-500 font-mono">
+            Official liquid savings accounts
+          </div>
+        </div>
+
+        {/* Total Combined Pillar 3 Assets */}
+        <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+              Total Wealth Assets
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-neutral-400 border border-white/10">
+              Combined
+            </span>
+          </div>
+          <div className="text-lg font-bold font-mono tracking-tight text-amber-300 tabular-nums">
+            {formatINR(totalPrincipalPaise + totalBankSavingsPaise)}
+          </div>
+          <div className="text-[10px] text-neutral-500 font-mono">
+            FDs + RDs + Bank Reserves
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs (Zero horizontal scrolling wrapping layout) */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-neutral-900 border border-white/10 text-xs font-medium w-full sm:w-auto">
+        <button
+          onClick={() => setFilterType('all')}
+          className={`px-3 py-1.5 rounded-lg transition active:scale-95 cursor-pointer min-h-[36px] sm:min-h-[30px] ${
+            filterType === 'all'
+              ? 'bg-neutral-800 text-white font-semibold shadow-sm'
+              : 'text-neutral-400 hover:text-white'
+          }`}
+        >
+          All Assets ({activeFDs.length + (filterType === 'all' ? bankSavingsAccounts.length : 0)})
+        </button>
+        <button
+          onClick={() => setFilterType('fd')}
+          className={`px-3 py-1.5 rounded-lg transition active:scale-95 cursor-pointer min-h-[36px] sm:min-h-[30px] ${
+            filterType === 'fd'
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold shadow-sm'
+              : 'text-neutral-400 hover:text-white'
+          }`}
+        >
+          Fixed Deposits ({fdsList.length})
+        </button>
+        <button
+          onClick={() => setFilterType('rd')}
+          className={`px-3 py-1.5 rounded-lg transition active:scale-95 cursor-pointer min-h-[36px] sm:min-h-[30px] ${
+            filterType === 'rd'
+              ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold shadow-sm'
+              : 'text-neutral-400 hover:text-white'
+          }`}
+        >
+          Recurring Deposits ({rdsList.length})
+        </button>
+        <button
+          onClick={() => setFilterType('savings')}
+          className={`px-3 py-1.5 rounded-lg transition active:scale-95 cursor-pointer min-h-[36px] sm:min-h-[30px] ${
+            filterType === 'savings'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold shadow-sm'
+              : 'text-neutral-400 hover:text-white'
+          }`}
+        >
+          Bank Savings ({bankSavingsAccounts.length + savingsDepositsList.length})
+        </button>
+      </div>
+
+      {/* Grid of Instruments */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading fixed deposits...</div>
-      ) : activeFDs.length === 0 ? (
-        <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto">
+        <div className="p-8 text-center text-xs text-neutral-500">Loading savings instruments...</div>
+      ) : filteredDeposits.length === 0 && (filterType !== 'all' && filterType !== 'savings' || bankSavingsAccounts.length === 0) ? (
+        <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3 bg-white/[0.01]">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20">
             <Landmark className="w-5 h-5" />
           </div>
-          <div className="text-xs text-neutral-400">No fixed deposits tracked yet.</div>
+          <div className="text-xs font-semibold text-white">No Instruments In This Category</div>
+          <p className="text-[11px] text-neutral-400 max-w-sm mx-auto">
+            Track your Fixed Deposits, Recurring Deposits (RD), or dedicated Bank Savings to monitor long-term wealth growth.
+          </p>
           <button
             onClick={() => setIsAddOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 border border-white/10 transition"
+            className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm"
           >
-            Track Fixed Deposit / Term Asset
+            + Add First Instrument
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeFDs.map((fd) => {
+          {/* Bank Savings Accounts (shown when filter is 'all' or 'savings') */}
+          {(filterType === 'all' || filterType === 'savings') &&
+            bankSavingsAccounts.map((acc) => (
+              <div
+                key={`acc-${acc.id}`}
+                className="glass-card glass-card-interactive rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-emerald-500/30 group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+                        Bank Savings Account
+                      </span>
+                    </div>
+                    <div className="text-sm font-semibold text-white group-hover:text-emerald-300 transition pt-1">
+                      {acc.name}
+                    </div>
+                    <div className="text-[11px] text-neutral-400">{acc.institution}</div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <PiggyBank className="w-4 h-4" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[11px] text-neutral-400">Current Savings Balance</div>
+                  <div className="text-xl font-bold font-mono tracking-tight text-emerald-400 tabular-nums">
+                    {formatINR(acc.balancePaise)}
+                  </div>
+                  <div className="text-[10px] text-neutral-500 font-mono">
+                    Official liquid bank account marked as savings
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-neutral-400">
+                  <span className="flex items-center space-x-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Active Account</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-neutral-500">Pillar 1/3 Reserve</span>
+                </div>
+              </div>
+            ))}
+
+          {/* Fixed Deposits & Recurring Deposits */}
+          {filteredDeposits.map((fd) => {
             const isTargetedForLiquidation = liquidatingFdId === fd.id;
+            const isRD = fd.deposit_type === 'rd';
+            const isSavingsReserve = fd.deposit_type === 'savings';
 
             return (
               <div
                 key={fd.id}
-                className="glass-card glass-card-interactive rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 hover:border-emerald-500/30 group"
+                className={`glass-card glass-card-interactive rounded-2xl p-5 border border-white/10 relative overflow-hidden space-y-4 group ${
+                  isRD ? 'hover:border-indigo-500/30' : isSavingsReserve ? 'hover:border-emerald-500/30' : 'hover:border-amber-500/30'
+                }`}
               >
                 {/* Top Info */}
                 <div className="flex items-start justify-between">
                   <div className="space-y-0.5">
-                    <div className="text-xs text-neutral-400 font-medium tracking-wide uppercase">
-                      Fixed Deposit
+                    <div className="flex items-center space-x-1.5">
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-medium ${
+                          isRD
+                            ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                            : isSavingsReserve
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                        }`}
+                      >
+                        {isRD ? 'Recurring Deposit (RD)' : isSavingsReserve ? 'Savings Reserve' : 'Fixed Deposit (FD)'}
+                      </span>
                     </div>
-                    <div className="text-sm font-semibold text-white group-hover:text-emerald-300 transition">
+                    <div className="text-sm font-semibold text-white group-hover:text-amber-200 transition pt-1">
                       {fd.institution}
                     </div>
                   </div>
-                  <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-white/5 text-neutral-300 border border-white/10">
                     {fd.interest_rate_percent}% p.a.
                   </span>
                 </div>
 
                 {/* Amounts */}
                 <div className="space-y-1">
-                  <div className="text-[11px] text-neutral-400">Locked Principal</div>
-                  <div className="text-xl font-bold font-mono tracking-tight text-white tabular-nums">
-                    {formatINR(fd.principal_paise)}
-                  </div>
+                  {isRD ? (
+                    <>
+                      <div className="text-[11px] text-neutral-400">Monthly Contribution</div>
+                      <div className="text-xl font-bold font-mono tracking-tight text-indigo-300 tabular-nums">
+                        {formatINR(fd.monthly_deposit_paise || 0)} <span className="text-xs font-normal text-neutral-400">/ mo</span>
+                      </div>
+                      <div className="text-[11px] text-neutral-400 flex items-center justify-between pt-0.5">
+                        <span>Total Target Principal:</span>
+                        <span className="font-mono text-white font-medium">{formatINR(fd.principal_paise)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[11px] text-neutral-400">Locked Principal</div>
+                      <div className="text-xl font-bold font-mono tracking-tight text-white tabular-nums">
+                        {formatINR(fd.principal_paise)}
+                      </div>
+                    </>
+                  )}
+
                   <div className="text-[11px] text-neutral-400 flex items-center justify-between pt-0.5">
                     <span>Maturity Yield:</span>
-                    <span className="font-mono text-emerald-300 font-medium">
+                    <span className="font-mono text-emerald-400 font-semibold">
                       {formatINR(fd.maturity_amount_paise)}
                     </span>
                   </div>
@@ -141,11 +385,11 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                 <div className="p-2.5 rounded-xl bg-neutral-900/60 border border-white/5 text-[11px] space-y-1 text-neutral-400">
                   <div className="flex items-center justify-between">
                     <span>Started:</span>
-                    <span className="text-neutral-300">{fd.start_date}</span>
+                    <span className="text-neutral-300 font-mono">{fd.start_date}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Matures On:</span>
-                    <span className="text-emerald-400 font-medium">{fd.maturity_date}</span>
+                    <span className="text-emerald-400 font-medium font-mono">{fd.maturity_date}</span>
                   </div>
                 </div>
 
@@ -168,14 +412,14 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                       <div className="flex items-center justify-end space-x-2 pt-1">
                         <button
                           onClick={() => setLiquidatingFdId(null)}
-                          className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-800 text-xs sm:text-sm text-neutral-300 transition active:scale-95"
+                          className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-800 text-xs sm:text-sm text-neutral-300 transition active:scale-95 cursor-pointer"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleConfirmLiquidation(fd.id)}
                           disabled={isLiquidating}
-                          className="px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs sm:text-sm text-white font-medium transition active:scale-95"
+                          className="px-4 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs sm:text-sm text-white font-medium transition active:scale-95 cursor-pointer"
                         >
                           {isLiquidating ? 'Redeeming...' : 'Confirm'}
                         </button>
@@ -185,7 +429,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-neutral-500 flex items-center space-x-1">
                         <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                        <span>Locked Pillar 3 Asset</span>
+                        <span>Pillar 3 Asset</span>
                       </span>
                       {accounts.length > 0 && (
                         <button
@@ -193,7 +437,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                             setLiquidatingFdId(fd.id);
                             if (accounts[0]) setDestAccountId(accounts[0].id);
                           }}
-                          className="text-xs sm:text-sm text-neutral-300 hover:text-white transition py-2 px-3.5 rounded-xl hover:bg-white/5 min-h-[44px] sm:min-h-[38px] flex items-center active:scale-95"
+                          className="text-xs sm:text-sm text-neutral-300 hover:text-white transition py-2 px-3.5 rounded-xl hover:bg-white/5 min-h-[44px] sm:min-h-[38px] flex items-center active:scale-95 cursor-pointer"
                         >
                           Redeem / Liquidate
                         </button>

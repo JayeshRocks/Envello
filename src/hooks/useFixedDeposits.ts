@@ -5,6 +5,7 @@ import {
   createFixedDeposit,
   liquidateFixedDeposit,
   type FixedDepositRow,
+  type DepositType,
 } from '@/lib/api/fixedDeposits';
 
 export function useFixedDeposits() {
@@ -37,17 +38,35 @@ export function useFixedDeposits() {
     loadFDs();
   }, [loadFDs]);
 
-  const totalPrincipalPaise = useMemo(() => {
-    return fixedDeposits
-      .filter(fd => !fd.is_liquidated)
-      .reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  const activeDeposits = useMemo(() => {
+    return fixedDeposits.filter((fd) => !fd.is_liquidated);
   }, [fixedDeposits]);
 
+  const totalPrincipalPaise = useMemo(() => {
+    return activeDeposits.reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  }, [activeDeposits]);
+
   const totalMaturityPaise = useMemo(() => {
-    return fixedDeposits
-      .filter(fd => !fd.is_liquidated)
-      .reduce((sum, fd) => sum + BigInt(fd.maturity_amount_paise), 0n);
-  }, [fixedDeposits]);
+    return activeDeposits.reduce((sum, fd) => sum + BigInt(fd.maturity_amount_paise), 0n);
+  }, [activeDeposits]);
+
+  const totalFdPrincipalPaise = useMemo(() => {
+    return activeDeposits
+      .filter((fd) => fd.deposit_type === 'fd' || !fd.deposit_type)
+      .reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  }, [activeDeposits]);
+
+  const totalRdPrincipalPaise = useMemo(() => {
+    return activeDeposits
+      .filter((fd) => fd.deposit_type === 'rd')
+      .reduce((sum, fd) => sum + BigInt(fd.principal_paise), 0n);
+  }, [activeDeposits]);
+
+  const totalRdMonthlyPaise = useMemo(() => {
+    return activeDeposits
+      .filter((fd) => fd.deposit_type === 'rd')
+      .reduce((sum, fd) => sum + BigInt(fd.monthly_deposit_paise || 0), 0n);
+  }, [activeDeposits]);
 
   const addFD = async (params: {
     institution: string;
@@ -56,11 +75,13 @@ export function useFixedDeposits() {
     start_date: string;
     maturity_date: string;
     maturity_amount_paise: number;
+    deposit_type?: DepositType;
+    monthly_deposit_paise?: number;
     funding_account_id?: string;
   }) => {
     if (!user) throw new Error('Authentication required');
     const newFd = await createFixedDeposit(user.id, params);
-    setFixedDeposits(prev => [...prev, newFd]);
+    setFixedDeposits((prev) => [...prev, newFd]);
     return newFd;
   };
 
@@ -79,6 +100,9 @@ export function useFixedDeposits() {
     fixedDeposits,
     totalPrincipalPaise,
     totalMaturityPaise,
+    totalFdPrincipalPaise,
+    totalRdPrincipalPaise,
+    totalRdMonthlyPaise,
     isLoading,
     error,
     refreshFDs: loadFDs,
