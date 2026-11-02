@@ -80,10 +80,10 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const {
     isRendered,
     phase,
-    panelRef,
-    panelStyle,
-    scaleX,
-    scaleY,
+    isNeonVisible,
+    neonStyle,
+    formStyle,
+    backdropStyle,
     requestClose,
   } = useFabMorphAnimation({
     isOpen,
@@ -185,71 +185,54 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   };
 
+  if (!isRendered) return null;
+
   return (
     <ModalPortal>
+      {/* Modal backdrop with dynamic opacity and blur transition */}
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 modal-overlay ${
-          phase === 'morphing-open'
-            ? 'animate-fab-backdrop-open bg-black/65 backdrop-blur-md sm:backdrop-blur-lg pointer-events-auto'
-            : phase === 'morphing-close'
-            ? 'animate-fab-backdrop-close bg-black/65 backdrop-blur-md sm:backdrop-blur-lg pointer-events-none'
-            : phase === 'open' || phase === 'desktop-open'
-            ? 'opacity-100 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg pointer-events-auto'
-            : 'opacity-0 bg-transparent backdrop-blur-none pointer-events-none'
-        }`}
+        style={backdropStyle}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay pointer-events-auto"
       >
-        <div
-          ref={panelRef}
-          style={panelStyle}
-          className={`max-w-lg w-full bg-[#0f1011] rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-hidden flex flex-col ${
-            phase === 'morphing-open'
-              ? 'animate-fab-morph-open'
-              : phase === 'morphing-close'
-              ? 'animate-fab-morph-close'
-              : phase === 'desktop-open'
-              ? 'modal-panel'
-              : ''
-          }`}
-        >
-          {/* Layer 1: Morphing FAB Pill (visible during flight between corner and center) */}
+        {/* Dedicated Glowing Neon Circle (Traverses smoothly between resting FAB and center) */}
+        {isNeonVisible && (
           <div
-            className={`absolute inset-0 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 shadow-2xl shadow-sky-500/50 flex items-center justify-center border border-white/20 pointer-events-none ${
-              phase === 'morphing-open'
-                ? 'animate-fab-icon-open'
-                : phase === 'morphing-close'
-                ? 'animate-fab-icon-close'
-                : 'opacity-0'
-            }`}
+            style={neonStyle}
+            className="fixed top-1/2 left-1/2 -ml-7 -mt-7 w-14 h-14 rounded-full pointer-events-none z-50 flex items-center justify-center"
           >
-            <Plus
-              className="w-6 h-6 text-white stroke-[2.5]"
-              style={{
-                transform: `scale(${scaleX ? 1 / scaleX : 1}, ${scaleY ? 1 / scaleY : 1})`,
-              }}
-            />
-          </div>
+            {/* Outer pulsating neon energy halo */}
+            <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-sky-400 via-cyan-400 to-indigo-500 opacity-80 blur-md animate-neon-halo" />
 
-          {/* Layer 2: Modal Form Content (rises and fades smoothly as card blossoms) */}
-          <div
-            className={`w-full p-5 sm:p-7 space-y-4 sm:space-y-5 overflow-y-auto max-h-[90vh] sm:max-h-[88vh] ${
-              phase === 'morphing-open'
-                ? 'animate-fab-form-open pointer-events-none'
-                : phase === 'morphing-close'
-                ? 'animate-fab-form-close pointer-events-none'
-                : 'opacity-100 pointer-events-auto'
-            }`}
+            {/* High-intensity glowing neon core */}
+            <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-sky-400 via-cyan-300 to-indigo-600 border-2 border-white shadow-[0_0_25px_rgba(56,189,248,0.95),0_0_50px_rgba(99,102,241,0.7)] flex items-center justify-center animate-neon-pulse overflow-hidden">
+              <Plus
+                className={`w-6 h-6 text-white stroke-[2.5] drop-shadow-[0_0_8px_rgba(255,255,255,0.95)] transition-transform duration-500 ${
+                  phase === 'neon-traversing' || phase === 'form-expanding' || phase === 'form-collapsing'
+                    ? 'rotate-90 scale-110'
+                    : 'rotate-0 scale-100'
+                }`}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Modal Form Dialog */}
+        <div
+          style={formStyle}
+          onClick={(e) => e.stopPropagation()}
+          className="max-w-lg w-full bg-[#0f1011] rounded-2xl sm:rounded-3xl border border-sky-500/25 shadow-[0_0_50px_-10px_rgba(56,189,248,0.3)] relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto p-5 sm:p-7 space-y-4 sm:space-y-5"
+        >
+          <button
+            type="button"
+            onClick={requestClose}
+            className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition cursor-pointer z-10"
+            title="Close modal"
+            aria-label="Close modal"
           >
-            <button
-              type="button"
-              onClick={requestClose}
-              className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition cursor-pointer z-10"
-              title="Close modal"
-              aria-label="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <X className="w-5 h-5" />
+          </button>
 
         {/* Header */}
         <div className="space-y-1">
@@ -576,9 +559,8 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </button>
           </div>
         </form>
-          </div>
-        </div>
       </div>
-    </ModalPortal>
+    </div>
+  </ModalPortal>
   );
 };

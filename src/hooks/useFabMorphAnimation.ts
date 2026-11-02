@@ -2,9 +2,13 @@ import { useState, useEffect, useRef, useCallback, CSSProperties } from 'react';
 
 export type MorphPhase =
   | 'idle'
-  | 'morphing-open'
+  | 'neon-activating'
+  | 'neon-traversing'
+  | 'form-expanding'
   | 'open'
-  | 'morphing-close'
+  | 'form-collapsing'
+  | 'neon-returning'
+  | 'neon-settling'
   | 'desktop-open'
   | 'desktop-closing';
 
@@ -15,38 +19,23 @@ interface UseFabMorphAnimationOptions {
   onCompleteClose: () => void;
 }
 
-export interface FabCoords {
+export interface FabDeltaVector {
   deltaX: number;
   deltaY: number;
-  scaleX: number;
-  scaleY: number;
-  fabWidth: number;
-  fabHeight: number;
 }
 
-export function calculateFabMorphCoords(
+export function calculateFabDeltaVector(
   fabRect: { left: number; top: number; width: number; height: number },
-  viewport: { width: number; height: number },
-  panel: { width: number; height: number }
-): FabCoords {
+  viewport: { width: number; height: number }
+): FabDeltaVector {
   const fabCenterX = fabRect.left + fabRect.width / 2;
   const fabCenterY = fabRect.top + fabRect.height / 2;
   const screenCenterX = viewport.width / 2;
   const screenCenterY = viewport.height / 2;
 
-  const deltaX = fabCenterX - screenCenterX;
-  const deltaY = fabCenterY - screenCenterY;
-
-  const scaleX = fabRect.width / panel.width;
-  const scaleY = fabRect.height / panel.height;
-
   return {
-    deltaX,
-    deltaY,
-    scaleX: Math.max(0.04, Math.min(0.5, scaleX)),
-    scaleY: Math.max(0.04, Math.min(0.5, scaleY)),
-    fabWidth: fabRect.width || 56,
-    fabHeight: fabRect.height || 56,
+    deltaX: fabCenterX - screenCenterX,
+    deltaY: fabCenterY - screenCenterY,
   };
 }
 
@@ -58,26 +47,13 @@ export function useFabMorphAnimation({
 }: UseFabMorphAnimationOptions) {
   const [phase, setPhase] = useState<MorphPhase>('idle');
   const [isRendered, setIsRendered] = useState(false);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  const coordsRef = useRef<FabCoords>({
-    deltaX: 0,
-    deltaY: 0,
-    scaleX: 0.15,
-    scaleY: 0.1,
-    fabWidth: 56,
-    fabHeight: 56,
-  });
+  const coordsRef = useRef<FabDeltaVector>({ deltaX: 0, deltaY: 0 });
 
   const timeoutsRef = useRef<number[]>([]);
-  const animFrameRef = useRef<number | null>(null);
 
   const clearAllTimeouts = useCallback(() => {
     timeoutsRef.current.forEach((id) => window.clearTimeout(id));
     timeoutsRef.current = [];
-    if (animFrameRef.current !== null) {
-      cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = null;
-    }
   }, []);
 
   // Measure target FAB coordinates against the viewport center
@@ -86,14 +62,10 @@ export function useFabMorphAnimation({
     if (!fabEl) return null;
 
     const fabRect = fabEl.getBoundingClientRect();
-    const panelWidth = panelRef.current?.offsetWidth || Math.min(window.innerWidth - 24, 512);
-    const panelHeight = panelRef.current?.offsetHeight || Math.min(window.innerHeight * 0.85, 560);
-
-    const coords = calculateFabMorphCoords(
-      fabRect,
-      { width: window.innerWidth, height: window.innerHeight },
-      { width: panelWidth, height: panelHeight }
-    );
+    const coords = calculateFabDeltaVector(fabRect, {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
 
     coordsRef.current = coords;
     return coords;
@@ -122,10 +94,23 @@ export function useFabMorphAnimation({
     // Refresh coordinates for the return flight
     measureCoords();
 
-    // Start continuous, hardware-accelerated reverse morph animation (780ms)
-    setPhase('morphing-close');
+    // Step 1: Form collapses into glowing neon circle at screen center
+    setPhase('form-collapsing');
 
-    const timer = window.setTimeout(() => {
+    // Step 2: Glowing neon circle traverses screen back down to FAB position
+    const t1 = window.setTimeout(() => {
+      setPhase('neon-returning');
+    }, 280);
+    timeoutsRef.current.push(t1);
+
+    // Step 3: Neon circle settles with soft spring bounce into corner position
+    const t2 = window.setTimeout(() => {
+      setPhase('neon-settling');
+    }, 700);
+    timeoutsRef.current.push(t2);
+
+    // Step 4: Restore real resting FAB and unmount modal
+    const t3 = window.setTimeout(() => {
       const fabEl = document.getElementById(fabId);
       if (fabEl) {
         fabEl.style.opacity = '1';
@@ -134,8 +119,8 @@ export function useFabMorphAnimation({
       setIsRendered(false);
       setPhase('idle');
       onCompleteClose();
-    }, 780);
-    timeoutsRef.current.push(timer);
+    }, 820);
+    timeoutsRef.current.push(t3);
   }, [clearAllTimeouts, isMobileOrTablet, measureCoords, fabId, onCompleteClose]);
 
   // Opening animation sequence
@@ -163,23 +148,33 @@ export function useFabMorphAnimation({
         return;
       }
 
-      // Hide real FAB while morphing element takes flight
+      // Hide real FAB while glowing neon orb takes flight
       fabEl.style.opacity = '0';
       fabEl.style.pointerEvents = 'none';
 
+      measureCoords();
       setIsRendered(true);
 
-      animFrameRef.current = requestAnimationFrame(() => {
-        measureCoords();
+      // Step 1: Button activates into glowing neon circle at FAB corner
+      setPhase('neon-activating');
 
-        // Start continuous, hardware-accelerated open morph animation (860ms)
-        setPhase('morphing-open');
+      // Step 2: Glowing neon circle glides smoothly across screen to center
+      const t1 = window.setTimeout(() => {
+        setPhase('neon-traversing');
+      }, 90);
+      timeoutsRef.current.push(t1);
 
-        const timer = window.setTimeout(() => {
-          setPhase('open');
-        }, 860);
-        timeoutsRef.current.push(timer);
-      });
+      // Step 3: Arrives at center and expands into form
+      const t2 = window.setTimeout(() => {
+        setPhase('form-expanding');
+      }, 510);
+      timeoutsRef.current.push(t2);
+
+      // Step 4: Form settles as fully interactive
+      const t3 = window.setTimeout(() => {
+        setPhase('open');
+      }, 870);
+      timeoutsRef.current.push(t3);
     } else {
       // If parent sets isOpen=false while modal is open, trigger clean close
       if (phase === 'open' || phase === 'desktop-open') {
@@ -204,53 +199,134 @@ export function useFabMorphAnimation({
     };
   }, [fabId, clearAllTimeouts]);
 
-  const { deltaX, deltaY, scaleX, scaleY } = coordsRef.current;
+  // Glowing neon circle styles (the orb traversing the screen)
+  const getNeonStyle = (): CSSProperties => {
+    const { deltaX, deltaY } = coordsRef.current;
 
-  // Build GPU-accelerated panel styles for current morph phase
-  const getPanelStyle = (): CSSProperties => {
-    const baseStyle: Record<string, string | number> = {
-      '--fab-delta-x': `${deltaX}px`,
-      '--fab-delta-y': `${deltaY}px`,
-      '--fab-scale-x': scaleX,
-      '--fab-scale-y': scaleY,
-      '--fab-counter-scale-x': scaleX ? 1 / scaleX : 1,
-      '--fab-counter-scale-y': scaleY ? 1 / scaleY : 1,
-    };
-
-    if (phase === 'desktop-open') {
-      return {
-        ...baseStyle,
-        animation: 'modalIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
-      };
+    switch (phase) {
+      case 'neon-activating':
+        return {
+          transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.85)`,
+          opacity: 1,
+          transition: 'transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 80ms ease',
+        };
+      case 'neon-traversing':
+        return {
+          transform: 'translate3d(0, 0, 0) scale(1.05)',
+          opacity: 1,
+          transition: 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease',
+        };
+      case 'form-expanding':
+        return {
+          transform: 'translate3d(0, 0, 0) scale(1.3)',
+          opacity: 0,
+          transition: 'transform 300ms ease-out, opacity 220ms ease-out',
+        };
+      case 'form-collapsing':
+        return {
+          transform: 'translate3d(0, 0, 0) scale(1.05)',
+          opacity: 1,
+          transition: 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease',
+        };
+      case 'neon-returning':
+        return {
+          transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.95)`,
+          opacity: 1,
+          transition: 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease',
+        };
+      case 'neon-settling':
+        return {
+          transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1)`,
+          opacity: 1,
+          transition: 'transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 100ms ease',
+        };
+      default:
+        return {
+          opacity: 0,
+          pointerEvents: 'none',
+        };
     }
-
-    if (phase === 'desktop-closing') {
-      return {
-        ...baseStyle,
-        opacity: 0,
-        transform: 'scale(0.96) translateY(8px)',
-        transition: 'all 180ms cubic-bezier(0.16, 1, 0.3, 1)',
-      };
-    }
-
-    if (phase === 'open') {
-      return {
-        ...baseStyle,
-        transform: 'translate3d(0, 0, 0) scale(1, 1)',
-        borderRadius: '1.5rem',
-      };
-    }
-
-    return baseStyle;
   };
+
+  // Form panel styles (expanding from center & collapsing to center)
+  const getFormStyle = (): CSSProperties => {
+    switch (phase) {
+      case 'neon-activating':
+      case 'neon-traversing':
+        return {
+          transform: 'scale(0.15)',
+          opacity: 0,
+          pointerEvents: 'none',
+        };
+      case 'form-expanding':
+        return {
+          transform: 'scale(1)',
+          opacity: 1,
+          transition: 'transform 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+          pointerEvents: 'none',
+        };
+      case 'open':
+        return {
+          transform: 'scale(1)',
+          opacity: 1,
+          pointerEvents: 'auto',
+        };
+      case 'form-collapsing':
+        return {
+          transform: 'scale(0.15)',
+          opacity: 0,
+          transition: 'transform 280ms cubic-bezier(0.32, 0.72, 0, 1), opacity 220ms ease',
+          pointerEvents: 'none',
+        };
+      case 'neon-returning':
+      case 'neon-settling':
+        return {
+          transform: 'scale(0.15)',
+          opacity: 0,
+          pointerEvents: 'none',
+        };
+      case 'desktop-open':
+        return {
+          animation: 'modalIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        };
+      case 'desktop-closing':
+        return {
+          opacity: 0,
+          transform: 'scale(0.96) translateY(8px)',
+          transition: 'all 180ms cubic-bezier(0.16, 1, 0.3, 1)',
+        };
+      default:
+        return {};
+    }
+  };
+
+  const isBackdropActive =
+    phase === 'neon-traversing' ||
+    phase === 'form-expanding' ||
+    phase === 'open' ||
+    phase === 'form-collapsing' ||
+    phase === 'desktop-open';
+
+  const getBackdropStyle = (): CSSProperties => ({
+    opacity: isBackdropActive ? 1 : 0,
+    transition: isBackdropActive ? 'opacity 380ms ease-out' : 'opacity 380ms ease-in',
+  });
+
+  const isNeonVisible =
+    phase === 'neon-activating' ||
+    phase === 'neon-traversing' ||
+    phase === 'form-expanding' ||
+    phase === 'form-collapsing' ||
+    phase === 'neon-returning' ||
+    phase === 'neon-settling';
 
   return {
     isRendered,
     phase,
-    panelRef,
-    panelStyle: getPanelStyle(),
-    scaleX,
-    scaleY,
+    isNeonVisible,
+    neonStyle: getNeonStyle(),
+    formStyle: getFormStyle(),
+    backdropStyle: getBackdropStyle(),
     requestClose,
   };
 }

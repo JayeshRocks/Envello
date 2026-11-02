@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { calculateFabMorphCoords } from './useFabMorphAnimation';
+import { calculateFabDeltaVector } from './useFabMorphAnimation';
 
-describe('useFabMorphAnimation — Morphing Geometry & Math', () => {
-  it('calculates exact delta vectors and scale factors for mobile portrait (iPhone)', () => {
+describe('useFabMorphAnimation — Neon Traveler Geometry & Math', () => {
+  it('calculates exact delta vector from resting FAB to viewport center on mobile portrait (iPhone)', () => {
     // iPhone 14/15 viewport: 393 x 852
     // FAB is 56x56, resting at bottom 20px, right 20px
     const fabRect = {
@@ -12,25 +12,17 @@ describe('useFabMorphAnimation — Morphing Geometry & Math', () => {
       height: 56,
     };
     const viewport = { width: 393, height: 852 };
-    // Modal panel rendered dimensions
-    const panel = { width: 369, height: 520 };
 
-    const coords = calculateFabMorphCoords(fabRect, viewport, panel);
+    const vector = calculateFabDeltaVector(fabRect, viewport);
 
     // FAB center: (317 + 28, 776 + 28) = (345, 804)
     // Screen center: (393 / 2, 852 / 2) = (196.5, 426)
     // Delta: (345 - 196.5, 804 - 426) = (148.5, 378)
-    expect(coords.deltaX).toBe(148.5);
-    expect(coords.deltaY).toBe(378);
-
-    // Scale factors: 56 / 369 ≈ 0.1517, 56 / 520 ≈ 0.1077
-    expect(coords.scaleX).toBeCloseTo(0.1517, 3);
-    expect(coords.scaleY).toBeCloseTo(0.1077, 3);
-    expect(coords.fabWidth).toBe(56);
-    expect(coords.fabHeight).toBe(56);
+    expect(vector.deltaX).toBe(148.5);
+    expect(vector.deltaY).toBe(378);
   });
 
-  it('calculates correct delta vectors for tablet landscape (iPad)', () => {
+  it('calculates exact delta vector for tablet landscape (iPad)', () => {
     // iPad landscape: 1194 x 834
     // FAB is 56x56, resting at bottom 24px, right 32px
     const fabRect = {
@@ -40,36 +32,30 @@ describe('useFabMorphAnimation — Morphing Geometry & Math', () => {
       height: 56,
     };
     const viewport = { width: 1194, height: 834 };
-    const panel = { width: 512, height: 560 };
 
-    const coords = calculateFabMorphCoords(fabRect, viewport, panel);
+    const vector = calculateFabDeltaVector(fabRect, viewport);
 
     // FAB center: (1106 + 28, 754 + 28) = (1134, 782)
     // Screen center: (1194 / 2, 834 / 2) = (597, 417)
     // Delta: (1134 - 597, 782 - 417) = (537, 365)
-    expect(coords.deltaX).toBe(537);
-    expect(coords.deltaY).toBe(365);
-
-    expect(coords.scaleX).toBeCloseTo(56 / 512, 3);
-    expect(coords.scaleY).toBeCloseTo(56 / 560, 3);
+    expect(vector.deltaX).toBe(537);
+    expect(vector.deltaY).toBe(365);
   });
 
-  it('clamps scale factors safely to prevent division by zero or extreme ratios', () => {
-    const fabRect = { left: 0, top: 0, width: 56, height: 56 };
+  it('handles custom FAB positions including negative delta and center alignment', () => {
     const viewport = { width: 400, height: 800 };
-    // Pathological tiny panel
-    const tinyPanel = { width: 10, height: 10 };
-    const coords = calculateFabMorphCoords(fabRect, viewport, tinyPanel);
 
-    // Clamped at max 0.5
-    expect(coords.scaleX).toBe(0.5);
-    expect(coords.scaleY).toBe(0.5);
+    // FAB at top-left corner
+    const topLeftFab = { left: 0, top: 0, width: 56, height: 56 };
+    const topLeftVector = calculateFabDeltaVector(topLeftFab, viewport);
+    // Center: (28, 28) - (200, 400) = (-172, -372)
+    expect(topLeftVector.deltaX).toBe(-172);
+    expect(topLeftVector.deltaY).toBe(-372);
 
-    // Pathological huge panel
-    const hugePanel = { width: 5000, height: 5000 };
-    const hugeCoords = calculateFabMorphCoords(fabRect, viewport, hugePanel);
-    // Clamped at min 0.04
-    expect(hugeCoords.scaleX).toBe(0.04);
-    expect(hugeCoords.scaleY).toBe(0.04);
+    // FAB at exact center
+    const centerFab = { left: 200 - 28, top: 400 - 28, width: 56, height: 56 };
+    const centerVector = calculateFabDeltaVector(centerFab, viewport);
+    expect(centerVector.deltaX).toBe(0);
+    expect(centerVector.deltaY).toBe(0);
   });
 });
