@@ -1081,6 +1081,8 @@ export const App: React.FC = () => {
       {/* Floating Action Button (FAB) for Mobile & Tablets (Unified Touch Surface for Vertical & Horizontal Orientations) */}
       {user && isMobileOrTablet && (
         <button
+          id="mobile-record-fab"
+          data-fab="record-transaction"
           onClick={() => setIsRecordTxModalOpen(true)}
           className={`fixed safe-bottom-fab z-40 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-neutral-950 font-bold shadow-2xl shadow-sky-500/50 active:scale-90 transition-all duration-200 flex items-center justify-center border border-white/20 touch-manipulation min-h-[56px] min-w-[56px] ${isLandscape
             ? 'bottom-5 right-6 sm:bottom-6 sm:right-8 p-4'

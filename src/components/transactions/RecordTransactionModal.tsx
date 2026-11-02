@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
+  Plus,
   ArrowDownLeft,
   ArrowUpRight,
   ArrowRightLeft,
@@ -16,6 +17,8 @@ import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
+import { useDevice } from '@/hooks/useDevice';
+import { useFabMorphAnimation } from '@/hooks/useFabMorphAnimation';
 
 interface RecordTransactionModalProps {
   isOpen: boolean;
@@ -72,7 +75,27 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
+  const { isMobileOrTablet } = useDevice();
+
+  const {
+    isRendered,
+    panelRef,
+    panelStyle,
+    isBackdropVisible,
+    isFabPillVisible,
+    isFormContentVisible,
+    isIconRotated,
+    scaleX,
+    scaleY,
+    requestClose,
+  } = useFabMorphAnimation({
+    isOpen,
+    isMobileOrTablet,
+    fabId: 'mobile-record-fab',
+    onCompleteClose: onClose,
+  });
+
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isRendered, requestClose);
 
   // Initialize selected dropdowns when modal opens or lists load
   useEffect(() => {
@@ -95,7 +118,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   }, [accounts, creditCards, envelopes, selectedAccountId, selectedPaymentSource, selectedEnvelopeId, isOpen]);
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   const currentEnteredPaise = toPaise(amountRupees || '0');
 
@@ -153,11 +176,11 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         });
       }
 
-      // Reset and close
+      // Reset and trigger smooth morphing close
       setAmountRupees('');
       setPayeeOrSource('');
       setNotes('');
-      onClose();
+      requestClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Transaction failed.');
     } finally {
@@ -170,15 +193,50 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 modal-overlay transition-all duration-300 ${
+          isBackdropVisible
+            ? 'opacity-100 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg pointer-events-auto'
+            : 'opacity-0 bg-transparent backdrop-blur-none pointer-events-none'
+        }`}
       >
-        <div className="max-w-lg w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto modal-panel">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
+        <div
+          ref={panelRef}
+          style={panelStyle}
+          className="max-w-lg w-full bg-[#0f1011] rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-hidden flex flex-col"
         >
-          <X className="w-5 h-5" />
-        </button>
+          {/* Layer 1: Morphing FAB Pill (visible during shrink, travel, and settle phases) */}
+          <div
+            className={`absolute inset-0 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 shadow-2xl shadow-sky-500/50 flex items-center justify-center border border-white/20 transition-opacity duration-150 ${
+              isFabPillVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <Plus
+              className={`w-6 h-6 text-white stroke-[2.5] transition-transform duration-300 ${
+                isIconRotated ? 'rotate-90' : 'rotate-0'
+              }`}
+              style={{
+                transform: `scale(${scaleX ? 1 / scaleX : 1}, ${scaleY ? 1 / scaleY : 1}) ${
+                  isIconRotated ? 'rotate(90deg)' : 'rotate(0deg)'
+                }`,
+              }}
+            />
+          </div>
+
+          {/* Layer 2: Modal Form Content (visible during expand & open phases) */}
+          <div
+            className={`w-full p-5 sm:p-7 space-y-4 sm:space-y-5 overflow-y-auto max-h-[90vh] sm:max-h-[88vh] transition-opacity duration-200 ${
+              isFormContentVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={requestClose}
+              className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition cursor-pointer z-10"
+              title="Close modal"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
         {/* Header */}
         <div className="space-y-1">
@@ -505,8 +563,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </button>
           </div>
         </form>
+          </div>
+        </div>
       </div>
-    </div>
-  </ModalPortal>
-);
+    </ModalPortal>
+  );
 };
