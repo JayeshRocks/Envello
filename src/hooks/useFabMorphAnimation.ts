@@ -2,13 +2,9 @@ import { useState, useEffect, useRef, useCallback, CSSProperties } from 'react';
 
 export type MorphPhase =
   | 'idle'
-  | 'shrink-at-fab'
-  | 'travel-to-center'
-  | 'expand-to-form'
+  | 'morphing-open'
   | 'open'
-  | 'collapse-to-circle'
-  | 'travel-to-fab'
-  | 'settle-at-fab'
+  | 'morphing-close'
   | 'desktop-open'
   | 'desktop-closing';
 
@@ -90,7 +86,6 @@ export function useFabMorphAnimation({
     if (!fabEl) return null;
 
     const fabRect = fabEl.getBoundingClientRect();
-    // Use measured or estimated modal panel dimensions
     const panelWidth = panelRef.current?.offsetWidth || Math.min(window.innerWidth - 24, 512);
     const panelHeight = panelRef.current?.offsetHeight || Math.min(window.innerHeight * 0.85, 560);
 
@@ -124,27 +119,13 @@ export function useFabMorphAnimation({
       return;
     }
 
-    // Measure fresh coords in case of resize or orientation changes
+    // Refresh coordinates for the return flight
     measureCoords();
 
-    // Mobile/Tablet 3-step reverse morphing sequence:
-    // 1. Collapse from form into 56px circle at viewport center
-    setPhase('collapse-to-circle');
+    // Start continuous, hardware-accelerated reverse morph animation (780ms)
+    setPhase('morphing-close');
 
-    // 2. Travel from center back down to the FAB position
-    const t1 = window.setTimeout(() => {
-      setPhase('travel-to-fab');
-    }, 220);
-    timeoutsRef.current.push(t1);
-
-    // 3. Settle at FAB with tactile spring bounce
-    const t2 = window.setTimeout(() => {
-      setPhase('settle-at-fab');
-    }, 460);
-    timeoutsRef.current.push(t2);
-
-    // 4. Complete: unmount modal and restore real FAB
-    const t3 = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const fabEl = document.getElementById(fabId);
       if (fabEl) {
         fabEl.style.opacity = '1';
@@ -153,8 +134,8 @@ export function useFabMorphAnimation({
       setIsRendered(false);
       setPhase('idle');
       onCompleteClose();
-    }, 580);
-    timeoutsRef.current.push(t3);
+    }, 780);
+    timeoutsRef.current.push(timer);
   }, [clearAllTimeouts, isMobileOrTablet, measureCoords, fabId, onCompleteClose]);
 
   // Opening animation sequence
@@ -188,30 +169,16 @@ export function useFabMorphAnimation({
 
       setIsRendered(true);
 
-      // In next animation frame, measure exact panel size and trigger sequence
       animFrameRef.current = requestAnimationFrame(() => {
         measureCoords();
 
-        // Phase 1: Shrink down a bit at the resting FAB position
-        setPhase('shrink-at-fab');
+        // Start continuous, hardware-accelerated open morph animation (860ms)
+        setPhase('morphing-open');
 
-        // Phase 2: Move from bottom-right to viewport center
-        const t1 = window.setTimeout(() => {
-          setPhase('travel-to-center');
-        }, 100);
-        timeoutsRef.current.push(t1);
-
-        // Phase 3: Expand outward into the full form at center
-        const t2 = window.setTimeout(() => {
-          setPhase('expand-to-form');
-        }, 350);
-        timeoutsRef.current.push(t2);
-
-        // Phase 4: Settle as fully interactive modal
-        const t3 = window.setTimeout(() => {
+        const timer = window.setTimeout(() => {
           setPhase('open');
-        }, 630);
-        timeoutsRef.current.push(t3);
+        }, 860);
+        timeoutsRef.current.push(timer);
       });
     } else {
       // If parent sets isOpen=false while modal is open, trigger clean close
@@ -241,136 +208,47 @@ export function useFabMorphAnimation({
 
   // Build GPU-accelerated panel styles for current morph phase
   const getPanelStyle = (): CSSProperties => {
+    const baseStyle: Record<string, string | number> = {
+      '--fab-delta-x': `${deltaX}px`,
+      '--fab-delta-y': `${deltaY}px`,
+      '--fab-scale-x': scaleX,
+      '--fab-scale-y': scaleY,
+      '--fab-counter-scale-x': scaleX ? 1 / scaleX : 1,
+      '--fab-counter-scale-y': scaleY ? 1 / scaleY : 1,
+    };
+
     if (phase === 'desktop-open') {
       return {
+        ...baseStyle,
         animation: 'modalIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
       };
     }
 
     if (phase === 'desktop-closing') {
       return {
+        ...baseStyle,
         opacity: 0,
         transform: 'scale(0.96) translateY(8px)',
         transition: 'all 180ms cubic-bezier(0.16, 1, 0.3, 1)',
       };
     }
 
-    if (phase === 'shrink-at-fab') {
-      return {
-        transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX * 0.82}, ${scaleY * 0.82})`,
-        borderRadius: '9999px',
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        borderColor: 'transparent',
-        transition: 'transform 100ms cubic-bezier(0.16, 1, 0.3, 1)',
-        willChange: 'transform, border-radius',
-      };
-    }
-
-    if (phase === 'travel-to-center') {
-      return {
-        transform: `translate3d(0, 0, 0) scale(${scaleX * 0.88}, ${scaleY * 0.88})`,
-        borderRadius: '9999px',
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        borderColor: 'transparent',
-        transition: 'transform 250ms cubic-bezier(0.32, 0.72, 0, 1)',
-        willChange: 'transform, border-radius',
-      };
-    }
-
-    if (phase === 'expand-to-form') {
-      return {
-        transform: 'translate3d(0, 0, 0) scale(1, 1)',
-        borderRadius: '1.5rem',
-        backgroundColor: '#0f1011',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
-        borderColor: 'rgba(255, 255, 255, 0.15)',
-        transition:
-          'transform 280ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 280ms cubic-bezier(0.16, 1, 0.3, 1), background-color 280ms ease, box-shadow 280ms ease, border-color 280ms ease',
-        willChange: 'transform, border-radius',
-      };
-    }
-
     if (phase === 'open') {
       return {
+        ...baseStyle,
         transform: 'translate3d(0, 0, 0) scale(1, 1)',
         borderRadius: '1.5rem',
-        backgroundColor: '#0f1011',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
-        borderColor: 'rgba(255, 255, 255, 0.15)',
       };
     }
 
-    if (phase === 'collapse-to-circle') {
-      return {
-        transform: `translate3d(0, 0, 0) scale(${scaleX * 0.88}, ${scaleY * 0.88})`,
-        borderRadius: '9999px',
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        borderColor: 'transparent',
-        transition:
-          'transform 220ms cubic-bezier(0.32, 0.72, 0, 1), border-radius 220ms cubic-bezier(0.32, 0.72, 0, 1), background-color 220ms ease, box-shadow 220ms ease, border-color 220ms ease',
-        willChange: 'transform, border-radius',
-      };
-    }
-
-    if (phase === 'travel-to-fab') {
-      return {
-        transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX * 0.82}, ${scaleY * 0.82})`,
-        borderRadius: '9999px',
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        borderColor: 'transparent',
-        transition: 'transform 240ms cubic-bezier(0.32, 0.72, 0, 1)',
-        willChange: 'transform, border-radius',
-      };
-    }
-
-    if (phase === 'settle-at-fab') {
-      return {
-        transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX}, ${scaleY})`,
-        borderRadius: '9999px',
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        borderColor: 'transparent',
-        transition: 'transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-        willChange: 'transform, border-radius',
-      };
-    }
-
-    return {};
+    return baseStyle;
   };
-
-  const isBackdropVisible =
-    phase === 'travel-to-center' ||
-    phase === 'expand-to-form' ||
-    phase === 'open' ||
-    phase === 'collapse-to-circle' ||
-    phase === 'desktop-open';
-
-  const isFabPillVisible =
-    phase === 'shrink-at-fab' ||
-    phase === 'travel-to-center' ||
-    phase === 'collapse-to-circle' ||
-    phase === 'travel-to-fab' ||
-    phase === 'settle-at-fab';
-
-  const isFormContentVisible =
-    phase === 'expand-to-form' || phase === 'open' || phase === 'desktop-open';
-
-  const isIconRotated =
-    phase === 'travel-to-center' || phase === 'collapse-to-circle';
 
   return {
     isRendered,
     phase,
     panelRef,
     panelStyle: getPanelStyle(),
-    isBackdropVisible,
-    isFabPillVisible,
-    isFormContentVisible,
-    isIconRotated,
     scaleX,
     scaleY,
     requestClose,

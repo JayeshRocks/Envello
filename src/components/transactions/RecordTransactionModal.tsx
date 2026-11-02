@@ -79,12 +79,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
 
   const {
     isRendered,
+    phase,
     panelRef,
     panelStyle,
-    isBackdropVisible,
-    isFabPillVisible,
-    isFormContentVisible,
-    isIconRotated,
     scaleX,
     scaleY,
     requestClose,
@@ -193,8 +190,12 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 modal-overlay transition-all duration-300 ${
-          isBackdropVisible
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 modal-overlay ${
+          phase === 'morphing-open'
+            ? 'animate-fab-backdrop-open bg-black/65 backdrop-blur-md sm:backdrop-blur-lg pointer-events-auto'
+            : phase === 'morphing-close'
+            ? 'animate-fab-backdrop-close bg-black/65 backdrop-blur-md sm:backdrop-blur-lg pointer-events-none'
+            : phase === 'open' || phase === 'desktop-open'
             ? 'opacity-100 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg pointer-events-auto'
             : 'opacity-0 bg-transparent backdrop-blur-none pointer-events-none'
         }`}
@@ -202,30 +203,42 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         <div
           ref={panelRef}
           style={panelStyle}
-          className="max-w-lg w-full bg-[#0f1011] rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-hidden flex flex-col"
+          className={`max-w-lg w-full bg-[#0f1011] rounded-2xl sm:rounded-3xl border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-hidden flex flex-col ${
+            phase === 'morphing-open'
+              ? 'animate-fab-morph-open'
+              : phase === 'morphing-close'
+              ? 'animate-fab-morph-close'
+              : phase === 'desktop-open'
+              ? 'modal-panel'
+              : ''
+          }`}
         >
-          {/* Layer 1: Morphing FAB Pill (visible during shrink, travel, and settle phases) */}
+          {/* Layer 1: Morphing FAB Pill (visible during flight between corner and center) */}
           <div
-            className={`absolute inset-0 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 shadow-2xl shadow-sky-500/50 flex items-center justify-center border border-white/20 transition-opacity duration-150 ${
-              isFabPillVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            className={`absolute inset-0 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 shadow-2xl shadow-sky-500/50 flex items-center justify-center border border-white/20 pointer-events-none ${
+              phase === 'morphing-open'
+                ? 'animate-fab-icon-open'
+                : phase === 'morphing-close'
+                ? 'animate-fab-icon-close'
+                : 'opacity-0'
             }`}
           >
             <Plus
-              className={`w-6 h-6 text-white stroke-[2.5] transition-transform duration-300 ${
-                isIconRotated ? 'rotate-90' : 'rotate-0'
-              }`}
+              className="w-6 h-6 text-white stroke-[2.5]"
               style={{
-                transform: `scale(${scaleX ? 1 / scaleX : 1}, ${scaleY ? 1 / scaleY : 1}) ${
-                  isIconRotated ? 'rotate(90deg)' : 'rotate(0deg)'
-                }`,
+                transform: `scale(${scaleX ? 1 / scaleX : 1}, ${scaleY ? 1 / scaleY : 1})`,
               }}
             />
           </div>
 
-          {/* Layer 2: Modal Form Content (visible during expand & open phases) */}
+          {/* Layer 2: Modal Form Content (rises and fades smoothly as card blossoms) */}
           <div
-            className={`w-full p-5 sm:p-7 space-y-4 sm:space-y-5 overflow-y-auto max-h-[90vh] sm:max-h-[88vh] transition-opacity duration-200 ${
-              isFormContentVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            className={`w-full p-5 sm:p-7 space-y-4 sm:space-y-5 overflow-y-auto max-h-[90vh] sm:max-h-[88vh] ${
+              phase === 'morphing-open'
+                ? 'animate-fab-form-open pointer-events-none'
+                : phase === 'morphing-close'
+                ? 'animate-fab-form-close pointer-events-none'
+                : 'opacity-100 pointer-events-auto'
             }`}
           >
             <button

@@ -258,6 +258,217 @@ body.modal-open {
   overscroll-behavior: none;
 }
 
+/* ==========================================================================
+   Mobile & Tablet FAB Morphing Shared-Element Animations
+   Silky 60/120 FPS continuous GPU-composited bezier trajectories
+   ========================================================================== */
+
+/* Panel open: 0% at FAB, 14% squish, 50% glide to center, 100% expand to card */
+@keyframes fabMorphOpen {
+  0% {
+    transform: translate3d(var(--fab-delta-x, 0px), var(--fab-delta-y, 0px), 0) scale(var(--fab-scale-x, 0.15), var(--fab-scale-y, 0.1));
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 15px 35px -5px rgba(14, 165, 233, 0.5);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  14% {
+    transform: translate3d(var(--fab-delta-x, 0px), var(--fab-delta-y, 0px), 0) scale(calc(var(--fab-scale-x, 0.15) * 0.8), calc(var(--fab-scale-y, 0.1) * 0.8));
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  50% {
+    transform: translate3d(0, 0, 0) scale(calc(var(--fab-scale-x, 0.15) * 0.9), calc(var(--fab-scale-y, 0.1) * 0.9));
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 20px 45px -5px rgba(14, 165, 233, 0.6);
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+    border-radius: 1.5rem;
+    background: #0f1011;
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+  }
+}
+
+/* Panel close: 0% card, 38% collapse to center circle, 80% glide to FAB, 100% settle */
+@keyframes fabMorphClose {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1, 1);
+    border-radius: 1.5rem;
+    background: #0f1011;
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  38% {
+    transform: translate3d(0, 0, 0) scale(calc(var(--fab-scale-x, 0.15) * 0.9), calc(var(--fab-scale-y, 0.1) * 0.9));
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 20px 45px -5px rgba(14, 165, 233, 0.6);
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  80% {
+    transform: translate3d(var(--fab-delta-x, 0px), var(--fab-delta-y, 0px), 0) scale(calc(var(--fab-scale-x, 0.15) * 0.8), calc(var(--fab-scale-y, 0.1) * 0.8));
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  100% {
+    transform: translate3d(var(--fab-delta-x, 0px), var(--fab-delta-y, 0px), 0) scale(var(--fab-scale-x, 0.15), var(--fab-scale-y, 0.1));
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 15px 35px -5px rgba(14, 165, 233, 0.5);
+  }
+}
+
+/* Plus icon inside pill during open: visible 0-50%, rotates 90deg, dissolves 50-64% */
+@keyframes fabIconOpen {
+  0% {
+    opacity: 1;
+    transform: scale(var(--fab-counter-scale-x, 1), var(--fab-counter-scale-y, 1)) rotate(0deg);
+  }
+  48% {
+    opacity: 1;
+    transform: scale(calc(var(--fab-counter-scale-x, 1) * 1.05), calc(var(--fab-counter-scale-y, 1) * 1.05)) rotate(90deg);
+  }
+  64% {
+    opacity: 0;
+    transform: scale(var(--fab-counter-scale-x, 1), var(--fab-counter-scale-y, 1)) rotate(90deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(var(--fab-counter-scale-x, 1), var(--fab-counter-scale-y, 1)) rotate(90deg);
+  }
+}
+
+/* Plus icon inside pill during close: appears at 30%, rotates 90deg -> 0deg during return flight */
+@keyframes fabIconClose {
+  0% {
+    opacity: 0;
+    transform: scale(var(--fab-counter-scale-x, 1), var(--fab-counter-scale-y, 1)) rotate(90deg);
+  }
+  30% {
+    opacity: 0;
+    transform: scale(var(--fab-counter-scale-x, 1), var(--fab-counter-scale-y, 1)) rotate(90deg);
+  }
+  42% {
+    opacity: 1;
+    transform: scale(calc(var(--fab-counter-scale-x, 1) * 1.05), calc(var(--fab-counter-scale-y, 1) * 1.05)) rotate(90deg);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(var(--fab-counter-scale-x, 1), var(--fab-counter-scale-y, 1)) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(var(--fab-counter-scale-x, 1), var(--fab-counter-scale-y, 1)) rotate(0deg);
+  }
+}
+
+/* Form content entrance: fades and rises smoothly between 50% and 100% */
+@keyframes fabFormOpen {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  50% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Form content exit: fades out quickly in first 26% of close */
+@keyframes fabFormClose {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  26% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+/* Backdrop entrance and exit */
+@keyframes fabBackdropOpen {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fabBackdropClose {
+  0% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Animation classes with silky durations */
+.animate-fab-morph-open {
+  animation: fabMorphOpen 860ms forwards;
+  will-change: transform, border-radius;
+}
+
+.animate-fab-morph-close {
+  animation: fabMorphClose 780ms forwards;
+  will-change: transform, border-radius;
+}
+
+.animate-fab-icon-open {
+  animation: fabIconOpen 860ms forwards;
+}
+
+.animate-fab-icon-close {
+  animation: fabIconClose 780ms forwards;
+}
+
+.animate-fab-form-open {
+  animation: fabFormOpen 860ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fab-form-close {
+  animation: fabFormClose 780ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fab-backdrop-open {
+  animation: fabBackdropOpen 860ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fab-backdrop-close {
+  animation: fabBackdropClose 780ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   *,
