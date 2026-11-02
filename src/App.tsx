@@ -10,6 +10,7 @@ import {
   Plus,
   AlertTriangle,
   RotateCcw,
+  HandCoins,
 } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import { getCreditCardUtilizationStatus } from '@/lib/accounting/calculations';
@@ -23,6 +24,7 @@ import { useCreditCards } from '@/hooks/useCreditCards';
 import { useFixedDeposits } from '@/hooks/useFixedDeposits';
 import { useSelfEmis } from '@/hooks/useSelfEmis';
 import { useActualDebts } from '@/hooks/useActualDebts';
+import { useDebtsLoans } from '@/hooks/useDebtsLoans';
 import { useMonthlyTargets } from '@/hooks/useMonthlyTargets';
 import { Header } from '@/components/common/Header';
 import { SpotlightCard } from '@/components/common/SpotlightCard';
@@ -256,6 +258,19 @@ export const App: React.FC = () => {
   } = useActualDebts();
 
   const {
+    debtsLoans,
+    totalBorrowedPaise: totalDebtLoanBorrowedPaise,
+    totalRemainingBalancePaise: totalDebtLoanRemainingPaise,
+    totalRepaidPaise: totalDebtLoanRepaidPaise,
+    isLoading: isDebtsLoansLoading,
+    addDebtLoan,
+    payDebtLoan,
+    updateDebtLoan,
+    deleteDebtLoan,
+    refreshDebtsLoans,
+  } = useDebtsLoans();
+
+  const {
     targets,
     totalTargetAmountPaise,
     totalContributedPaise,
@@ -284,7 +299,7 @@ export const App: React.FC = () => {
   const effectiveEnvelopeAllocationsPaise = totalAllocatedPaise;
   const effectiveSavingsAndFDsPaise = totalPrincipalPaise;
   const effectiveCreditCardLiabilitiesPaise = totalCardOutstandingPaise;
-  const effectiveActualDebtsPaise = totalRemainingDebtPaise;
+  const effectiveActualDebtsPaise = totalRemainingDebtPaise + totalDebtLoanRemainingPaise;
 
   const totalMonthlyRecurringPaise = React.useMemo(() => {
     return recurringRules.filter((r) => r.isActive).reduce((sum, r) => sum + r.amountPaise, 0n);
@@ -304,6 +319,7 @@ export const App: React.FC = () => {
       refreshFDs(),
       refreshSelfEmis(),
       refreshDebts(),
+      refreshDebtsLoans(),
       refreshTargets(),
       refreshRecurringRules(),
     ]);
@@ -626,7 +642,7 @@ export const App: React.FC = () => {
                   </div>
                 </SpotlightCard>
 
-                {/* 5. Actual Debts */}
+                {/* 5. Debts & Loans */}
                 <SpotlightCard
                   as="button"
                   onClick={() => {
@@ -635,22 +651,22 @@ export const App: React.FC = () => {
                   }}
                   spotlightColor="rgba(251, 146, 60, 0.18)"
                   className="space-y-3 relative overflow-hidden group cursor-pointer"
-                  title="Scroll to Actual Debts"
+                  title="Scroll to Debts & Loans"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider group-hover:text-orange-300 transition-colors">
-                      5. Actual Debts
+                      5. Debts & Loans
                     </span>
                     <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 group-hover:bg-orange-500/20 group-hover:scale-105 transition-all">
-                      <CalendarClock className="w-5 h-5" />
+                      <HandCoins className="w-5 h-5" />
                     </div>
                   </div>
                   <div>
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums truncate">
-                      {formatINR(effectiveActualDebtsPaise)}
+                      {formatINR(totalDebtLoanRemainingPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>External Loans & Debts Owed</span>
+                      <span>Personal & External Loans Owed</span>
                       <span className="text-[10px] text-orange-400/80 group-hover:text-orange-300 font-medium transition-colors">Manage &rarr;</span>
                     </div>
                   </div>
@@ -802,45 +818,67 @@ export const App: React.FC = () => {
               }}
 
               selfEmis={selfEmis}
+              externalEmis={actualDebts}
               totalSelfEmiRemainingPaise={totalSelfEmiRemainingPaise}
-              isEmisLoading={isEmisLoading}
-              onAddEmi={async (params) => {
+              totalExternalEmiRemainingPaise={totalRemainingDebtPaise}
+              isEmisLoading={isEmisLoading || isDebtsLoading}
+              onAddSelfEmi={async (params) => {
                 await addEmi(params);
                 showToast('Self EMI schedule created', 'success');
               }}
-              onPayEmi={async (params) => {
+              onPaySelfEmi={async (params) => {
                 await payEmi(params);
                 await handleTransactionRecorded();
-                showToast('Self EMI installment paid', 'success');
+                showToast('Self EMI reimbursement recorded', 'success');
               }}
-              onUpdateEmi={async (emiId, updates) => {
+              onUpdateSelfEmi={async (emiId, updates) => {
                 await editEmi(emiId, updates);
                 showToast('Self EMI updated', 'success');
               }}
-              onDeleteEmi={async (emiId) => {
+              onDeleteSelfEmi={async (emiId) => {
                 await removeEmi(emiId);
                 showToast('Self EMI removed', 'info');
               }}
-
-              actualDebts={actualDebts}
-              totalActualDebtRemainingPaise={totalRemainingDebtPaise}
-              isDebtsLoading={isDebtsLoading}
-              onAddDebt={async (params) => {
+              onAddExternalEmi={async (params) => {
                 await addDebt(params);
-                showToast('Debt liability created', 'success');
+                showToast('External EMI scheduled', 'success');
               }}
-              onPayDebt={async (params) => {
+              onPayExternalEmi={async (params) => {
                 await payDebt(params);
                 await handleTransactionRecorded();
-                showToast('Debt payment recorded', 'success');
+                showToast('External EMI payment recorded', 'success');
               }}
-              onUpdateDebt={async (debtId, updates) => {
+              onUpdateExternalEmi={async (debtId, updates) => {
                 await editDebt(debtId, updates);
-                showToast('Debt details updated', 'success');
+                showToast('External EMI details updated', 'success');
               }}
-              onDeleteDebt={async (debtId) => {
+              onDeleteExternalEmi={async (debtId) => {
                 await removeDebt(debtId);
-                showToast('Debt record removed', 'info');
+                showToast('External EMI removed', 'info');
+              }}
+
+              debtsLoans={debtsLoans}
+              totalDebtLoanRemainingPaise={totalDebtLoanRemainingPaise}
+              totalDebtLoanBorrowedPaise={totalDebtLoanBorrowedPaise}
+              totalDebtLoanRepaidPaise={totalDebtLoanRepaidPaise}
+              isDebtsLoansLoading={isDebtsLoansLoading}
+              onAddDebtLoan={async (params) => {
+                await addDebtLoan(params);
+                await handleTransactionRecorded();
+                showToast('Debt / Loan recorded successfully', 'success');
+              }}
+              onPayDebtLoan={async (params) => {
+                await payDebtLoan(params);
+                await handleTransactionRecorded();
+                showToast('Loan payment recorded into ledger', 'success');
+              }}
+              onUpdateDebtLoan={async (loanId, updates) => {
+                await updateDebtLoan(loanId, updates);
+                showToast('Debt / Loan details updated', 'success');
+              }}
+              onDeleteDebtLoan={async (loanId) => {
+                await deleteDebtLoan(loanId);
+                showToast('Debt / Loan record removed', 'info');
               }}
 
               targets={targets}
@@ -982,6 +1020,7 @@ export const App: React.FC = () => {
         creditCards={cards}
         fixedDeposits={fixedDeposits}
         actualDebts={actualDebts}
+        debtsLoans={debtsLoans}
         monthlyTargets={targets}
         recurringRules={recurringRules}
       />

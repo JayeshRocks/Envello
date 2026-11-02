@@ -518,6 +518,48 @@ export interface Database {
         };
         Relationships: [];
       };
+      debts_loans: {
+        Row: {
+          id: string;
+          user_id: string;
+          lender_name: string;
+          borrowed_amount_paise: number;
+          remaining_balance_paise: number;
+          interest_rate_percent: number;
+          due_date: string | null;
+          notes: string | null;
+          is_settled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          lender_name: string;
+          borrowed_amount_paise: number;
+          remaining_balance_paise: number;
+          interest_rate_percent?: number;
+          due_date?: string | null;
+          notes?: string | null;
+          is_settled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          lender_name?: string;
+          borrowed_amount_paise?: number;
+          remaining_balance_paise?: number;
+          interest_rate_percent?: number;
+          due_date?: string | null;
+          notes?: string | null;
+          is_settled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       monthly_targets: {
         Row: {
           id: string;

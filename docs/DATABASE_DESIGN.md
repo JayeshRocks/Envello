@@ -216,6 +216,20 @@ CREATE TABLE IF NOT EXISTS public.actual_debts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+CREATE TABLE IF NOT EXISTS public.debts_loans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    lender_name TEXT NOT NULL,
+    borrowed_amount_paise BIGINT NOT NULL CHECK (borrowed_amount_paise > 0),
+    remaining_balance_paise BIGINT NOT NULL CHECK (remaining_balance_paise >= 0),
+    interest_rate_percent NUMERIC(5, 2) NOT NULL DEFAULT 0.00,
+    due_date DATE,
+    notes TEXT,
+    is_settled BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
 ```
 
 ### 3.8 `monthly_targets`
@@ -354,4 +368,5 @@ $$;
 | `20261029000000_rename_regular_to_spendable_and_trim_default_envelopes.sql` | Refines envelope taxonomy to match Spendable Cash pillar. |
 | `20261031000000_security_hardening.sql` | Security hardening: caller identity assertions (`auth.uid() = target_user_id`) in `purge_user_data`, `REVOKE EXECUTE FROM PUBLIC, anon` on sensitive RPCs, and string length check constraints across all tables. |
 | `20261102000000_savings_and_deposits_types.sql` | Expands `fixed_deposits` table with `deposit_type` (`fd`, `rd`) and `monthly_deposit_paise` for recurring deposits. |
+| `20261102000001_debts_and_loans_schema.sql` | Introduces `public.debts_loans` table for tracking personal and external loans with manual card-like repayments, RLS policies, and balance constraints. |
 

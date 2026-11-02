@@ -6,6 +6,7 @@ import type { EnvelopeWithDetails } from '@/lib/api/envelopes';
 import type { CreditCardWithDetails } from '@/lib/api/creditCards';
 import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
 import type { ActualDebtRow } from '@/lib/api/actualDebts';
+import type { DebtLoanRow } from '@/lib/api/debtsLoans';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
 import type { RecurringRule } from '@/types/recurring.types';
 import { exportTransactionsToCSV, exportFullBackupToJSON } from '@/lib/export/dataExport';
@@ -21,6 +22,7 @@ interface ExportDataModalProps {
   creditCards: CreditCardWithDetails[];
   fixedDeposits: FixedDepositRow[];
   actualDebts: ActualDebtRow[];
+  debtsLoans?: DebtLoanRow[];
   monthlyTargets: MonthlyTargetWithProgress[];
   recurringRules?: RecurringRule[];
 }
@@ -34,6 +36,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
   creditCards,
   fixedDeposits,
   actualDebts,
+  debtsLoans,
   monthlyTargets,
   recurringRules,
 }) => {
@@ -58,6 +61,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({
       creditCards,
       fixedDeposits,
       actualDebts,
+  debtsLoans,
       monthlyTargets,
       recurringRules,
     });

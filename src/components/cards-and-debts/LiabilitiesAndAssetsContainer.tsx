@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { CreditCard, Landmark, RefreshCw, CalendarClock, Target } from 'lucide-react';
+import { CreditCard, Landmark, RefreshCw, CalendarClock, HandCoins, Target } from 'lucide-react';
 import type { CreditCardWithDetails, CreditCardRow } from '@/lib/api/creditCards';
 import type { FixedDepositRow, DepositType } from '@/lib/api/fixedDeposits';
 import type { SelfEmiWithProgress } from '@/hooks/useSelfEmis';
 import type { SelfEmiInsert } from '@/lib/api/selfEmis';
 import type { ActualDebtRow, ActualDebtInsert } from '@/lib/api/actualDebts';
+import type { DebtLoanRow, DebtLoanInsert } from '@/lib/api/debtsLoans';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
 import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring.types';
@@ -12,11 +13,11 @@ import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { CreditCardSection } from './CreditCardSection';
 import { FixedDepositSection } from './FixedDepositSection';
 import { RecurringSection } from './RecurringSection';
-import { SelfEmiSection } from './SelfEmiSection';
-import { ActualDebtsSection } from './ActualDebtsSection';
+import { EmiSection } from './EmiSection';
+import { DebtsAndLoansSection } from './DebtsAndLoansSection';
 import { MonthlyTargetsSection } from '@/components/targets/MonthlyTargetsSection';
 
-export type SubTabType = 'cards' | 'fds' | 'recurring' | 'self_emis' | 'debts' | 'targets';
+export type SubTabType = 'cards' | 'fds' | 'recurring' | 'emis' | 'debts' | 'targets';
 
 interface LiabilitiesAndAssetsContainerProps {
   activeTab?: SubTabType;
@@ -84,42 +85,64 @@ interface LiabilitiesAndAssetsContainerProps {
   onLogSingleRecurringRule: (rule: RecurringRule) => Promise<void>;
   onLogAllDueRecurringRules: () => Promise<void>;
 
-  // Self EMIs
+  // EMIs: Self EMIs (internal) & External EMIs (lenders)
   selfEmis: SelfEmiWithProgress[];
+  externalEmis: ActualDebtRow[];
   totalSelfEmiRemainingPaise: bigint;
+  totalExternalEmiRemainingPaise: bigint;
   isEmisLoading: boolean;
-  onAddEmi: (params: {
+  onAddSelfEmi: (params: {
     description: string;
     total_funded_paise: number;
     monthly_reimbursement_paise: number;
     start_date?: string;
   }) => Promise<void>;
-  onPayEmi: (params: {
+  onPaySelfEmi: (params: {
     emiId: string;
     amountPaise: number;
   }) => Promise<void>;
-  onUpdateEmi?: (emiId: string, updates: Partial<SelfEmiInsert>) => Promise<void>;
-  onDeleteEmi?: (emiId: string) => Promise<void>;
-
-  // Actual Debts
-  actualDebts: ActualDebtRow[];
-  totalActualDebtRemainingPaise: bigint;
-  isDebtsLoading: boolean;
-  onAddDebt: (params: {
+  onUpdateSelfEmi?: (emiId: string, updates: Partial<SelfEmiInsert>) => Promise<void>;
+  onDeleteSelfEmi?: (emiId: string) => Promise<void>;
+  onAddExternalEmi: (params: {
     lender_name: string;
     initial_debt_paise: number;
     monthly_instalment_paise: number;
     due_date?: string;
   }) => Promise<void>;
-  onPayDebt: (params: {
+  onPayExternalEmi: (params: {
     debtId: string;
-    amountPaise: number;
     fromAccountId: string;
+    amountPaise: number;
     paymentDate?: string;
     notes?: string;
   }) => Promise<void>;
-  onUpdateDebt?: (debtId: string, updates: Partial<ActualDebtInsert>) => Promise<void>;
-  onDeleteDebt?: (debtId: string) => Promise<void>;
+  onUpdateExternalEmi?: (debtId: string, updates: Partial<ActualDebtInsert>) => Promise<void>;
+  onDeleteExternalEmi?: (debtId: string) => Promise<void>;
+
+  // Debts & Loans: Personal & external lump-sum debts with manual card-like payment
+  debtsLoans: DebtLoanRow[];
+  totalDebtLoanRemainingPaise: bigint;
+  totalDebtLoanBorrowedPaise: bigint;
+  totalDebtLoanRepaidPaise: bigint;
+  isDebtsLoansLoading: boolean;
+  onAddDebtLoan: (params: {
+    lender_name: string;
+    borrowed_amount_paise: number;
+    remaining_balance_paise?: number;
+    interest_rate_percent?: number;
+    due_date?: string;
+    notes?: string;
+    initial_deposit_account_id?: string;
+  }) => Promise<void>;
+  onPayDebtLoan: (params: {
+    loanId: string;
+    fromAccountId: string;
+    amountPaise: number;
+    paymentDate?: string;
+    notes?: string;
+  }) => Promise<void>;
+  onUpdateDebtLoan?: (loanId: string, updates: Partial<DebtLoanInsert>) => Promise<void>;
+  onDeleteDebtLoan?: (loanId: string) => Promise<void>;
 
   // Target Goals (One-Time Major Purchases)
   targets: MonthlyTargetWithProgress[];
@@ -149,6 +172,10 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
     }
   };
 
+  const activeSelfEmisCount = props.selfEmis.filter((e) => !e.is_completed).length;
+  const activeExternalEmisCount = props.externalEmis.filter((d) => !d.is_settled).length;
+  const activeDebtsLoansCount = props.debtsLoans.filter((d) => !d.is_settled).length;
+
   const tabs = [
     {
       id: 'cards' as const,
@@ -172,17 +199,17 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
       badgeColor: props.dueRecurringRules.length > 0 ? 'text-amber-400 font-bold' : 'text-indigo-400',
     },
     {
-      id: 'self_emis' as const,
-      name: 'Self EMIs',
+      id: 'emis' as const,
+      name: 'EMIs',
       icon: RefreshCw,
-      count: props.selfEmis.filter((e) => !e.is_completed).length,
+      count: activeSelfEmisCount + activeExternalEmisCount,
       badgeColor: 'text-indigo-400',
     },
     {
       id: 'debts' as const,
-      name: 'Actual Debts',
-      icon: CalendarClock,
-      count: props.actualDebts.filter((d) => !d.is_settled).length,
+      name: 'Debts & Loans',
+      icon: HandCoins,
+      count: activeDebtsLoansCount,
       badgeColor: 'text-orange-400',
     },
     {
@@ -277,28 +304,37 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
           />
         )}
 
-        {currentTab === 'self_emis' && (
-          <SelfEmiSection
+        {currentTab === 'emis' && (
+          <EmiSection
             selfEmis={props.selfEmis}
-            totalRemainingPaise={props.totalSelfEmiRemainingPaise}
+            externalEmis={props.externalEmis}
+            accounts={props.accounts}
+            totalSelfEmiRemainingPaise={props.totalSelfEmiRemainingPaise}
+            totalExternalEmiRemainingPaise={props.totalExternalEmiRemainingPaise}
             isLoading={props.isEmisLoading}
-            onAddEmi={props.onAddEmi}
-            onPayEmi={props.onPayEmi}
-            onUpdateEmi={props.onUpdateEmi}
-            onDeleteEmi={props.onDeleteEmi}
+            onAddSelfEmi={props.onAddSelfEmi}
+            onPaySelfEmi={props.onPaySelfEmi}
+            onUpdateSelfEmi={props.onUpdateSelfEmi}
+            onDeleteSelfEmi={props.onDeleteSelfEmi}
+            onAddExternalEmi={props.onAddExternalEmi}
+            onPayExternalEmi={props.onPayExternalEmi}
+            onUpdateExternalEmi={props.onUpdateExternalEmi}
+            onDeleteExternalEmi={props.onDeleteExternalEmi}
           />
         )}
 
         {currentTab === 'debts' && (
-          <ActualDebtsSection
-            actualDebts={props.actualDebts}
+          <DebtsAndLoansSection
+            debtsLoans={props.debtsLoans}
             accounts={props.accounts}
-            totalRemainingDebtPaise={props.totalActualDebtRemainingPaise}
-            isLoading={props.isDebtsLoading}
-            onAddDebt={props.onAddDebt}
-            onPayDebt={props.onPayDebt}
-            onUpdateDebt={props.onUpdateDebt}
-            onDeleteDebt={props.onDeleteDebt}
+            totalRemainingBalancePaise={props.totalDebtLoanRemainingPaise}
+            totalBorrowedPaise={props.totalDebtLoanBorrowedPaise}
+            totalRepaidPaise={props.totalDebtLoanRepaidPaise}
+            isLoading={props.isDebtsLoansLoading}
+            onAddDebtLoan={props.onAddDebtLoan}
+            onPayDebtLoan={props.onPayDebtLoan}
+            onUpdateDebtLoan={props.onUpdateDebtLoan}
+            onDeleteDebtLoan={props.onDeleteDebtLoan}
           />
         )}
 

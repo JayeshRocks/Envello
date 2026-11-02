@@ -22,8 +22,9 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
 4. **Credit Card Liabilities (Unsettled Debt)**:
    - Total outstanding balances across all active credit cards.
    - Tracked alongside available credit limits and statement due dates.
-5. **Actual Debts (External Obligations)**:
-   - Amounts owed to individuals (friends, family) or financial institutions with repayment schedules.
+5. **Debts & Loans (External & Personal Obligations)**:
+   - Amounts borrowed from individuals (friends, family) or financial institutions with on-demand manual repayment from liquid bank accounts (mirrors credit card bill payments).
+   - Fixed recurring monthly instalments (e.g. car, gadget, personal loans) are organized under the unified **EMIs** hub alongside Self EMIs.
 6. **Monthly Targets (Forward Planning)**:
    - Forward-looking financial goals and recurring purchase intentions.
    - Setting a target does NOT deduct cash until actual contributions are recorded.
@@ -85,7 +86,7 @@ Every financial movement is classified deterministically:
 
 ---
 
-### 2.5 Credit Cards & EMIs
+### 2.5 Credit Cards, EMIs & Debts/Loans
 
 #### 2.5.1 Credit Card Management
 - **Tracking Fields**: Card name, Issuer, Credit Limit, Outstanding Balance, Available Credit, Utilisation %, Statement Date, Payment Due Date, Statement Balance, Minimum Payment.
@@ -93,14 +94,25 @@ Every financial movement is classified deterministically:
 - **Billing Cycle Discipline**: Distinguishes unbilled transactions from closed statement balances.
 - **Security Constraint**: Never store full PAN, CVV, expiry dates, or banking passwords.
 
-#### 2.5.2 Self EMIs (Internal Savings Reimbursement)
-- Used when a significant purchase is funded upfront from savings, with the intention of paying back savings over several months.
-- Tracks: Original purchase details, initial amount drawn from savings, monthly reimbursement target, total reimbursed to date, and remaining balance.
-- Mechanics: Monthly repayments move money from the spendable pool back to the savings asset.
+#### 2.5.2 Unified EMIs Hub (Self EMIs & External EMIs)
+- **Self EMIs (Internal Savings Reimbursement)**:
+  - Used when a significant purchase is funded upfront from savings, with the intention of paying back savings over several months.
+  - Tracks: Description, initial amount drawn from savings, monthly reimbursement target, total reimbursed to date, and remaining balance.
+  - Repayment: Inline reimbursement moves money back into savings reserves.
+- **External EMIs (Scheduled External Instalments)**:
+  - Tracks structured recurring loan instalments owed to external lenders, banks, or finance companies (auto loans, equipment loans, personal loans).
+  - Tracks: Lender name, initial principal, monthly instalment, due date, payment records, and remaining debt.
+  - Unified view: Metric strip computes combined monthly EMI commitment and total outstanding balance.
 
-#### 2.5.3 Actual EMIs & Debts
-- Tracks debts owed to external individuals (e.g. friends, family) or financial institutions.
-- Tracks: Lender/Individual name, principal amount, interest rate (if any), monthly instalment amount, due dates, payment history, and remaining balance.
+#### 2.5.3 Debts & Loans (Manual-Pay Personal & External Borrowing)
+- Designed for lump-sum or flexible borrowings (e.g. money borrowed from friends, family, or lenders) that do not follow a strict automated monthly instalment schedule.
+- **Tracking Fields**: Lender name, borrowed amount, remaining balance, interest rate (%), due date, notes, and settlement status.
+- **Manual Payment Flow**: Mirrors the credit card payment modal:
+  - Select source liquid bank account with real-time balance validation.
+  - Quick-pay chips (`25%`, `50%`, `Full Balance`).
+  - Strict validation capping payment at remaining balance.
+  - Atomic ledger transaction logging (`type: 'debt_repayment'`).
+  - Auto-marks debt as settled when balance reaches ₹0.
 
 ---
 

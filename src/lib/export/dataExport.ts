@@ -4,6 +4,7 @@ import type { EnvelopeWithDetails } from '@/lib/api/envelopes';
 import type { CreditCardWithDetails } from '@/lib/api/creditCards';
 import type { FixedDepositRow } from '@/lib/api/fixedDeposits';
 import type { ActualDebtRow } from '@/lib/api/actualDebts';
+import type { DebtLoanRow } from '@/lib/api/debtsLoans';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
 import type { RecurringRule } from '@/types/recurring.types';
 
@@ -68,6 +69,7 @@ export function exportFullBackupToJSON(data: {
   creditCards: CreditCardWithDetails[];
   fixedDeposits: FixedDepositRow[];
   actualDebts: ActualDebtRow[];
+  debtsLoans?: DebtLoanRow[];
   monthlyTargets: MonthlyTargetWithProgress[];
   recurringRules?: RecurringRule[];
 }): void {

@@ -249,5 +249,30 @@ describe('Accounting Engine — Invariants & Precision', () => {
       const finalDue = monthlyInstalment < finalRemainingDebt ? monthlyInstalment : finalRemainingDebt;
       expect(finalDue).toBe(300000n); // Auto-fills exact due, capped at remaining
     });
+
+    it('debts & loans manual payment calculates remaining balance and settlement accurately in paise', () => {
+      const initialBorrowed = 5000000n; // ₹50,000 borrowed from family/friend
+      let remainingBalance = initialBorrowed;
+      const bankBalance = 10000000n; // ₹1,00,000 in liquid account
+
+      // Payment 1: 50% partial repayment
+      const payment1 = 2500000n; // ₹25,000
+      expect(payment1 <= remainingBalance).toBe(true);
+      expect(payment1 <= bankBalance).toBe(true);
+
+      remainingBalance -= payment1;
+      const newBankBalance = bankBalance - payment1;
+      expect(remainingBalance).toBe(2500000n);
+      expect(newBankBalance).toBe(7500000n);
+      let isSettled = remainingBalance === 0n;
+      expect(isSettled).toBe(false);
+
+      // Payment 2: Remaining payoff
+      const payment2 = remainingBalance; // ₹25,000
+      remainingBalance -= payment2;
+      isSettled = remainingBalance === 0n;
+      expect(remainingBalance).toBe(0n);
+      expect(isSettled).toBe(true);
+    });
   });
 });
