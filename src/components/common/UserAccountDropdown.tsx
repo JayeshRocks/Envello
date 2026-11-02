@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Scale,
   Trash2,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -17,6 +18,7 @@ interface UserAccountDropdownProps {
   onOpenChangeEmailModal: () => void;
   onOpenSetPasswordModal: () => void;
   onOpenDeletionModal: () => void;
+  onOpenExportModal?: () => void;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
 }
@@ -26,6 +28,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
   onOpenChangeEmailModal,
   onOpenSetPasswordModal,
   onOpenDeletionModal,
+  onOpenExportModal,
   onOpenPrivacy = () => {},
   onOpenTerms = () => {},
 }) => {
@@ -232,8 +235,31 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
         {/* Privacy & Account Deletion Section */}
         <div className="p-2.5 space-y-1 bg-neutral-950">
           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-            Privacy &amp; Security
+            Data, Privacy &amp; Security
           </div>
+
+          {/* Export Data */}
+          {onOpenExportModal && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onOpenExportModal();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-neutral-900 text-neutral-200 hover:text-white transition active:scale-[0.99] text-left min-h-[44px] cursor-pointer"
+            >
+              <div className="flex items-center space-x-2.5">
+                <Download className="w-4 h-4 text-sky-400 flex-shrink-0" />
+                <div>
+                  <span className="text-xs font-medium block">Export Data</span>
+                  <span className="text-[10px] text-neutral-400 block">Download CSV / JSON backup</span>
+                </div>
+              </div>
+              <span className="text-[10px] text-sky-300 font-medium px-2 py-0.5 rounded bg-sky-500/20 border border-sky-500/30">
+                Backup
+              </span>
+            </button>
+          )}
 
           <button
             type="button"

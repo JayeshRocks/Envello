@@ -136,14 +136,6 @@ export const EnvelopeGrid: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-sky-400' : ''}`} />
           </button>
-
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 border border-white/10 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95 min-h-[44px] sm:min-h-[38px]"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Envelope</span>
-          </button>
         </div>
       </div>
 
@@ -283,10 +275,10 @@ export const EnvelopeGrid: React.FC = () => {
 
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white text-xs font-medium transition self-start sm:self-auto active:scale-95 cursor-pointer min-h-[38px] sm:min-h-[32px]"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white text-xs font-medium transition self-start sm:self-auto active:scale-95 cursor-pointer min-h-[38px] sm:min-h-[32px]"
               >
                 <Plus className="w-3.5 h-3.5 text-sky-400" />
-                <span>New Category</span>
+                <span>New Envelope</span>
               </button>
             </div>
 
@@ -303,7 +295,7 @@ export const EnvelopeGrid: React.FC = () => {
                   onClick={() => setIsCreateModalOpen(true)}
                   className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm"
                 >
-                  + Create Your First Category
+                  + Create Your First Envelope
                 </button>
               </div>
             ) : (

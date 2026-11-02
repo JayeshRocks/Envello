@@ -6,7 +6,6 @@ import {
   CalendarClock,
 
   Landmark,
-  Download,
   Scale,
   Plus,
   AlertTriangle,
@@ -371,6 +370,7 @@ export const App: React.FC = () => {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
         onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
+        onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenSetNameModal={() => {
           setIsFirstTimeNameModal(false);
           setIsSetNameModalOpen(true);
@@ -475,15 +475,7 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-3 sm:flex sm:items-center gap-2 w-full sm:w-auto">
-                  <button
-                    onClick={() => setIsExportModalOpen(true)}
-                    className="px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center justify-center space-x-1.5 transition active:scale-95 shadow-sm"
-                    title="Export Data"
-                  >
-                    <Download className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
-                    <span>Export</span>
-                  </button>
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       setReconcileAccountId(undefined);
@@ -714,7 +706,6 @@ export const App: React.FC = () => {
               savingsAndFDsPaise={effectiveSavingsAndFDsPaise}
               creditCardLiabilitiesPaise={effectiveCreditCardLiabilitiesPaise}
               actualDebtsPaise={effectiveActualDebtsPaise}
-              onOpenExportModal={() => setIsExportModalOpen(true)}
             />
 
             {/* Section: Recurring Alert Banner (when standing expenses are due) */}

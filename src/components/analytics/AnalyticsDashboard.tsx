@@ -1,5 +1,4 @@
 import React from 'react';
-import { Download } from 'lucide-react';
 import type { TransactionWithEntries } from '@/lib/api/transactions';
 import type { EnvelopeWithDetails } from '@/lib/api/envelopes';
 import { CashflowChart } from './CashflowChart';
@@ -13,7 +12,6 @@ interface AnalyticsDashboardProps {
   savingsAndFDsPaise: bigint;
   creditCardLiabilitiesPaise: bigint;
   actualDebtsPaise: bigint;
-  onOpenExportModal: () => void;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
@@ -23,7 +21,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   savingsAndFDsPaise,
   creditCardLiabilitiesPaise,
   actualDebtsPaise,
-  onOpenExportModal,
 }) => {
   return (
     <section className="space-y-4 max-w-full overflow-hidden">
@@ -40,14 +37,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             Real-time trends, spending distributions, and solvency health
           </p>
         </div>
-
-        <button
-          onClick={onOpenExportModal}
-          className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center space-x-1.5 transition self-start sm:self-auto active:scale-95 min-h-[44px] sm:min-h-[38px]"
-        >
-          <Download className="w-3.5 h-3.5 text-sky-400" />
-          <span>Export Data</span>
-        </button>
       </div>
 
       {/* Net Worth Hero */}
