@@ -61,9 +61,9 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
   const [loggingRuleId, setLoggingRuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
+  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, onClose);
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,11 +114,11 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg ${overlayClass}`}
       >
-        <div className="max-w-xl w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto modal-panel">
+        <div className={`max-w-xl w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto ${panelClass}`}>
         <button
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="Close Recurring Rules Modal"
           className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
         >

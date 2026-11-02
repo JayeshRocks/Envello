@@ -218,13 +218,21 @@
   }
 }
 
-/* Modal backdrop overlay with deep frosted blur */
+/* Modal backdrop overlay with deep frosted blur & Apple fade */
 .modal-overlay {
+  animation: appleBackdropFadeIn 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   overscroll-behavior: contain;
   touch-action: none;
+  will-change: opacity;
+}
+
+.modal-overlay.closing,
+.animate-backdrop-out {
+  animation: appleBackdropFadeOut 220ms cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
+  pointer-events: none;
 }
 
 @supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
@@ -233,20 +241,32 @@
   }
 }
 
-/* Centered modal entry animation for all screen sizes */
+/* Centered modal entry & exit animation for all screen sizes */
 .modal-panel {
-  animation: modalIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: appleModalPresent 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   overscroll-behavior: contain;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+.modal-panel.closing,
+.animate-apple-dismiss {
+  animation: appleModalDismiss 220ms cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
+  pointer-events: none;
 }
 
 @keyframes modalIn {
-  from {
+  0% {
     opacity: 0;
-    transform: scale(0.96) translateY(8px);
+    transform: scale(0.92) translateY(14px);
   }
-  to {
+  65% {
+    opacity: 0.96;
+    transform: scale(1.006) translateY(-1px);
+  }
+  100% {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
@@ -289,6 +309,36 @@ body.modal-open {
     opacity: 0;
     transform: scale(0.95) translateY(8px);
   }
+}
+
+/* Backdrop Fade In / Out */
+@keyframes appleBackdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes appleBackdropFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-apple-present {
+  animation: appleModalPresent 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+.animate-backdrop-in {
+  animation: appleBackdropFadeIn 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
 }
 
 /* Reduced motion support */

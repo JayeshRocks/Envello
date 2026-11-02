@@ -43,7 +43,7 @@ export const RecordLoanPaymentModal: React.FC<RecordLoanPaymentModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
+  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, onClose);
 
   const toRupeesString = (paise: number) => {
     if (paise <= 0) return '0';
@@ -77,7 +77,7 @@ export const RecordLoanPaymentModal: React.FC<RecordLoanPaymentModalProps> = ({
     }
   }, [isOpen, preselectedLoanId, loans, accounts]);
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   const currentLoan = loans.find((l) => l.id === selectedLoanId) || loans[0];
   const currentAccount = accounts.find((a) => a.id === selectedAccountId) || accounts[0];
@@ -169,7 +169,7 @@ export const RecordLoanPaymentModal: React.FC<RecordLoanPaymentModalProps> = ({
         paymentDate,
         notes: notes.trim() || undefined,
       });
-      onClose();
+      requestClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to record loan payment';
       setError(msg);
@@ -183,9 +183,9 @@ export const RecordLoanPaymentModal: React.FC<RecordLoanPaymentModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay ${overlayClass}`}
       >
-        <div className="bg-neutral-900 border border-white/15 w-full max-w-lg rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
+        <div className={`bg-neutral-900 border border-white/15 w-full max-w-lg rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto ${panelClass}`}>
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -198,7 +198,7 @@ export const RecordLoanPaymentModal: React.FC<RecordLoanPaymentModalProps> = ({
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={requestClose}
               className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center active:scale-95 transition"
             >
               <X className="w-5 h-5" />
@@ -348,7 +348,7 @@ export const RecordLoanPaymentModal: React.FC<RecordLoanPaymentModalProps> = ({
             <div className="pt-2 flex items-center justify-end space-x-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={requestClose}
                 className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95 cursor-pointer"
               >
                 Cancel

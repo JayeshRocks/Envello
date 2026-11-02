@@ -34,19 +34,19 @@ export const LegalModal: React.FC<LegalModalProps> = ({
     }
   }, [isOpen, initialTab]);
 
-  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
+  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, onClose);
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   return (
     <ModalPortal>
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in overflow-y-auto"
+        className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg overflow-y-auto ${overlayClass}`}
       >
       <div
-        className="w-full max-w-4xl bg-neutral-900 border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden modal-panel"
+        className={`w-full max-w-4xl bg-neutral-900 border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden ${panelClass}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="legal-modal-title"
@@ -75,7 +75,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="p-2 sm:p-2.5 rounded-xl bg-neutral-800/80 hover:bg-neutral-800 text-neutral-400 hover:text-white transition active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close dialog"
           >

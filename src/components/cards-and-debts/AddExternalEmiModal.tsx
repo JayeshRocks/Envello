@@ -27,9 +27,9 @@ export const AddExternalEmiModal: React.FC<AddExternalEmiModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
+  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, onClose);
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +64,7 @@ export const AddExternalEmiModal: React.FC<AddExternalEmiModalProps> = ({
       setInitialDebtRupees('');
       setMonthlyInstalmentRupees('');
       setDueDate('');
-      onClose();
+      requestClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to record external EMI';
       setError(msg);
@@ -78,9 +78,9 @@ export const AddExternalEmiModal: React.FC<AddExternalEmiModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay ${overlayClass}`}
       >
-        <div className="bg-neutral-900 border border-white/15 w-full max-w-md rounded-2xl sm:rounded-3xl p-6 space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
+        <div className={`bg-neutral-900 border border-white/15 w-full max-w-md rounded-2xl sm:rounded-3xl p-6 space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto ${panelClass}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -92,7 +92,7 @@ export const AddExternalEmiModal: React.FC<AddExternalEmiModalProps> = ({
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={requestClose}
               className="p-2 min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn active:scale-95 transition"
               aria-label="Close modal"
             >
@@ -169,7 +169,7 @@ export const AddExternalEmiModal: React.FC<AddExternalEmiModalProps> = ({
             <div className="pt-2 flex items-center justify-end space-x-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={requestClose}
                 className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95 cursor-pointer"
               >
                 Cancel

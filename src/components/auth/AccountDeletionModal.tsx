@@ -78,7 +78,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
     onClose();
   };
 
-  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, handleDismiss);
+  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, handleDismiss);
 
   // 1. Handle Requesting 30-Day Closure
   const handleScheduleDeletion = async () => {
@@ -148,26 +148,26 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   return (
     <ModalPortal>
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg ${overlayClass}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="deletion-modal-title"
       >
-      <div className="max-w-lg w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-5 border border-white/15 shadow-2xl relative modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
+      <div className={`max-w-lg w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto ${panelClass}`}>
         {/* Decorative alert stripe */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 rounded-t-2xl" />
 
         {/* Close Button */}
         {!isSubmitting && (
           <button
-            onClick={handleDismiss}
+            onClick={requestClose}
             aria-label="Close dialog"
             className="absolute top-4 right-4 p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 min-h-[44px] min-w-[44px] flex items-center justify-center transition"
           >
