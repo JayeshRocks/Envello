@@ -1,20 +1,10 @@
 import { useState, useEffect, useRef, useCallback, CSSProperties } from 'react';
 
-export type MorphPhase =
-  | 'idle'
-  | 'neon-activating'
-  | 'neon-traversing'
-  | 'form-expanding'
-  | 'open'
-  | 'form-collapsing'
-  | 'neon-returning'
-  | 'neon-settling'
-  | 'desktop-open'
-  | 'desktop-closing';
+export type MorphPhase = 'idle' | 'opening' | 'open' | 'closing';
 
 interface UseFabMorphAnimationOptions {
   isOpen: boolean;
-  isMobileOrTablet: boolean;
+  isMobileOrTablet?: boolean;
   fabId?: string;
   onCompleteClose: () => void;
 }
@@ -41,274 +31,123 @@ export function calculateFabDeltaVector(
 
 export function useFabMorphAnimation({
   isOpen,
-  isMobileOrTablet,
   fabId = 'mobile-record-fab',
   onCompleteClose,
 }: UseFabMorphAnimationOptions) {
   const [phase, setPhase] = useState<MorphPhase>('idle');
   const [isRendered, setIsRendered] = useState(false);
-  const coordsRef = useRef<FabDeltaVector>({ deltaX: 0, deltaY: 0 });
+  const timerRef = useRef<number | null>(null);
 
-  const timeoutsRef = useRef<number[]>([]);
-
-  const clearAllTimeouts = useCallback(() => {
-    timeoutsRef.current.forEach((id) => window.clearTimeout(id));
-    timeoutsRef.current = [];
+  const clearTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
   }, []);
 
-  // Measure target FAB coordinates against the viewport center
-  const measureCoords = useCallback(() => {
-    const fabEl = document.getElementById(fabId);
-    if (!fabEl) return null;
-
-    const fabRect = fabEl.getBoundingClientRect();
-    const coords = calculateFabDeltaVector(fabRect, {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    });
-
-    coordsRef.current = coords;
-    return coords;
-  }, [fabId]);
-
-  // Request close with choreographed reverse animation
+  // Request close: Apple-style fluid dismissal where the form fades out and the + button fades back in
   const requestClose = useCallback(() => {
-    // Prevent duplicate calls if already in an exit animation
-    if (
-      phase === 'form-collapsing' ||
-      phase === 'neon-returning' ||
-      phase === 'neon-settling' ||
-      phase === 'desktop-closing'
-    ) {
-      return;
-    }
+    if (phase === 'closing' || phase === 'idle') return;
 
-    clearAllTimeouts();
+    clearTimer();
 
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const fabEl = document.getElementById(fabId);
+    // Trigger closing phase
+    setPhase('closing');
 
-    // Desktop or reduced motion path: clean animated fade-and-sink
-    if (!fabEl || prefersReducedMotion) {
-      setPhase('desktop-closing');
-      const timer = window.setTimeout(() => {
-        setIsRendered(false);
-        setPhase('idle');
-        onCompleteClose();
-      }, 220);
-      timeoutsRef.current.push(timer);
-      return;
+    // Smoothly fade in the + FAB button in its corner with fluid spring curve
+    const fabEl = document.getElementById(fabId);
+    if (fabEl) {
+      fabEl.style.transition = prefersReducedMotion
+        ? 'none'
+        : 'opacity 220ms cubic-bezier(0.16, 1, 0.3, 1), transform 220ms cubic-bezier(0.16, 1, 0.3, 1)';
+      fabEl.style.opacity = '1';
+      fabEl.style.transform = 'scale(1)';
+      fabEl.style.pointerEvents = 'auto';
     }
 
-    // Refresh coordinates for the return flight
-    measureCoords();
+    const duration = prefersReducedMotion ? 10 : 220;
 
-    // Step 1: Form collapses visibly into glowing neon circle at screen center
-    setPhase('form-collapsing');
-
-    // Step 2: Glowing neon circle traverses screen back down to resting FAB position
-    const t1 = window.setTimeout(() => {
-      setPhase('neon-returning');
-    }, 320);
-    timeoutsRef.current.push(t1);
-
-    // Step 3: Neon circle settles with soft spring bounce into corner position
-    const t2 = window.setTimeout(() => {
-      setPhase('neon-settling');
-    }, 770);
-    timeoutsRef.current.push(t2);
-
-    // Step 4: Restore real resting FAB and unmount modal
-    const t3 = window.setTimeout(() => {
-      const el = document.getElementById(fabId);
-      if (el) {
-        el.style.opacity = '1';
-        el.style.pointerEvents = 'auto';
-      }
+    timerRef.current = window.setTimeout(() => {
       setIsRendered(false);
       setPhase('idle');
       onCompleteClose();
-    }, 900);
-    timeoutsRef.current.push(t3);
-  }, [phase, clearAllTimeouts, measureCoords, fabId, onCompleteClose]);
+    }, duration);
+  }, [phase, clearTimer, fabId, onCompleteClose]);
 
-  // Opening animation sequence
+  // Open sequence: Apple-style fluid spring presentation
   useEffect(() => {
     if (isOpen) {
-      clearAllTimeouts();
+      clearTimer();
 
       const prefersReducedMotion =
         typeof window !== 'undefined' &&
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // Desktop path or reduced motion: standard centered entry
-      if (!isMobileOrTablet || prefersReducedMotion) {
-        setIsRendered(true);
-        setPhase('desktop-open');
-        return;
-      }
-
+      // Smoothly hide resting FAB while modal opens
       const fabEl = document.getElementById(fabId);
-
-      // If mobile FAB element not found, fallback to desktop open
-      if (!fabEl) {
-        setIsRendered(true);
-        setPhase('desktop-open');
-        return;
+      if (fabEl) {
+        fabEl.style.transition = prefersReducedMotion
+          ? 'none'
+          : 'opacity 180ms ease-out, transform 180ms ease-out';
+        fabEl.style.opacity = '0';
+        fabEl.style.transform = 'scale(0.85)';
+        fabEl.style.pointerEvents = 'none';
       }
 
-      // Hide real FAB while glowing neon orb takes flight
-      fabEl.style.opacity = '0';
-      fabEl.style.pointerEvents = 'none';
-
-      measureCoords();
       setIsRendered(true);
+      setPhase('opening');
 
-      // Step 1: Button activates into glowing neon circle at FAB corner
-      setPhase('neon-activating');
-
-      // Step 2: Glowing neon circle glides smoothly across screen to center
-      const t1 = window.setTimeout(() => {
-        setPhase('neon-traversing');
-      }, 90);
-      timeoutsRef.current.push(t1);
-
-      // Step 3: Arrives at center and expands into form
-      const t2 = window.setTimeout(() => {
-        setPhase('form-expanding');
-      }, 510);
-      timeoutsRef.current.push(t2);
-
-      // Step 4: Form settles as fully interactive
-      const t3 = window.setTimeout(() => {
+      const duration = prefersReducedMotion ? 10 : 320;
+      timerRef.current = window.setTimeout(() => {
         setPhase('open');
-      }, 870);
-      timeoutsRef.current.push(t3);
+      }, duration);
     } else {
-      // If parent sets isOpen=false while modal is open, trigger clean close
-      if (phase === 'open' || phase === 'desktop-open') {
+      if (phase === 'open' || phase === 'opening') {
         requestClose();
       }
     }
 
     return () => {
-      clearAllTimeouts();
+      clearTimer();
     };
   }, [isOpen]);
 
-  // Cleanup on unmount: ensure FAB is never left invisible
+  // Cleanup on unmount: guarantee FAB is never left invisible
   useEffect(() => {
     return () => {
-      clearAllTimeouts();
+      clearTimer();
       const fabEl = document.getElementById(fabId);
       if (fabEl) {
         fabEl.style.opacity = '1';
+        fabEl.style.transform = 'scale(1)';
         fabEl.style.pointerEvents = 'auto';
       }
     };
-  }, [fabId, clearAllTimeouts]);
+  }, [fabId, clearTimer]);
 
-  // Glowing neon circle styles (the orb traversing the screen)
-  const getNeonStyle = (): CSSProperties => {
-    const { deltaX, deltaY } = coordsRef.current;
-
-    switch (phase) {
-      case 'neon-activating':
-        return {
-          transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.85)`,
-          opacity: 1,
-          transition: 'transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 80ms ease',
-        };
-      case 'neon-traversing':
-        return {
-          transform: 'translate3d(0, 0, 0) scale(1.05)',
-          opacity: 1,
-          transition: 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease',
-        };
-      case 'form-expanding':
-        return {
-          transform: 'translate3d(0, 0, 0) scale(1.3)',
-          opacity: 0,
-          transition: 'transform 300ms ease-out, opacity 220ms ease-out',
-        };
-      case 'form-collapsing':
-        return {
-          transform: 'translate3d(0, 0, 0) scale(1.05)',
-          opacity: 1,
-          animation: 'neonEmerge 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        };
-      case 'neon-returning':
-        return {
-          transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.95)`,
-          opacity: 1,
-          transition: 'transform 450ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease',
-        };
-      case 'neon-settling':
-        return {
-          transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1)`,
-          opacity: 1,
-          transition: 'transform 130ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 100ms ease',
-        };
-      default:
-        return {
-          opacity: 0,
-          pointerEvents: 'none',
-        };
-    }
-  };
-
-  // Form panel styles (expanding from center & collapsing to center)
+  // Form panel styles: Apple fluid spring presentation & dismissal
   const getFormStyle = (): CSSProperties => {
     switch (phase) {
-      case 'neon-activating':
-      case 'neon-traversing':
+      case 'opening':
         return {
-          transform: 'scale(0.12)',
-          opacity: 0,
-          pointerEvents: 'none',
-          transformOrigin: 'center center',
-        };
-      case 'form-expanding':
-        return {
-          animation: 'formExpandFromCenter 360ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
-          pointerEvents: 'none',
+          animation: 'appleModalPresent 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
           transformOrigin: 'center center',
           willChange: 'transform, opacity',
         };
       case 'open':
         return {
-          transform: 'scale(1)',
+          transform: 'scale(1) translateY(0)',
           opacity: 1,
           pointerEvents: 'auto',
           transformOrigin: 'center center',
         };
-      case 'form-collapsing':
+      case 'closing':
         return {
-          animation: 'formCollapseToCenter 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards',
-          pointerEvents: 'none',
-          transformOrigin: 'center center',
-          willChange: 'transform, opacity',
-        };
-      case 'neon-returning':
-      case 'neon-settling':
-        return {
-          transform: 'scale(0.12)',
-          opacity: 0,
-          pointerEvents: 'none',
-          transformOrigin: 'center center',
-        };
-      case 'desktop-open':
-        return {
-          animation: 'desktopModalIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
-          transformOrigin: 'center center',
-          willChange: 'transform, opacity',
-        };
-      case 'desktop-closing':
-        return {
-          animation: 'desktopModalOut 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          animation: 'appleModalDismiss 220ms cubic-bezier(0.32, 0.72, 0, 1) forwards',
           pointerEvents: 'none',
           transformOrigin: 'center center',
           willChange: 'transform, opacity',
@@ -318,31 +157,21 @@ export function useFabMorphAnimation({
     }
   };
 
-  const isBackdropActive =
-    phase === 'neon-traversing' ||
-    phase === 'form-expanding' ||
-    phase === 'open' ||
-    phase === 'form-collapsing' ||
-    phase === 'desktop-open';
-
-  const getBackdropStyle = (): CSSProperties => ({
-    opacity: isBackdropActive ? 1 : 0,
-    transition: isBackdropActive ? 'opacity 320ms ease-out' : 'opacity 420ms ease-in',
-  });
-
-  const isNeonVisible =
-    phase === 'neon-activating' ||
-    phase === 'neon-traversing' ||
-    phase === 'form-expanding' ||
-    phase === 'form-collapsing' ||
-    phase === 'neon-returning' ||
-    phase === 'neon-settling';
+  // Backdrop styles: Smoothly fading blur & dim overlay
+  const getBackdropStyle = (): CSSProperties => {
+    const isVisible = phase === 'opening' || phase === 'open';
+    return {
+      opacity: isVisible ? 1 : 0,
+      transition: isVisible
+        ? 'opacity 280ms cubic-bezier(0.16, 1, 0.3, 1)'
+        : 'opacity 220ms cubic-bezier(0.32, 0.72, 0, 1)',
+      pointerEvents: isVisible ? 'auto' : 'none',
+    };
+  };
 
   return {
     isRendered,
     phase,
-    isNeonVisible,
-    neonStyle: getNeonStyle(),
     formStyle: getFormStyle(),
     backdropStyle: getBackdropStyle(),
     requestClose,

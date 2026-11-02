@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
-  Plus,
   ArrowDownLeft,
   ArrowUpRight,
   ArrowRightLeft,
@@ -17,7 +16,6 @@ import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
-import { useDevice } from '@/hooks/useDevice';
 import { useFabMorphAnimation } from '@/hooks/useFabMorphAnimation';
 
 interface RecordTransactionModalProps {
@@ -75,19 +73,13 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { isMobileOrTablet } = useDevice();
-
   const {
     isRendered,
-    phase,
-    isNeonVisible,
-    neonStyle,
     formStyle,
     backdropStyle,
     requestClose,
   } = useFabMorphAnimation({
     isOpen,
-    isMobileOrTablet,
     fabId: 'mobile-record-fab',
     onCompleteClose: onClose,
   });
@@ -196,28 +188,6 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         style={backdropStyle}
         className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay pointer-events-auto"
       >
-        {/* Dedicated Glowing Neon Circle (Traverses smoothly between resting FAB and center) */}
-        {isNeonVisible && (
-          <div
-            style={neonStyle}
-            className="fixed top-1/2 left-1/2 -ml-7 -mt-7 w-14 h-14 rounded-full pointer-events-none z-50 flex items-center justify-center"
-          >
-            {/* Outer pulsating neon energy halo */}
-            <div className="absolute -inset-3 rounded-full bg-gradient-to-r from-sky-400 via-cyan-400 to-indigo-500 opacity-80 blur-md animate-neon-halo" />
-
-            {/* High-intensity glowing neon core */}
-            <div className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-sky-400 via-cyan-300 to-indigo-600 border-2 border-white shadow-[0_0_25px_rgba(56,189,248,0.95),0_0_50px_rgba(99,102,241,0.7)] flex items-center justify-center animate-neon-pulse overflow-hidden">
-              <Plus
-                className={`w-6 h-6 text-white stroke-[2.5] drop-shadow-[0_0_8px_rgba(255,255,255,0.95)] transition-transform duration-500 ${
-                  phase === 'neon-traversing' || phase === 'form-expanding' || phase === 'form-collapsing'
-                    ? 'rotate-90 scale-110'
-                    : 'rotate-0 scale-100'
-                }`}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Modal Form Dialog */}
         <div
           style={formStyle}
