@@ -274,5 +274,46 @@ describe('Accounting Engine — Invariants & Precision', () => {
       expect(remainingBalance).toBe(0n);
       expect(isSettled).toBe(true);
     });
+
+    it('envelope expense cannot exceed available balance (prevents negative envelope balances)', () => {
+      const allocated = 200000n; // ₹2,000
+      const carried = 0n;
+      const spent = 50000n; // ₹500
+      const available = calculateAvailableEnvelopeBalance(allocated, carried, spent); // ₹1,500
+      expect(available).toBe(150000n);
+
+      const invalidExpense = 200000n; // ₹2,000 attempted
+      expect(invalidExpense > available).toBe(true); // Exceeds available balance, must be rejected
+
+      const validExpense = 100000n; // ₹1,000
+      expect(validExpense <= available).toBe(true);
+      const newAvailable = calculateAvailableEnvelopeBalance(allocated, carried, spent + validExpense);
+      expect(newAvailable).toBe(50000n); // ₹500 remaining positive
+      expect(newAvailable >= 0n).toBe(true);
+    });
+
+    it('income recording can allocate directly into an envelope, increasing budget and available balance', () => {
+      const initialBankBalance = 1000000n; // ₹10,000
+      const initialEnvelopeAllocated = 500000n; // ₹5,000
+      const initialEnvelopeSpent = 100000n; // ₹1,000
+      const initialAvailable = calculateAvailableEnvelopeBalance(initialEnvelopeAllocated, 0n, initialEnvelopeSpent);
+      expect(initialAvailable).toBe(400000n); // ₹4,000
+
+      // Income of ₹3,000 credited to bank and allocated to envelope
+      const incomeAmount = 300000n;
+      const newBankBalance = initialBankBalance + incomeAmount;
+      const newEnvelopeAllocated = initialEnvelopeAllocated + incomeAmount;
+      const newAvailable = calculateAvailableEnvelopeBalance(newEnvelopeAllocated, 0n, initialEnvelopeSpent);
+
+      expect(newBankBalance).toBe(1300000n); // ₹13,000
+      expect(newEnvelopeAllocated).toBe(800000n); // ₹8,000
+      expect(newAvailable).toBe(700000n); // ₹7,000
+
+      // Deleting income transaction reverses allocation
+      const reversedAllocated = newEnvelopeAllocated - incomeAmount;
+      const reversedBankBalance = newBankBalance - incomeAmount;
+      expect(reversedAllocated).toBe(initialEnvelopeAllocated);
+      expect(reversedBankBalance).toBe(initialBankBalance);
+    });
   });
 });

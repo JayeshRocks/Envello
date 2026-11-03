@@ -78,7 +78,7 @@ export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ 
       cumulativeAngle = endAngle;
 
       // Handle single slice 100% case
-      if (angle >= 359.9) {
+      if (segments.length === 1 || angle >= 359.5) {
         return {
           ...seg,
           d: `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius}`,

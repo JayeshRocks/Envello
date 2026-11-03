@@ -70,6 +70,7 @@ export function useTransactions() {
 
   const addIncome = async (params: {
     accountId: string;
+    envelopeId?: string | null;
     amountPaise: bigint;
     source: string;
     date: string;

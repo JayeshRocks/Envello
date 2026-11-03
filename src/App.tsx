@@ -935,7 +935,10 @@ export const App: React.FC = () => {
         onRecordIncome={async (params) => {
           await addIncome(params);
           await handleTransactionRecorded();
-          showToast('Income added to account', 'success');
+          showToast(
+            params.envelopeId ? 'Income deposited & added to envelope' : 'Income added to account',
+            'success'
+          );
         }}
         onRecordTransfer={async (params) => {
           await addTransfer(params);

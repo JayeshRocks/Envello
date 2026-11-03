@@ -165,10 +165,20 @@ export const EnvelopeGrid: React.FC = () => {
           <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
             Total Available to Spend
           </div>
-          <div className="text-xl font-bold font-mono tracking-tight text-emerald-400 tabular-nums">
+          <div
+            className={`text-xl font-bold font-mono tracking-tight tabular-nums ${
+              totalAvailablePaise < 0n ? 'text-rose-400' : 'text-emerald-400'
+            }`}
+          >
             {formatINR(totalAvailablePaise)}
           </div>
-          <div className="text-[10px] text-emerald-400/80 font-mono">Liquid safe spending capacity</div>
+          <div
+            className={`text-[10px] font-mono ${
+              totalAvailablePaise < 0n ? 'text-rose-400/80 font-medium' : 'text-emerald-400/80'
+            }`}
+          >
+            {totalAvailablePaise < 0n ? 'Deficit (overspent allocations)' : 'Liquid safe spending capacity'}
+          </div>
         </div>
       </div>
 

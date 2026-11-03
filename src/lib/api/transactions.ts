@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { getOrCreateBudgetPeriod } from './envelopes';
+import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
 
 export interface TransactionEntryRecord {
   id: string;
@@ -74,6 +75,32 @@ export async function recordExpenseTransaction(
 
   const numAmount = Number(params.amountPaise);
   const hasEnvelope = Boolean(params.envelopeId && params.envelopeId !== 'none');
+  let budgetPeriodId: string | null = null;
+  let envelopeAllocData: { id: string; allocated_paise: number; carried_over_paise: number; spent_paise: number } | null = null;
+
+  if (hasEnvelope) {
+    const periodKey = params.date.slice(0, 7);
+    budgetPeriodId = await getOrCreateBudgetPeriod(userId, periodKey);
+
+    const { data } = await supabase
+      .from('envelope_allocations')
+      .select('id, allocated_paise, carried_over_paise, spent_paise')
+      .eq('envelope_id', params.envelopeId!)
+      .eq('period_id', budgetPeriodId)
+      .maybeSingle();
+
+    envelopeAllocData = data;
+    const allocatedPaise = BigInt(envelopeAllocData?.allocated_paise ?? 0);
+    const carriedOverPaise = BigInt(envelopeAllocData?.carried_over_paise ?? 0);
+    const spentPaise = BigInt(envelopeAllocData?.spent_paise ?? 0);
+    const availablePaise = calculateAvailableEnvelopeBalance(allocatedPaise, carriedOverPaise, spentPaise);
+
+    if (params.amountPaise > availablePaise) {
+      throw new Error(
+        `Insufficient funds in envelope (available: ₹${(Number(availablePaise) / 100).toFixed(2)}). Expense of ₹${(Number(params.amountPaise) / 100).toFixed(2)} exceeds available budget.`
+      );
+    }
+  }
 
   if (isCard) {
     // 1. Credit Card Purchase
@@ -140,28 +167,18 @@ export async function recordExpenseTransaction(
         amount_paise: numAmount,
       });
 
-      const periodKey = params.date.slice(0, 7);
-      const periodId = await getOrCreateBudgetPeriod(userId, periodKey);
-
-      const { data: allocData } = await supabase
-        .from('envelope_allocations')
-        .select('id, spent_paise')
-        .eq('envelope_id', params.envelopeId!)
-        .eq('period_id', periodId)
-        .maybeSingle();
-
-      if (allocData?.id) {
+      if (envelopeAllocData?.id) {
         await supabase
           .from('envelope_allocations')
           .update({
-            spent_paise: (allocData.spent_paise || 0) + numAmount,
+            spent_paise: (envelopeAllocData.spent_paise || 0) + numAmount,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', allocData.id);
+          .eq('id', envelopeAllocData.id);
       } else {
         await supabase.from('envelope_allocations').insert({
           envelope_id: params.envelopeId!,
-          period_id: periodId,
+          period_id: budgetPeriodId!,
           user_id: userId,
           allocated_paise: 0,
           carried_over_paise: 0,
@@ -256,28 +273,18 @@ export async function recordExpenseTransaction(
         amount_paise: numAmount,
       });
 
-      const periodKey = params.date.slice(0, 7);
-      const periodId = await getOrCreateBudgetPeriod(userId, periodKey);
-
-      const { data: allocData } = await supabase
-        .from('envelope_allocations')
-        .select('id, spent_paise')
-        .eq('envelope_id', params.envelopeId!)
-        .eq('period_id', periodId)
-        .maybeSingle();
-
-      if (allocData?.id) {
+      if (envelopeAllocData?.id) {
         await supabase
           .from('envelope_allocations')
           .update({
-            spent_paise: (allocData.spent_paise || 0) + numAmount,
+            spent_paise: (envelopeAllocData.spent_paise || 0) + numAmount,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', allocData.id);
+          .eq('id', envelopeAllocData.id);
       } else {
         await supabase.from('envelope_allocations').insert({
           envelope_id: params.envelopeId!,
-          period_id: periodId,
+          period_id: budgetPeriodId!,
           user_id: userId,
           allocated_paise: 0,
           carried_over_paise: 0,
@@ -299,13 +306,15 @@ export async function recordExpenseTransaction(
 /**
  * Records an Income transaction:
  * - Inserts master transaction (type: 'income')
- * - Inserts debit entry for bank account
+ * - Inserts debit entry for bank account (and optional credit entry for envelope)
  * - Credits liquid account balance
+ * - If envelopeId provided: credits and increments envelope allocated_paise
  */
 export async function recordIncomeTransaction(
   userId: string,
   params: {
     accountId: string;
+    envelopeId?: string | null;
     amountPaise: bigint;
     source: string;
     date: string; // YYYY-MM-DD
@@ -317,6 +326,7 @@ export async function recordIncomeTransaction(
   }
 
   const numAmount = Number(params.amountPaise);
+  const hasEnvelope = Boolean(params.envelopeId && params.envelopeId !== 'none');
 
   // 1. Insert master transaction
   const { data: tx, error: txError } = await supabase
@@ -337,15 +347,66 @@ export async function recordIncomeTransaction(
     throw txError || new Error('Income transaction creation failed.');
   }
 
-  // 2. Insert debit entry for the receiving account
-  const { error: entryError } = await supabase.from('transaction_entries').insert({
-    transaction_id: tx.id,
-    user_id: userId,
-    account_id: params.accountId,
-    envelope_id: null,
-    direction: 'debit',
-    amount_paise: numAmount,
-  });
+  // 2. Prepare transaction entries: debit receiving account, and optionally credit envelope
+  const entries: {
+    transaction_id: string;
+    user_id: string;
+    account_id: string | null;
+    envelope_id: string | null;
+    direction: 'debit' | 'credit';
+    amount_paise: number;
+  }[] = [
+    {
+      transaction_id: tx.id,
+      user_id: userId,
+      account_id: params.accountId,
+      envelope_id: null,
+      direction: 'debit',
+      amount_paise: numAmount,
+    },
+  ];
+
+  if (hasEnvelope) {
+    entries.push({
+      transaction_id: tx.id,
+      user_id: userId,
+      account_id: null,
+      envelope_id: params.envelopeId!,
+      direction: 'credit',
+      amount_paise: numAmount,
+    });
+
+    const periodKey = params.date.slice(0, 7);
+    const periodId = await getOrCreateBudgetPeriod(userId, periodKey);
+
+    const { data: allocData } = await supabase
+      .from('envelope_allocations')
+      .select('id, allocated_paise')
+      .eq('envelope_id', params.envelopeId!)
+      .eq('period_id', periodId)
+      .maybeSingle();
+
+    if (allocData?.id) {
+      await supabase
+        .from('envelope_allocations')
+        .update({
+          allocated_paise: (allocData.allocated_paise || 0) + numAmount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', allocData.id);
+    } else {
+      await supabase.from('envelope_allocations').insert({
+        envelope_id: params.envelopeId!,
+        period_id: periodId,
+        user_id: userId,
+        allocated_paise: numAmount,
+        carried_over_paise: 0,
+        spent_paise: 0,
+      });
+    }
+  }
+
+  const { error: entryError } = await supabase.from('transaction_entries').insert(entries);
 
   if (entryError) {
     console.error('[Envello Transactions API] Error inserting income entry:', entryError.message);
@@ -669,6 +730,31 @@ export async function deleteTransaction(transactionId: string, userId: string): 
           .from('envelope_allocations')
           .update({
             spent_paise: newSpent,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', alloc.id);
+      }
+    }
+
+    // 5. Reverse envelope allocated_paise if this entry was credit on an envelope (income assignment)
+    if (entry.envelope_id && entry.direction === 'credit') {
+      const yearMonth = tx.transaction_date.substring(0, 7);
+      const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+
+      const { data: alloc } = await supabase
+        .from('envelope_allocations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('envelope_id', entry.envelope_id)
+        .eq('period_id', periodId)
+        .maybeSingle();
+
+      if (alloc) {
+        const newAllocated = Math.max(0, alloc.allocated_paise - entry.amount_paise);
+        await supabase
+          .from('envelope_allocations')
+          .update({
+            allocated_paise: newAllocated,
             updated_at: new Date().toISOString(),
           })
           .eq('id', alloc.id);

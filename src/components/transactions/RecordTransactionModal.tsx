@@ -9,6 +9,7 @@ import {
   Calendar,
   CreditCard,
   Wallet,
+  Layers,
 } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { CreditCardRow } from '@/lib/api/creditCards';
@@ -35,6 +36,7 @@ interface RecordTransactionModalProps {
   }) => Promise<void>;
   onRecordIncome: (params: {
     accountId: string;
+    envelopeId?: string | null;
     amountPaise: bigint;
     source: string;
     date: string;
@@ -66,7 +68,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const [payeeOrSource, setPayeeOrSource] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedPaymentSource, setSelectedPaymentSource] = useState('');
-  const [selectedEnvelopeId, setSelectedEnvelopeId] = useState('');
+  const [selectedEnvelopeId, setSelectedEnvelopeId] = useState('none');
   const [toAccountId, setToAccountId] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
@@ -101,15 +103,25 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         setSelectedPaymentSource('card:' + creditCards[0].id);
       }
     }
-    if (envelopes.length > 0 && !selectedEnvelopeId) {
-      const regularEnv = envelopes.find((e) => e.slug === 'regular' || e.slug === 'spendable');
-      setSelectedEnvelopeId(regularEnv?.id || 'none');
+  }, [accounts, creditCards, selectedAccountId, selectedPaymentSource, isOpen]);
+
+  // Reset envelope selection to 'none' when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedEnvelopeId('none');
+      setError(null);
     }
-  }, [accounts, creditCards, envelopes, selectedAccountId, selectedPaymentSource, selectedEnvelopeId, isOpen]);
+  }, [isOpen]);
 
   if (!isRendered) return null;
 
   const currentEnteredPaise = toPaise(amountRupees || '0');
+  const selectedEnvelope = envelopes.find((e) => e.id === selectedEnvelopeId);
+  const isEnvelopeSelected = Boolean(selectedEnvelopeId && selectedEnvelopeId !== 'none' && selectedEnvelope);
+  const isExpenseExceedingEnvelope =
+    mode === 'expense' && isEnvelopeSelected && selectedEnvelope
+      ? currentEnteredPaise > selectedEnvelope.availablePaise
+      : false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,9 +132,11 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       return;
     }
 
-    if (!selectedAccountId) {
-      setError('Please select an account.');
-      return;
+    if (mode === 'income' || mode === 'transfer') {
+      if (!selectedAccountId) {
+        setError('Please select an account.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -134,10 +148,21 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
           setError('Please select a payment method.');
           return;
         }
+
+        // Enforce that an expense cannot exceed available envelope balance
+        if (isEnvelopeSelected && selectedEnvelope) {
+          if (currentEnteredPaise > selectedEnvelope.availablePaise) {
+            setError(
+              `Expense amount (${formatINR(currentEnteredPaise)}) exceeds available balance in "${selectedEnvelope.name}" (${formatINR(selectedEnvelope.availablePaise)}). Cannot overspend an envelope into negative. Please select "None" for a direct bill or allocate budget first.`
+            );
+            return;
+          }
+        }
+
         await onRecordExpense({
           accountId: !isCard ? sourceId : undefined,
           cardId: isCard ? sourceId : undefined,
-          envelopeId: selectedEnvelopeId === 'none' || !selectedEnvelopeId ? null : selectedEnvelopeId,
+          envelopeId: isEnvelopeSelected ? selectedEnvelopeId : null,
           amountPaise: currentEnteredPaise,
           payee: payeeOrSource.trim() || 'Expense',
           date,
@@ -146,6 +171,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       } else if (mode === 'income') {
         await onRecordIncome({
           accountId: selectedAccountId,
+          envelopeId: isEnvelopeSelected ? selectedEnvelopeId : null,
           amountPaise: currentEnteredPaise,
           source: payeeOrSource.trim() || 'Income',
           date,
@@ -169,6 +195,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       setAmountRupees('');
       setPayeeOrSource('');
       setNotes('');
+      setSelectedEnvelopeId('none');
       requestClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Transaction failed.');
@@ -218,6 +245,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             type="button"
             onClick={() => {
               setMode('expense');
+              setSelectedEnvelopeId('none');
               setError(null);
             }}
             className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[44px] active:scale-95 ${
@@ -233,6 +261,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             type="button"
             onClick={() => {
               setMode('income');
+              setSelectedEnvelopeId('none');
               setError(null);
             }}
             className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[44px] active:scale-95 ${
@@ -248,6 +277,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             type="button"
             onClick={() => {
               setMode('transfer');
+              setSelectedEnvelopeId('none');
               setError(null);
             }}
             className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-lg transition min-h-[44px] active:scale-95 ${
@@ -392,7 +422,11 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                   <select
                     value={selectedEnvelopeId}
                     onChange={(e) => setSelectedEnvelopeId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                    className={`w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border focus:ring-1 ${
+                      isExpenseExceedingEnvelope
+                        ? 'border-red-500/50 focus:ring-red-500'
+                        : 'border-white/10 focus:ring-sky-500'
+                    }`}
                   >
                     <option value="none" className="bg-neutral-900 text-neutral-400 font-medium">
                       None (Direct Account / Card Bill)
@@ -405,6 +439,26 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                   </select>
                 </div>
               </div>
+
+              {/* Real-time Envelope Warning / Info Pill */}
+              {isEnvelopeSelected && selectedEnvelope && (
+                isExpenseExceedingEnvelope ? (
+                  <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+                    <span>
+                      Exceeds available balance in {selectedEnvelope.name} ({formatINR(selectedEnvelope.availablePaise)}). Envelopes cannot go negative; choose &quot;None&quot; or allocate budget first.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Layers className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                      <span>Debits from {selectedEnvelope.name} envelope</span>
+                    </div>
+                    <span className="font-mono text-emerald-400 font-semibold">{formatINR(selectedEnvelope.availablePaise)} available</span>
+                  </div>
+                )
+              )}
 
               {/* Dynamic Payment Impact Pill */}
               {selectedPaymentSource.startsWith('card:') ? (
@@ -421,21 +475,63 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             </div>
           )}
 
-          {/* Income: Deposited In Account */}
+          {/* Income: Deposited In Account & Optional Envelope */}
           {mode === 'income' && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-neutral-300">Deposited In Account</label>
-              <select
-                value={selectedAccountId}
-                onChange={(e) => setSelectedAccountId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
-              >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id} className="bg-neutral-900 text-white">
-                    {acc.name} ({formatINR(acc.balancePaise)})
-                  </option>
-                ))}
-              </select>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-neutral-300">Deposited In Account</label>
+                  <select
+                    value={selectedAccountId}
+                    onChange={(e) => setSelectedAccountId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  >
+                    {accounts.map((acc) => (
+                      <option key={acc.id} value={acc.id} className="bg-neutral-900 text-white">
+                        {acc.name} ({formatINR(acc.balancePaise)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-neutral-300">Add to Envelope</label>
+                    <span className="text-[10px] text-neutral-400">Optional allocation</span>
+                  </div>
+                  <select
+                    value={selectedEnvelopeId}
+                    onChange={(e) => setSelectedEnvelopeId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                  >
+                    <option value="none" className="bg-neutral-900 text-neutral-400 font-medium">
+                      None (Direct Inflow to Account)
+                    </option>
+                    {envelopes.map((env) => (
+                      <option key={env.id} value={env.id} className="bg-neutral-900 text-white">
+                        {env.name} ({formatINR(env.availablePaise)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dynamic Income Impact Pill */}
+              {isEnvelopeSelected && selectedEnvelope ? (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center space-x-2">
+                  <Layers className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                  <span>
+                    Deposited into {accounts.find((a) => a.id === selectedAccountId)?.name || 'account'} AND adds{' '}
+                    <span className="font-mono font-semibold text-white">{formatINR(currentEnteredPaise)}</span> directly to{' '}
+                    <span className="font-semibold text-white">{selectedEnvelope.name}</span>&apos;s budget allocation.
+                  </span>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs flex items-center space-x-2">
+                  <Wallet className="w-4 h-4 flex-shrink-0 text-sky-400" />
+                  <span>Direct Inflow to Account. Increases liquid bank cash; envelope allocations remain unassigned.</span>
+                </div>
+              )}
             </div>
           )}
 

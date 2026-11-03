@@ -75,6 +75,8 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   const percentSpent =
     envelope.allocatedPaise > 0n
       ? Math.min(100, Number((envelope.spentPaise * 100n) / envelope.allocatedPaise))
+      : envelope.spentPaise > 0n
+      ? 100
       : 0;
 
   const isOverspent = envelope.availablePaise < 0n;
@@ -153,12 +155,19 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
         <div className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
           Available to Spend
         </div>
-        <div
-          className={`text-2xl font-bold font-mono tracking-tight tabular-nums mt-0.5 ${
-            isOverspent ? 'text-red-400' : 'text-white'
-          }`}
-        >
-          {formatINR(envelope.availablePaise)}
+        <div className="flex items-center space-x-2 mt-0.5">
+          <div
+            className={`text-2xl font-bold font-mono tracking-tight tabular-nums ${
+              isOverspent ? 'text-red-400' : 'text-white'
+            }`}
+          >
+            {formatINR(envelope.availablePaise)}
+          </div>
+          {isOverspent && (
+            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+              Overspent
+            </span>
+          )}
         </div>
       </div>
 
@@ -177,7 +186,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                 ? 'bg-amber-400'
                 : 'bg-sky-400'
             }`}
-            style={{ width: `${Math.max(3, percentSpent)}%` }}
+            style={{ width: `${isOverspent ? 100 : Math.max(3, percentSpent)}%` }}
           />
         </div>
       </div>
