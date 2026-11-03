@@ -255,9 +255,14 @@
 }
 
 /* Prevent background scroll when any modal is open without resetting scroll position */
+html.modal-open,
 body.modal-open {
-  overflow: hidden;
-  overscroll-behavior: none;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+html.modal-open #root {
+  overscroll-behavior: none !important;
 }
 
 /* ==========================================================================
