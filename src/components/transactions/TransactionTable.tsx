@@ -6,16 +6,21 @@ import {
   ArrowRightLeft,
   Receipt,
   Plus,
-  Trash2,
   X,
   Layers,
+  RotateCcw,
+  Lock,
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
+import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { formatINR } from '@/lib/accounting/currency';
+import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
 import { useDevice } from '@/hooks/useDevice';
+import { RevertTransactionModal } from './RevertTransactionModal';
 
 interface TransactionTableProps {
   transactions: TransactionRecord[];
+  envelopes?: EnvelopeWithAllocation[];
   isLoading: boolean;
   typeFilter: string;
   onTypeFilterChange: (type: string) => void;
@@ -27,6 +32,7 @@ interface TransactionTableProps {
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
+  envelopes = [],
   isLoading,
   typeFilter,
   onTypeFilterChange,
@@ -36,7 +42,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   onDeleteTransaction,
 }) => {
   const { isMobileOrTablet, isDesktop, isLandscape } = useDevice();
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [revertingTx, setRevertingTx] = useState<TransactionRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<'all' | 'this_month' | 'last_month'>('all');
 
@@ -265,43 +271,31 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       )}
                     </div>
 
-                    {/* Delete Action with 44px tap comfort */}
-                    {confirmDeleteId === tx.id ? (
-                      <div className="inline-flex items-center space-x-1.5 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg flex-shrink-0">
-                        <span className="text-[10px] text-red-300 font-medium">Revert?</span>
+                    {/* Revert Action */}
+                    {(() => {
+                      const eligibility = checkReversionEligibility(tx.transactionDate);
+                      return (
                         <button
-                          onClick={async () => {
-                            if (!onDeleteTransaction) return;
-                            setIsDeleting(true);
-                            try {
-                              await onDeleteTransaction(tx.id);
-                            } finally {
-                              setIsDeleting(false);
-                              setConfirmDeleteId(null);
-                            }
-                          }}
-                          disabled={isDeleting}
-                          className="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition min-h-[36px]"
+                          onClick={() => setRevertingTx(tx)}
+                          title={
+                            eligibility.isReversible
+                              ? 'Revert Transaction'
+                              : 'Historical Transaction Locked (Closed month)'
+                          }
+                          className={`p-2 sm:p-2.5 rounded-xl transition min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 flex-shrink-0 cursor-pointer ${
+                            eligibility.isReversible
+                              ? 'hover:bg-amber-500/10 text-neutral-400 hover:text-amber-400'
+                              : 'text-neutral-600 hover:text-neutral-500 hover:bg-white/5'
+                          }`}
                         >
-                          {isDeleting ? '...' : 'Yes'}
+                          {eligibility.isReversible ? (
+                            <RotateCcw className="w-4 h-4" />
+                          ) : (
+                            <Lock className="w-3.5 h-3.5" />
+                          )}
                         </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          disabled={isDeleting}
-                          className="text-[11px] px-2.5 py-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white transition min-h-[36px]"
-                        >
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDeleteId(tx.id)}
-                        title="Revert & Delete Transaction"
-                        className="p-2 sm:p-2.5 rounded-xl hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 flex-shrink-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -439,42 +433,30 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          {confirmDeleteId === tx.id ? (
-                            <div className="inline-flex items-center space-x-1 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
-                              <span className="text-[10px] text-red-300 font-medium">Revert?</span>
+                          {(() => {
+                            const eligibility = checkReversionEligibility(tx.transactionDate);
+                            return (
                               <button
-                                onClick={async () => {
-                                  if (!onDeleteTransaction) return;
-                                  setIsDeleting(true);
-                                  try {
-                                    await onDeleteTransaction(tx.id);
-                                  } finally {
-                                    setIsDeleting(false);
-                                    setConfirmDeleteId(null);
-                                  }
-                                }}
-                                disabled={isDeleting}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50 transition"
+                                onClick={() => setRevertingTx(tx)}
+                                title={
+                                  eligibility.isReversible
+                                    ? 'Revert Transaction'
+                                    : 'Historical Transaction Locked (Closed month)'
+                                }
+                                className={`p-2 rounded-xl transition cursor-pointer min-h-[36px] min-w-[36px] inline-flex items-center justify-center active:scale-95 ${
+                                  eligibility.isReversible
+                                    ? 'hover:bg-amber-500/10 text-neutral-400 hover:text-amber-400'
+                                    : 'text-neutral-600 hover:text-neutral-500 hover:bg-white/5'
+                                }`}
                               >
-                                {isDeleting ? '...' : 'Yes'}
+                                {eligibility.isReversible ? (
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Lock className="w-3.5 h-3.5" />
+                                )}
                               </button>
-                              <button
-                                onClick={() => setConfirmDeleteId(null)}
-                                disabled={isDeleting}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 hover:text-white transition"
-                              >
-                                No
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setConfirmDeleteId(tx.id)}
-                              title="Revert & Delete Transaction"
-                              className="p-1.5 rounded-lg hover:bg-red-500/10 text-neutral-500 hover:text-red-400 transition"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                            );
+                          })()}
                         </td>
                       </tr>
                     );
@@ -485,6 +467,25 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           </div>
         </div>
       )}
+
+      {/* Revert Transaction Modal with Full Impact Details */}
+      <RevertTransactionModal
+        isOpen={Boolean(revertingTx)}
+        transaction={revertingTx}
+        envelopes={envelopes}
+        isDeleting={isDeleting}
+        onClose={() => setRevertingTx(null)}
+        onConfirmRevert={async (txId) => {
+          if (!onDeleteTransaction) return;
+          setIsDeleting(true);
+          try {
+            await onDeleteTransaction(txId);
+            setRevertingTx(null);
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+      />
     </section>
   );
 };

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { getOrCreateBudgetPeriod } from './envelopes';
 import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
+import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
 
 export interface TransactionEntryRecord {
   id: string;
@@ -647,7 +648,16 @@ export async function deleteTransaction(transactionId: string, userId: string): 
     throw new Error('Transaction not found or unauthorized.');
   }
 
-  // 2. Fetch all entries
+  // 2. Policy Enforcement: Only allow current month transactions or last 3 days of preceding month
+  const eligibility = checkReversionEligibility(tx.transaction_date);
+  if (!eligibility.isReversible) {
+    throw new Error(
+      eligibility.reason ||
+        'This transaction belongs to a closed historical budget period and can no longer be reverted.'
+    );
+  }
+
+  // 3. Fetch all entries
   const { data: entries, error: entriesError } = await supabase
     .from('transaction_entries')
     .select('*')
@@ -658,8 +668,9 @@ export async function deleteTransaction(transactionId: string, userId: string): 
     throw new Error('Failed to fetch entries for transaction deletion.');
   }
 
-  // 3. Reverse account entries
+  // 4. Reverse account and envelope entries
   for (const entry of entries || []) {
+    // 4.1 Account balance reversal
     if (entry.account_id) {
       const { data: acc } = await supabase
         .from('accounts')
@@ -685,33 +696,8 @@ export async function deleteTransaction(transactionId: string, userId: string): 
       }
     }
 
-    // Reversal for credit card purchases if card was charged
-    if (tx.type === 'credit_card_purchase') {
-      const cardMatch = tx.notes?.match(/\[card:([a-f0-9-]+)\]/);
-      if (cardMatch && cardMatch[1]) {
-        const cardId = cardMatch[1];
-        const { data: card } = await supabase
-          .from('credit_cards')
-          .select('outstanding_balance_paise')
-          .eq('id', cardId)
-          .eq('user_id', userId)
-          .single();
-
-        if (card) {
-          const newOutstanding = Math.max(0, card.outstanding_balance_paise - tx.total_amount_paise);
-          await supabase
-            .from('credit_cards')
-            .update({
-              outstanding_balance_paise: newOutstanding,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', cardId)
-            .eq('user_id', userId);
-        }
-      }
-    }
-
-    // 4. Reverse envelope spent_paise if this entry was debit on an envelope (expense)
+    // 4.2 Reverse envelope spent_paise if this entry was debit on an envelope (expense)
+    // Decreasing spent_paise refunds money back into available envelope budget!
     if (entry.envelope_id && entry.direction === 'debit' && tx.type !== 'envelope_allocation') {
       const yearMonth = tx.transaction_date.substring(0, 7);
       const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
@@ -736,7 +722,7 @@ export async function deleteTransaction(transactionId: string, userId: string): 
       }
     }
 
-    // 5. Reverse envelope allocated_paise if this entry was credit on an envelope (income assignment)
+    // 4.3 Reverse envelope allocated_paise if this entry was credit on an envelope (income assignment)
     if (entry.envelope_id && entry.direction === 'credit' && tx.type === 'income') {
       const yearMonth = tx.transaction_date.substring(0, 7);
       const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
@@ -750,6 +736,15 @@ export async function deleteTransaction(transactionId: string, userId: string): 
         .maybeSingle();
 
       if (alloc) {
+        // Guard against negative envelope balance:
+        const safeCapacity =
+          (alloc.allocated_paise || 0) + (alloc.carried_over_paise || 0) - (alloc.spent_paise || 0);
+        if (entry.amount_paise > safeCapacity) {
+          throw new Error(
+            'Cannot revert income: Funds assigned to this envelope have already been spent this month. Reverting would force the envelope into negative available.'
+          );
+        }
+
         const newAllocated = Math.max(0, alloc.allocated_paise - entry.amount_paise);
         await supabase
           .from('envelope_allocations')
@@ -761,7 +756,7 @@ export async function deleteTransaction(transactionId: string, userId: string): 
       }
     }
 
-    // 6. Reverse envelope allocation transfer if tx was an internal envelope reallocation
+    // 4.4 Reverse envelope allocation transfer if tx was an internal envelope reallocation
     if (entry.envelope_id && tx.type === 'envelope_allocation') {
       const yearMonth = tx.transaction_date.substring(0, 7);
       const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
@@ -776,6 +771,7 @@ export async function deleteTransaction(transactionId: string, userId: string): 
 
       if (alloc) {
         if (entry.direction === 'credit') {
+          // Source envelope: restore budget allocation
           await supabase
             .from('envelope_allocations')
             .update({
@@ -784,6 +780,15 @@ export async function deleteTransaction(transactionId: string, userId: string): 
             })
             .eq('id', alloc.id);
         } else if (entry.direction === 'debit') {
+          // Destination envelope: guard against negative envelope balance
+          const safeCapacity =
+            (alloc.allocated_paise || 0) + (alloc.carried_over_paise || 0) - (alloc.spent_paise || 0);
+          if (entry.amount_paise > safeCapacity) {
+            throw new Error(
+              'Cannot revert reallocation: Destination envelope has already spent these transferred funds. Reverting would force the envelope into negative available.'
+            );
+          }
+
           const newAlloc = Math.max(0, alloc.allocated_paise - entry.amount_paise);
           await supabase
             .from('envelope_allocations')
@@ -797,14 +802,77 @@ export async function deleteTransaction(transactionId: string, userId: string): 
     }
   }
 
-  // 5. Delete entries first (cascade or explicit)
+  // 5. Handle credit card balances
+  if (tx.type === 'credit_card_purchase') {
+    const cardMatch = tx.notes?.match(/\[card:([a-f0-9-]+)\]/);
+    if (cardMatch && cardMatch[1]) {
+      const cardId = cardMatch[1];
+      const { data: card } = await supabase
+        .from('credit_cards')
+        .select('outstanding_balance_paise')
+        .eq('id', cardId)
+        .eq('user_id', userId)
+        .single();
+
+      if (card) {
+        const newOutstanding = Math.max(0, card.outstanding_balance_paise - tx.total_amount_paise);
+        await supabase
+          .from('credit_cards')
+          .update({
+            outstanding_balance_paise: newOutstanding,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', cardId)
+          .eq('user_id', userId);
+      }
+    }
+  } else if (tx.type === 'credit_card_payment') {
+    // Reverting a bill payment restores the card's outstanding liability
+    const { data: cards } = await supabase
+      .from('credit_cards')
+      .select('id, card_name, outstanding_balance_paise')
+      .eq('user_id', userId);
+
+    const matchedCard = cards?.find((c) => tx.description.includes(c.card_name));
+    if (matchedCard) {
+      await supabase
+        .from('credit_cards')
+        .update({
+          outstanding_balance_paise: matchedCard.outstanding_balance_paise + tx.total_amount_paise,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', matchedCard.id)
+        .eq('user_id', userId);
+    }
+  } else if (tx.type === 'debt_repayment') {
+    // Reverting a debt repayment restores the loan's remaining debt balance
+    const { data: loans } = await supabase
+      .from('debts_loans')
+      .select('id, lender_name, remaining_balance_paise')
+      .eq('user_id', userId);
+
+    const matchedLoan = loans?.find((l) => tx.description.includes(l.lender_name));
+    if (matchedLoan) {
+      await supabase
+        .from('debts_loans')
+        .update({
+          remaining_balance_paise: matchedLoan.remaining_balance_paise + tx.total_amount_paise,
+          is_settled: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', matchedLoan.id)
+        .eq('user_id', userId);
+    }
+  }
+
+  // 6. Delete transaction entries
   await supabase
     .from('transaction_entries')
     .delete()
     .eq('transaction_id', transactionId)
     .eq('user_id', userId);
 
-  // 6. Delete transaction record
+  // 7. Delete transaction record
   const { error: delError } = await supabase
     .from('transactions')
     .delete()

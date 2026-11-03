@@ -904,6 +904,7 @@ export const App: React.FC = () => {
             {/* Section: Transaction Ledger */}
             <TransactionTable
               transactions={transactions}
+              envelopes={envelopes}
               isLoading={isTxLoading}
               typeFilter={typeFilter}
               onTypeFilterChange={setTypeFilter}
