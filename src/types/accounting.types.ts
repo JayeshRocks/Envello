@@ -49,7 +49,17 @@ export interface AccountSummary {
   institution: string;
   accountType: AccountType;
   balancePaise: bigint;
+  allocatedPaise?: bigint;
+  unallocatedPaise?: bigint;
   isActive: boolean;
+}
+
+export interface AllocationSourceRecord {
+  id: string;
+  allocationId: string;
+  accountId: string;
+  accountName?: string;
+  amountPaise: bigint;
 }
 
 export interface EnvelopeSummary {
@@ -67,6 +77,7 @@ export interface EnvelopeSummary {
   rolloverPolicy: EnvelopeRolloverPolicy;
   sortOrder?: number;
   allocationId?: string;
+  sources?: AllocationSourceRecord[];
 }
 
 export type EnvelopeWithAllocation = EnvelopeSummary;

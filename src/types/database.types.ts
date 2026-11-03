@@ -173,6 +173,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      envelope_allocation_sources: {
+        Row: {
+          id: string;
+          user_id: string;
+          allocation_id: string;
+          account_id: string;
+          amount_paise: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          allocation_id: string;
+          account_id: string;
+          amount_paise: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          allocation_id?: string;
+          account_id?: string;
+          amount_paise?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       envelope_allocations: {
         Row: {
           id: string;
