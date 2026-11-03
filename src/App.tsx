@@ -37,6 +37,7 @@ import { ReconcileModal } from '@/components/accounts/ReconcileModal';
 import { RecurringAlertBanner } from '@/components/recurring/RecurringAlertBanner';
 import { RecurringRulesModal } from '@/components/recurring/RecurringRulesModal';
 import { useRecurringRules } from '@/hooks/useRecurringRules';
+import { calculateNormalizedMonthlyCostPaise } from '@/lib/accounting/recurringSchedule';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { LiabilitiesAndAssetsContainer, type SubTabType } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
@@ -302,7 +303,7 @@ export const App: React.FC = () => {
   const effectiveActualDebtsPaise = totalRemainingDebtPaise + totalDebtLoanRemainingPaise;
 
   const totalMonthlyRecurringPaise = React.useMemo(() => {
-    return recurringRules.filter((r) => r.isActive).reduce((sum, r) => sum + r.amountPaise, 0n);
+    return calculateNormalizedMonthlyCostPaise(recurringRules);
   }, [recurringRules]);
   const effectiveStandingMonthlyCostsPaise = totalMonthlyRecurringPaise;
 

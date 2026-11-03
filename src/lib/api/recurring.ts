@@ -1,4 +1,4 @@
-import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring.types';
+import type { RecurringRule, CreateRecurringRuleParams, RecurringFrequencyType } from '@/types/recurring.types';
 
 const STORAGE_KEY_PREFIX = 'envello_recurring_rules_';
 
@@ -11,9 +11,13 @@ interface SerializedRecurringRule {
   accountId?: string;
   cardId?: string;
   envelopeId?: string | null;
-  dayOfMonth: number;
-  isActive: boolean;
+  frequencyType?: RecurringFrequencyType;
+  dayOfMonth?: number;
+  intervalDays?: number;
+  startDate?: string;
+  lastLoggedDate?: string;
   lastLoggedYearMonth?: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,6 +32,12 @@ function deserializeRule(item: SerializedRecurringRule): RecurringRule {
     sourceType: item.sourceType || 'account',
     amountPaise: BigInt(item.amountPaise),
     envelopeId: item.envelopeId || null,
+    frequencyType: item.frequencyType || 'monthly_day',
+    dayOfMonth: item.dayOfMonth ?? 1,
+    intervalDays: item.intervalDays ?? 30,
+    startDate: item.startDate || item.createdAt.split('T')[0],
+    lastLoggedDate: item.lastLoggedDate,
+    lastLoggedYearMonth: item.lastLoggedYearMonth,
   };
 }
 
@@ -37,6 +47,12 @@ function serializeRule(rule: RecurringRule): SerializedRecurringRule {
     sourceType: rule.sourceType || 'account',
     amountPaise: rule.amountPaise.toString(),
     envelopeId: rule.envelopeId || null,
+    frequencyType: rule.frequencyType || 'monthly_day',
+    dayOfMonth: rule.dayOfMonth ?? 1,
+    intervalDays: rule.intervalDays ?? 30,
+    startDate: rule.startDate,
+    lastLoggedDate: rule.lastLoggedDate,
+    lastLoggedYearMonth: rule.lastLoggedYearMonth,
   };
 }
 
@@ -64,7 +80,9 @@ export async function createRecurringRule(
 ): Promise<RecurringRule> {
   const existing = await fetchRecurringRules(userId);
   const now = new Date().toISOString();
+  const todayStr = now.split('T')[0];
 
+  const frequencyType = params.frequencyType || 'monthly_day';
   const newRule: RecurringRule = {
     id: crypto.randomUUID(),
     userId,
@@ -74,7 +92,10 @@ export async function createRecurringRule(
     accountId: params.accountId,
     cardId: params.cardId,
     envelopeId: params.envelopeId || null,
-    dayOfMonth: Math.min(31, Math.max(1, params.dayOfMonth)),
+    frequencyType,
+    dayOfMonth: frequencyType === 'monthly_day' ? Math.min(31, Math.max(1, params.dayOfMonth || 1)) : undefined,
+    intervalDays: frequencyType === 'interval_days' ? Math.max(1, params.intervalDays || 30) : undefined,
+    startDate: params.startDate || todayStr,
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -94,7 +115,7 @@ export async function updateRecurringRule(
   updates: Partial<Omit<RecurringRule, 'id' | 'userId' | 'createdAt'>>
 ): Promise<RecurringRule> {
   const existing = await fetchRecurringRules(userId);
-  const index = existing.findIndex(r => r.id === ruleId);
+  const index = existing.findIndex((r) => r.id === ruleId);
 
   if (index === -1) {
     throw new Error('Recurring rule not found.');
@@ -113,14 +134,18 @@ export async function updateRecurringRule(
 }
 
 /**
- * Marks a recurring rule as logged for a given budget cycle (e.g. "2026-10").
+ * Marks a recurring rule as logged for a given date (e.g. "2026-11-03").
  */
 export async function markRecurringRuleAsLogged(
   userId: string,
   ruleId: string,
-  yearMonth: string
+  loggedDateStr: string
 ): Promise<void> {
-  await updateRecurringRule(userId, ruleId, { lastLoggedYearMonth: yearMonth });
+  const yearMonth = loggedDateStr.substring(0, 7);
+  await updateRecurringRule(userId, ruleId, {
+    lastLoggedDate: loggedDateStr,
+    lastLoggedYearMonth: yearMonth,
+  });
 }
 
 /**
@@ -128,6 +153,6 @@ export async function markRecurringRuleAsLogged(
  */
 export async function deleteRecurringRule(userId: string, ruleId: string): Promise<void> {
   const existing = await fetchRecurringRules(userId);
-  const filtered = existing.filter(r => r.id !== ruleId);
+  const filtered = existing.filter((r) => r.id !== ruleId);
   localStorage.setItem(getStorageKey(userId), JSON.stringify(filtered.map(serializeRule)));
 }

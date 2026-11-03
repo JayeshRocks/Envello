@@ -45,7 +45,7 @@ export const RecurringAlertBanner: React.FC<RecurringAlertBannerProps> = ({
             </span>
           </div>
           <p className="text-xs text-neutral-300">
-            Monthly schedule detected expenses ready to be logged into your ledger.
+            Schedule detected recurring supplies or bills due to be logged into your ledger.
           </p>
           <div className="flex flex-wrap gap-1.5 pt-1">
             {dueRules.slice(0, 4).map((rule) => (
@@ -68,26 +68,26 @@ export const RecurringAlertBanner: React.FC<RecurringAlertBannerProps> = ({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0 w-full md:w-auto">
         <button
           onClick={onOpenManageModal}
-          className="px-3.5 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-xs font-medium text-neutral-300 border border-white/10 transition flex items-center justify-center space-x-1.5"
+          className="px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-xs sm:text-sm font-medium text-neutral-300 hover:text-white border border-white/10 transition active:scale-95 flex items-center justify-center space-x-1.5 cursor-pointer"
         >
-          <Settings className="w-3.5 h-3.5" />
+          <Settings className="w-4 h-4" />
           <span>Manage</span>
         </button>
         <button
           onClick={handleLogAll}
           disabled={isSubmitting}
-          className="px-4 py-2.5 sm:py-2 min-h-[38px] rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-xs transition flex items-center justify-center space-x-1.5 shadow-lg shadow-indigo-500/25 disabled:opacity-50"
+          className="px-4 py-2.5 min-h-[44px] rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-xs sm:text-sm transition flex items-center justify-center space-x-1.5 shadow-lg shadow-indigo-500/25 active:scale-95 disabled:opacity-50 cursor-pointer"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
               <span>Logging...</span>
             </>
           ) : (
             <>
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-4 h-4 stroke-[2.5]" />
               <span>1-Click Log All ({formatINR(totalDuePaise)})</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4" />
             </>
           )}
         </button>

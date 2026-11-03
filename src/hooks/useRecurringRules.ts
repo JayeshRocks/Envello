@@ -8,6 +8,7 @@ import {
   markRecurringRuleAsLogged,
 } from '@/lib/api/recurring';
 import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring.types';
+import { getRecurringRuleDueStatus } from '@/lib/accounting/recurringSchedule';
 
 export function useRecurringRules() {
   const { user } = useAuth();
@@ -40,10 +41,10 @@ export function useRecurringRules() {
     refreshRules();
   }, [refreshRules]);
 
-  // Compute active rules due for the current month
+  // Compute active rules that are currently triggered and due to be logged
   const dueRules = useMemo(() => {
-    return rules.filter(r => r.isActive && r.lastLoggedYearMonth !== currentYearMonth);
-  }, [rules, currentYearMonth]);
+    return rules.filter(r => r.isActive && getRecurringRuleDueStatus(r).isDue);
+  }, [rules]);
 
   const totalDuePaise = useMemo(() => {
     return dueRules.reduce((sum, r) => sum + r.amountPaise, 0n);
@@ -80,7 +81,7 @@ export function useRecurringRules() {
 
   /**
    * Logs a single recurring rule into the ledger as an expense or credit card purchase
-   * and marks it as logged for the month.
+   * and updates its execution timestamp to advance its schedule.
    */
   const logSingleRule = async (
     rule: RecurringRule,
@@ -99,6 +100,11 @@ export function useRecurringRules() {
     const todayDate = new Date().toISOString().split('T')[0];
     const isCard = rule.sourceType === 'card' || Boolean(rule.cardId);
 
+    const frequencyNote =
+      rule.frequencyType === 'interval_days'
+        ? `Recurring Item (Every ${rule.intervalDays || 30} days)`
+        : `Standing Instruction (Day ${rule.dayOfMonth || 1} of month)`;
+
     await recordExpenseFn({
       accountId: !isCard ? rule.accountId : undefined,
       cardId: isCard ? rule.cardId : undefined,
@@ -106,12 +112,17 @@ export function useRecurringRules() {
       amountPaise: rule.amountPaise,
       payee: rule.title,
       date: todayDate,
-      notes: `Standing Instruction (Day ${rule.dayOfMonth})`,
+      notes: frequencyNote,
     });
 
-    await markRecurringRuleAsLogged(user.id, rule.id, currentYearMonth);
+    const currentYearMonth = todayDate.substring(0, 7);
+    await markRecurringRuleAsLogged(user.id, rule.id, todayDate);
     setRules(prev =>
-      prev.map(r => (r.id === rule.id ? { ...r, lastLoggedYearMonth: currentYearMonth } : r))
+      prev.map(r =>
+        r.id === rule.id
+          ? { ...r, lastLoggedDate: todayDate, lastLoggedYearMonth: currentYearMonth }
+          : r
+      )
     );
   };
 
