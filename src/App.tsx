@@ -47,6 +47,7 @@ import { SetNameModal } from '@/components/auth/SetNameModal';
 import { ChangeEmailModal } from '@/components/auth/ChangeEmailModal';
 import { AccountDeletionModal } from '@/components/auth/AccountDeletionModal';
 import { LegalModal, LegalTab } from '@/components/legal/LegalModal';
+import { InteractiveTutorialModal } from '@/components/tutorial/InteractiveTutorialModal';
 import {
   isEmailConfirmationUrl,
   broadcastAuthEvent,
@@ -83,8 +84,21 @@ export const App: React.FC = () => {
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
+  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isCancelingDeletion, setIsCancelingDeletion] = useState(false);
   const [liabilitiesActiveTab, setLiabilitiesActiveTab] = useState<SubTabType>('cards');
+
+  // Auto-launch interactive feature tour for first-time visitors unless already dismissed
+  useEffect(() => {
+    try {
+      const hasSeen = localStorage.getItem('envello_tutorial_seen');
+      if (!hasSeen && !isEmailConfirmedLanding) {
+        setIsTutorialModalOpen(true);
+      }
+    } catch {
+      // Ignore localStorage access restrictions in private mode
+    }
+  }, [isEmailConfirmedLanding]);
 
   const scrollToSection = (elementId: string) => {
     const el = document.getElementById(elementId);
@@ -387,6 +401,7 @@ export const App: React.FC = () => {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
         onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
+        onOpenTutorial={() => setIsTutorialModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenSetNameModal={() => {
           setIsFirstTimeNameModal(false);
@@ -413,6 +428,7 @@ export const App: React.FC = () => {
         {!user ? (
           <CoverPage
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            onOpenTutorial={() => setIsTutorialModalOpen(true)}
             onOpenPrivacy={() => {
               setLegalModalTab('privacy');
               setIsLegalModalOpen(true);
@@ -1080,6 +1096,21 @@ export const App: React.FC = () => {
         isOpen={isDeletionModalOpen}
         onClose={() => setIsDeletionModalOpen(false)}
         onOpenExport={() => setIsExportModalOpen(true)}
+      />
+
+      {/* Interactive Feature Demo & Onboarding Tutorial Modal */}
+      <InteractiveTutorialModal
+        isOpen={isTutorialModalOpen}
+        onClose={() => setIsTutorialModalOpen(false)}
+        onDontShowAgain={(dontShow) => {
+          if (dontShow) {
+            try {
+              localStorage.setItem('envello_tutorial_seen', 'true');
+            } catch {
+              // Ignore localStorage restrictions
+            }
+          }
+        }}
       />
 
 

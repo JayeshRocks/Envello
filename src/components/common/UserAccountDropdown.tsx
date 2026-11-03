@@ -10,6 +10,7 @@ import {
   Scale,
   Trash2,
   Download,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,6 +20,7 @@ interface UserAccountDropdownProps {
   onOpenSetPasswordModal: () => void;
   onOpenDeletionModal: () => void;
   onOpenExportModal?: () => void;
+  onOpenTutorial?: () => void;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
 }
@@ -29,6 +31,7 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
   onOpenSetPasswordModal,
   onOpenDeletionModal,
   onOpenExportModal,
+  onOpenTutorial,
   onOpenPrivacy = () => {},
   onOpenTerms = () => {},
 }) => {
@@ -231,6 +234,31 @@ export const UserAccountDropdown: React.FC<UserAccountDropdownProps> = ({
             <span className="text-[10px] text-neutral-400 font-medium">Update</span>
           </button>
         </div>
+
+        {/* Guidance & Tutorial Section */}
+        {onOpenTutorial && (
+          <div className="p-2.5 space-y-1 border-b border-white/5">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                onOpenTutorial();
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-200 hover:text-white transition active:scale-[0.99] text-left min-h-[44px] cursor-pointer border border-sky-500/20"
+            >
+              <div className="flex items-center space-x-2.5">
+                <Sparkles className="w-4 h-4 text-sky-400 flex-shrink-0 animate-pulse" />
+                <div>
+                  <span className="text-xs font-semibold block">Interactive Demo</span>
+                  <span className="text-[10px] text-sky-300/80 block">Tutorial &amp; live feature sandboxes</span>
+                </div>
+              </div>
+              <span className="text-[10px] text-sky-300 font-semibold px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/30 font-mono">
+                Guide
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Privacy & Account Deletion Section */}
         <div className="p-2.5 space-y-1 bg-neutral-950">

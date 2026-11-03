@@ -4,6 +4,7 @@ import {
   PlusCircle,
   LogIn,
   Landmark,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDevice } from '@/hooks/useDevice';
@@ -13,6 +14,7 @@ interface HeaderProps {
   onOpenAuthModal: () => void;
   onRecordTransactionClick: () => void;
   onOpenAccountsModal?: () => void;
+  onOpenTutorial?: () => void;
   onOpenSetNameModal?: () => void;
   onOpenChangeEmailModal?: () => void;
   onOpenSetPasswordModal?: () => void;
@@ -26,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuthModal,
   onRecordTransactionClick,
   onOpenAccountsModal,
+  onOpenTutorial,
   onOpenSetNameModal = () => {},
   onOpenChangeEmailModal = () => {},
   onOpenSetPasswordModal = () => {},
@@ -58,6 +61,20 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center space-x-1.5 sm:space-x-3">
+            {/* Interactive Demo / Feature Tour Button (Available to all users) */}
+            {onOpenTutorial && (
+              <button
+                type="button"
+                onClick={onOpenTutorial}
+                className="flex items-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 hover:text-white text-xs sm:text-sm font-semibold border border-sky-500/25 active:scale-95 transition-all duration-200 min-h-[44px] sm:min-h-[38px] cursor-pointer shadow-sm"
+                title="Launch Interactive Demo & Feature Guide"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-sky-400 flex-shrink-0 animate-pulse" />
+                <span className="hidden sm:inline">Interactive Demo</span>
+                <span className="sm:hidden">Demo</span>
+              </button>
+            )}
+
             {/* User Account Dropdown (Authenticated) or Sign In button */}
             {user ? (
               <UserAccountDropdown
@@ -66,6 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onOpenSetPasswordModal={onOpenSetPasswordModal}
                 onOpenDeletionModal={onOpenDeletionModal}
                 onOpenExportModal={onOpenExportModal}
+                onOpenTutorial={onOpenTutorial}
                 onOpenPrivacy={onOpenPrivacy}
                 onOpenTerms={onOpenTerms}
               />
