@@ -241,7 +241,7 @@ export const EnvelopeGrid: React.FC = () => {
         <div className="space-y-6">
           {/* Section 1: Core & Mandatory Envelopes (Primary Flow & Emergency Reserve) */}
           {systemEnvelopes.length > 0 && (
-            <div className="space-y-3">
+            <div id="core-system-envelopes" className="space-y-3 scroll-mt-24">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="p-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">

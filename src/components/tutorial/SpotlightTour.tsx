@@ -37,29 +37,30 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const [isPositioned, setIsPositioned] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const steps: SpotlightStep[] = [
     {
       id: 'pillars',
-      targetId: 'financial-pillars',
+      targetId: 'pillars-grid',
+      fallbackTargetId: 'financial-pillars',
       title: 'Six Financial Pillars',
       badge: 'Balance Taxonomy',
       description:
         'Envello never shows an ambiguous "Total Balance". Spendable cash is always separated from locked FDs, credit card liabilities, and debts.',
       actionText: 'Scroll to Envelopes',
       onAction: () => {
-        document.getElementById('envelope-budgeting')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('core-system-envelopes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       },
     },
     {
       id: 'accounts',
       targetId: 'accounts-reconcile-actions',
+      fallbackTargetId: 'financial-pillars',
       title: 'Accounts & Bank Reconciliation',
       badge: 'Liquid Assets',
       description:
-        'Click "Accounts" to manage your liquid bank checking, savings, and cash in hand. Use "Reconcile" at month-end to audit against bank statements.',
+        'Click "Accounts" to manage liquid bank checking, savings, and cash in hand. Use "Reconcile" at month-end to audit against bank statements.',
       actionText: 'Open Accounts Drawer',
       onAction: () => {
         if (onOpenAccounts) onOpenAccounts();
@@ -67,14 +68,15 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
     },
     {
       id: 'envelopes',
-      targetId: 'envelope-budgeting',
+      targetId: 'core-system-envelopes',
+      fallbackTargetId: 'envelope-budgeting',
       title: 'Core Envelopes & Anti-Negative Guard',
       badge: 'Budgeting',
       description:
-        'Spendable is your primary clearinghouse; Emergency and Savings are guarded reserves. Envelopes can NEVER be overspent into negative.',
-      actionText: 'Inspect Envelopes',
+        'Spendable is your liquid pool; Emergency and Savings are guarded reserves. Envelopes can NEVER be overspent into negative.',
+      actionText: 'Inspect Core Envelopes',
       onAction: () => {
-        document.getElementById('envelope-budgeting')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('core-system-envelopes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       },
     },
     {
@@ -92,7 +94,8 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
     },
     {
       id: 'liabilities',
-      targetId: 'liabilities-and-assets',
+      targetId: 'liabilities-tab-strip',
+      fallbackTargetId: 'liabilities-and-assets',
       title: 'Cards, EMIs & Debts Hub',
       badge: 'Liabilities',
       description:
@@ -135,7 +138,18 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
 
   const currentStep = steps[currentStepIndex];
 
-  // Measure and scroll target into view
+  // Auto-switch tabs in Liabilities & Assets container when reaching related steps
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (currentStep.id === 'liabilities') {
+      onSelectLiabilitiesTab?.('cards');
+    } else if (currentStep.id === 'recurring') {
+      onSelectLiabilitiesTab?.('recurring');
+    }
+  }, [isOpen, currentStep.id, onSelectLiabilitiesTab]);
+
+  // Measure target element position with delta guard (prevents redundant 60fps React re-renders)
   const updateTargetPosition = useCallback(() => {
     let el = document.getElementById(currentStep.targetId);
     if (!el && currentStep.fallbackTargetId) {
@@ -144,44 +158,70 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
 
     if (el) {
       const rect = el.getBoundingClientRect();
-      setTargetRect(rect);
-      setIsPositioned(true);
+      setTargetRect((prev) => {
+        if (
+          prev &&
+          Math.abs(prev.top - rect.top) < 0.5 &&
+          Math.abs(prev.left - rect.left) < 0.5 &&
+          Math.abs(prev.width - rect.width) < 0.5 &&
+          Math.abs(prev.height - rect.height) < 0.5
+        ) {
+          return prev;
+        }
+        return rect;
+      });
     } else {
-      setTargetRect(null);
-      setIsPositioned(false);
+      setTargetRect((prev) => (prev === null ? prev : null));
     }
   }, [currentStep.targetId, currentStep.fallbackTargetId]);
 
-  // When step changes, smooth scroll to element and measure position
+  // Smooth-scroll element into view with header offset when step changes
   useEffect(() => {
     if (!isOpen) return;
 
-    let el = document.getElementById(currentStep.targetId);
-    if (!el && currentStep.fallbackTargetId) {
-      el = document.getElementById(currentStep.fallbackTargetId);
-    }
+    const timeout = setTimeout(() => {
+      let el = document.getElementById(currentStep.targetId);
+      if (!el && currentStep.fallbackTargetId) {
+        el = document.getElementById(currentStep.fallbackTargetId);
+      }
 
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const currentScrollY = window.scrollY || document.documentElement.scrollTop;
+        const elementAbsoluteTop = rect.top + currentScrollY;
 
-    const timer = setTimeout(() => {
+        // 64px fixed header + 24px safety buffer = 88px offset
+        const targetScrollTop = Math.max(0, elementAbsoluteTop - 88);
+        window.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth',
+        });
+      }
+    }, 50);
+
+    return () => clearTimeout(timeout);
+  }, [isOpen, currentStepIndex, currentStep.targetId, currentStep.fallbackTargetId]);
+
+  // Continuous 60fps RAF tracking loop to guarantee 100% position accuracy during scroll & resize
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let rafId: number;
+    const loop = () => {
       updateTargetPosition();
-    }, 250);
-
-    const handleScrollOrResize = () => {
-      updateTargetPosition();
+      rafId = requestAnimationFrame(loop);
     };
+    rafId = requestAnimationFrame(loop);
 
-    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
-    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('resize', updateTargetPosition, { passive: true });
+    window.addEventListener('scroll', updateTargetPosition, { passive: true });
 
     return () => {
-      clearTimeout(timer);
-      window.removeEventListener('scroll', handleScrollOrResize);
-      window.removeEventListener('resize', handleScrollOrResize);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', updateTargetPosition);
+      window.removeEventListener('scroll', updateTargetPosition);
     };
-  }, [isOpen, currentStepIndex, currentStep.targetId, currentStep.fallbackTargetId, updateTargetPosition]);
+  }, [isOpen, updateTargetPosition]);
 
   if (!isOpen) return null;
 
@@ -206,56 +246,102 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
     onComplete();
   };
 
-  // Determine floating popover positioning relative to target
+  // Dimensions & padding
+  const padding = 8;
+  const cardWidth = Math.min(380, window.innerWidth - 32);
+  const estimatedCardHeight = 220;
+  const actualCardHeight = cardRef.current?.offsetHeight || estimatedCardHeight;
+
+  // Calculate popover positioning relative to target
   let popoverTop = 100;
   let popoverLeft = 16;
-  const cardWidth = Math.min(380, window.innerWidth - 32);
   let arrowPlacement: 'top' | 'bottom' = 'top';
 
   if (targetRect) {
     const targetCenterX = targetRect.left + targetRect.width / 2;
     popoverLeft = Math.max(16, Math.min(window.innerWidth - cardWidth - 16, targetCenterX - cardWidth / 2));
 
-    const spaceBelow = window.innerHeight - targetRect.bottom;
-    const spaceAbove = targetRect.top;
+    const spaceBelow = window.innerHeight - (targetRect.bottom + padding);
+    const spaceAbove = targetRect.top - padding - 64; // account for 64px header
 
-    if (spaceBelow > 240 || spaceBelow > spaceAbove) {
-      // Place below target
-      popoverTop = Math.min(window.innerHeight - 260, targetRect.bottom + 16);
+    if (spaceBelow >= actualCardHeight + 20) {
+      // Comfortably fits below target
+      popoverTop = Math.min(window.innerHeight - actualCardHeight - 16, targetRect.bottom + padding + 12);
       arrowPlacement = 'top';
-    } else {
-      // Place above target
-      popoverTop = Math.max(16, targetRect.top - 240);
+    } else if (spaceAbove >= actualCardHeight + 20) {
+      // Fits above target
+      popoverTop = Math.max(76, targetRect.top - padding - actualCardHeight - 12);
       arrowPlacement = 'bottom';
+    } else {
+      // Target is very tall (e.g. 6-pillar grid): dock card at bottom of viewport
+      popoverTop = Math.max(76, window.innerHeight - actualCardHeight - 20);
+      arrowPlacement = 'top';
     }
   } else {
     // Fallback centered
-    popoverTop = window.innerHeight / 2 - 120;
+    popoverTop = Math.max(80, window.innerHeight / 2 - actualCardHeight / 2);
     popoverLeft = Math.max(16, window.innerWidth / 2 - cardWidth / 2);
   }
 
+  // Arrow horizontal offset
+  const arrowLeft = targetRect
+    ? Math.max(20, Math.min(cardWidth - 30, (targetRect.left + targetRect.width / 2) - popoverLeft - 7))
+    : cardWidth / 2 - 7;
+
   return (
     <ModalPortal>
-      {/* Semi-transparent dark overlay */}
-      <div
-        className="fixed inset-0 z-50 pointer-events-auto bg-black/60 backdrop-blur-[2px] transition-all duration-300"
-        onClick={handleSkip}
-      />
+      {/* =========================================================================
+          SVG CUTOUT MASK (True Industry-Standard Hole-Punch Spotlight)
+          - The highlighted target has ZERO overlay and ZERO blur: 100% sharp & readable
+          - Everything outside the target is dimmed with crisp semi-transparent black
+          ========================================================================= */}
+      <svg
+        className="fixed inset-0 w-full h-full pointer-events-none z-50 transition-opacity duration-200"
+        style={{ width: '100vw', height: '100vh' }}
+        aria-hidden="true"
+      >
+        <defs>
+          <mask id="spotlight-cutout-mask">
+            {/* White: covers whole screen (visible overlay) */}
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {/* Black: cuts out a clear transparent hole for the target element */}
+            {targetRect && (
+              <rect
+                x={Math.max(0, targetRect.left - padding)}
+                y={Math.max(0, targetRect.top - padding)}
+                width={targetRect.width + padding * 2}
+                height={targetRect.height + padding * 2}
+                rx="16"
+                ry="16"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
 
-      {/* Spotlight cutout glow ring over target element */}
-      {targetRect && isPositioned && (
+        {/* Dimming backdrop (transparent through the cutout mask, isolates focus) */}
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="rgba(0, 0, 0, 0.75)"
+          mask="url(#spotlight-cutout-mask)"
+          className="pointer-events-auto"
+        />
+      </svg>
+
+      {/* Target Highlight Border Ring (surgical fit, zero lag, zero drifting, no exploding animations) */}
+      {targetRect && (
         <div
-          className="fixed z-50 pointer-events-none rounded-2xl ring-4 ring-sky-400/80 shadow-[0_0_60px_rgba(56,189,248,0.5)] transition-all duration-300"
+          className="fixed z-50 pointer-events-none rounded-2xl border-2 border-sky-400 shadow-[0_0_24px_rgba(56,189,248,0.45)] transition-none"
           style={{
-            top: Math.max(0, targetRect.top - 6),
-            left: Math.max(0, targetRect.left - 6),
-            width: targetRect.width + 12,
-            height: targetRect.height + 12,
+            top: Math.max(0, targetRect.top - padding),
+            left: Math.max(0, targetRect.left - padding),
+            width: targetRect.width + padding * 2,
+            height: targetRect.height + padding * 2,
           }}
-        >
-          {/* Animated beacon ring */}
-          <div className="absolute -inset-2 rounded-2xl border-2 border-sky-400/40 animate-ping opacity-60" />
-        </div>
+        />
       )}
 
       {/* Floating Pointer Popover Card */}
@@ -264,7 +350,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="spotlight-title"
-        className="fixed z-50 bg-[#0c0d12]/95 border border-sky-500/40 rounded-2xl shadow-2xl p-4 sm:p-5 backdrop-blur-xl animate-fade-in transition-all duration-200 pointer-events-auto"
+        className="fixed z-50 bg-[#0c0d12]/98 border border-sky-500/40 rounded-2xl shadow-2xl p-4 sm:p-5 backdrop-blur-xl animate-fade-in pointer-events-auto"
         style={{
           top: `${popoverTop}px`,
           left: `${popoverLeft}px`,
@@ -272,22 +358,22 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Pointer Arrow */}
+        {/* Pointer Arrow pointing to target */}
         {targetRect && (
           <div
-            className={`absolute w-3.5 h-3.5 bg-[#0c0d12] border-sky-500/40 rotate-45 ${
+            className={`absolute w-3 h-3 bg-[#0c0d12] border-sky-500/40 rotate-45 ${
               arrowPlacement === 'top'
-                ? '-top-2 border-t border-l'
-                : '-bottom-2 border-b border-r'
+                ? '-top-1.5 border-t border-l'
+                : '-bottom-1.5 border-b border-r'
             }`}
             style={{
-              left: `${Math.max(20, Math.min(cardWidth - 30, (targetRect.left + targetRect.width / 2) - popoverLeft - 7))}px`,
+              left: `${arrowLeft}px`,
             }}
           />
         )}
 
         {/* Card Header: Step Pill & Close */}
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+        <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
           <div className="flex items-center space-x-2">
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
               Step {currentStepIndex + 1} of {steps.length}
@@ -300,7 +386,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
           <button
             type="button"
             onClick={handleSkip}
-            className="w-8 h-8 rounded-lg bg-neutral-800/80 hover:bg-neutral-700 text-neutral-400 hover:text-white flex items-center justify-center transition active:scale-95 cursor-pointer"
+            className="w-7 h-7 rounded-lg bg-neutral-800/80 hover:bg-neutral-700 text-neutral-400 hover:text-white flex items-center justify-center transition active:scale-95 cursor-pointer"
             title="Skip and never show again"
             aria-label="Skip Tutorial"
           >
@@ -309,10 +395,10 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
         </div>
 
         {/* Card Body: Title & Punchy Description */}
-        <div className="py-3 space-y-2">
+        <div className="py-2.5 space-y-1.5">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white flex-shrink-0 shadow-md">
-              <Compass className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+              <Compass className="w-3 h-3" />
             </div>
             <h3 id="spotlight-title" className="text-sm sm:text-base font-bold text-white tracking-tight">
               {currentStep.title}
@@ -325,13 +411,13 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
 
         {/* Action Button: "Try It" live trigger */}
         {currentStep.actionText && currentStep.onAction && (
-          <div className="pb-3">
+          <div className="pb-2.5">
             <button
               type="button"
               onClick={() => {
                 if (currentStep.onAction) currentStep.onAction();
               }}
-              className="w-full py-2 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-200 hover:text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition active:scale-95 cursor-pointer group shadow-sm"
+              className="w-full py-1.5 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-200 hover:text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition active:scale-95 cursor-pointer group shadow-sm"
             >
               <MousePointerClick className="w-3.5 h-3.5 text-sky-400 group-hover:scale-110 transition-transform flex-shrink-0" />
               <span>{currentStep.actionText}</span>
@@ -340,11 +426,11 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
         )}
 
         {/* Card Footer: Skip, Progress Dots, Back, Next */}
-        <div className="flex items-center justify-between pt-2.5 border-t border-white/10 text-xs">
+        <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
           <button
             type="button"
             onClick={handleSkip}
-            className="text-neutral-400 hover:text-white transition active:scale-95 cursor-pointer font-medium"
+            className="text-neutral-400 hover:text-white transition active:scale-95 cursor-pointer font-medium text-[11px]"
           >
             Skip Tour
           </button>
@@ -358,7 +444,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
                 onClick={() => setCurrentStepIndex(idx)}
                 className={`w-1.5 h-1.5 rounded-full transition-all cursor-pointer ${
                   currentStepIndex === idx
-                    ? 'w-4 bg-sky-400'
+                    ? 'w-3.5 bg-sky-400'
                     : idx < currentStepIndex
                       ? 'bg-emerald-400'
                       : 'bg-neutral-600'
@@ -373,7 +459,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
               <button
                 type="button"
                 onClick={handlePrev}
-                className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition active:scale-95 cursor-pointer"
+                className="p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition active:scale-95 cursor-pointer"
                 title="Previous Step"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -382,10 +468,10 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs flex items-center space-x-1 active:scale-95 transition cursor-pointer shadow-sm shadow-sky-500/20"
+              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs flex items-center space-x-1 active:scale-95 transition cursor-pointer shadow-sm shadow-sky-500/20"
             >
               <span>{isLastStep ? 'Finish' : 'Next'}</span>
-              {!isLastStep ? <ChevronRight className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+              {!isLastStep ? <ChevronRight className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
             </button>
           </div>
         </div>

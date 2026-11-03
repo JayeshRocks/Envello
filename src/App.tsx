@@ -543,7 +543,7 @@ export const App: React.FC = () => {
               </div>
 
               {/* The 6 Pillars Grid (Cult UI Cursor-Tracking Spotlight Cards) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div id="pillars-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-24">
                 {/* 1. Liquid Funds */}
                 <SpotlightCard
                   as="button"

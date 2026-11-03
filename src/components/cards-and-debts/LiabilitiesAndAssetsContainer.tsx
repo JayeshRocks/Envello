@@ -227,7 +227,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
       className="rounded-2xl bg-[#0f1011] border border-white/10 p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-hidden scroll-mt-20 shadow-xl"
     >
       {/* Tab Navigation header — Responsive grid on mobile & tablet, flex-wrap on desktop (No horizontal scrolling) */}
-      <div className="grid grid-cols-2 xs:grid-cols-3 lg:flex lg:flex-wrap items-center gap-1.5 sm:gap-2 border-b border-white/10 pb-3 sm:pb-4 w-full">
+      <div id="liabilities-tab-strip" className="grid grid-cols-2 xs:grid-cols-3 lg:flex lg:flex-wrap items-center gap-1.5 sm:gap-2 border-b border-white/10 pb-3 sm:pb-4 w-full scroll-mt-24">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentTab === tab.id;
