@@ -165,7 +165,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   }, [frequencyType, intervalDays, dayOfMonth, startDate]);
 
   return (
-    <div className="space-y-4">
+    <div id="recurring-section" className="space-y-4 scroll-mt-24">
       {/* Top Banner / Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">

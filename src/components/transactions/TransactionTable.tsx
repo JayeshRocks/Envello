@@ -62,7 +62,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   });
 
   return (
-    <section className="space-y-4 max-w-full overflow-hidden">
+    <section id="transaction-ledger" className="space-y-4 max-w-full overflow-hidden scroll-mt-20">
       {/* Table Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

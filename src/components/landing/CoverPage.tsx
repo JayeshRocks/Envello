@@ -26,14 +26,12 @@ import { SpotlightCard } from '@/components/common/SpotlightCard';
 
 interface CoverPageProps {
   onOpenAuthModal: () => void;
-  onOpenTutorial?: () => void;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
 }
 
 export const CoverPage: React.FC<CoverPageProps> = ({
   onOpenAuthModal,
-  onOpenTutorial,
   onOpenPrivacy = () => {},
   onOpenTerms = () => {},
 }) => {
@@ -96,15 +94,6 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             <span>Sign In to Workspace</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
-          {onOpenTutorial && (
-            <button
-              onClick={onOpenTutorial}
-              className="w-full sm:w-auto px-5 py-3 min-h-[44px] rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 hover:text-white text-sm font-semibold border border-sky-500/30 active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-lg shadow-sky-500/10"
-            >
-              <Sparkles className="w-4 h-4 text-sky-400 animate-pulse" />
-              <span>Interactive Feature Tour</span>
-            </button>
-          )}
           <button
             onClick={() => scrollTo('pillars')}
             className="w-full sm:w-auto px-5 py-3 min-h-[44px] rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-200 hover:text-white text-sm font-medium border border-white/10 active:scale-95 transition-all duration-200 flex items-center justify-center cursor-pointer"

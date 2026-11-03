@@ -47,7 +47,7 @@ import { SetNameModal } from '@/components/auth/SetNameModal';
 import { ChangeEmailModal } from '@/components/auth/ChangeEmailModal';
 import { AccountDeletionModal } from '@/components/auth/AccountDeletionModal';
 import { LegalModal, LegalTab } from '@/components/legal/LegalModal';
-import { InteractiveTutorialModal } from '@/components/tutorial/InteractiveTutorialModal';
+import { SpotlightTour } from '@/components/tutorial/SpotlightTour';
 import {
   isEmailConfirmationUrl,
   broadcastAuthEvent,
@@ -84,21 +84,35 @@ export const App: React.FC = () => {
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
-  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
   const [isCancelingDeletion, setIsCancelingDeletion] = useState(false);
   const [liabilitiesActiveTab, setLiabilitiesActiveTab] = useState<SubTabType>('cards');
 
-  // Auto-launch interactive feature tour for first-time visitors unless already dismissed
+  // Guided on-screen tour: ONLY for first-time users inside their workspace
+  // Once completed or skipped, it is saved to localStorage and NEVER shown again.
   useEffect(() => {
+    if (!user || isEmailConfirmedLanding) return;
     try {
-      const hasSeen = localStorage.getItem('envello_tutorial_seen');
-      if (!hasSeen && !isEmailConfirmedLanding) {
-        setIsTutorialModalOpen(true);
+      const isCompleted = localStorage.getItem('envello_tour_completed');
+      if (!isCompleted) {
+        const timer = setTimeout(() => {
+          setIsTourOpen(true);
+        }, 600);
+        return () => clearTimeout(timer);
       }
     } catch {
       // Ignore localStorage access restrictions in private mode
     }
-  }, [isEmailConfirmedLanding]);
+  }, [user, isEmailConfirmedLanding]);
+
+  const handleTourComplete = () => {
+    setIsTourOpen(false);
+    try {
+      localStorage.setItem('envello_tour_completed', 'true');
+    } catch {
+      // Ignore
+    }
+  };
 
   const scrollToSection = (elementId: string) => {
     const el = document.getElementById(elementId);
@@ -401,7 +415,6 @@ export const App: React.FC = () => {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
         onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
-        onOpenTutorial={() => setIsTutorialModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenSetNameModal={() => {
           setIsFirstTimeNameModal(false);
@@ -428,7 +441,6 @@ export const App: React.FC = () => {
         {!user ? (
           <CoverPage
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
-            onOpenTutorial={() => setIsTutorialModalOpen(true)}
             onOpenPrivacy={() => {
               setLegalModalTab('privacy');
               setIsLegalModalOpen(true);
@@ -494,7 +506,7 @@ export const App: React.FC = () => {
             )}
 
             {/* Section: The Six Financial Pillars */}
-            <section className="space-y-4">
+            <section id="financial-pillars" className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center space-x-2">
@@ -508,7 +520,7 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                <div id="accounts-reconcile-actions" className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       setReconcileAccountId(undefined);
@@ -1098,19 +1110,13 @@ export const App: React.FC = () => {
         onOpenExport={() => setIsExportModalOpen(true)}
       />
 
-      {/* Interactive Feature Demo & Onboarding Tutorial Modal */}
-      <InteractiveTutorialModal
-        isOpen={isTutorialModalOpen}
-        onClose={() => setIsTutorialModalOpen(false)}
-        onDontShowAgain={(dontShow) => {
-          if (dontShow) {
-            try {
-              localStorage.setItem('envello_tutorial_seen', 'true');
-            } catch {
-              // Ignore localStorage restrictions
-            }
-          }
-        }}
+      {/* Interactive Spotlight Onboarding Tour (First-time users only) */}
+      <SpotlightTour
+        isOpen={isTourOpen}
+        onComplete={handleTourComplete}
+        onOpenAccounts={() => setIsAccountsModalOpen(true)}
+        onOpenRecordTransaction={() => setIsRecordTxModalOpen(true)}
+        onSelectLiabilitiesTab={(tab) => setLiabilitiesActiveTab(tab)}
       />
 
 
