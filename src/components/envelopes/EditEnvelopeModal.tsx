@@ -83,7 +83,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, onClose);
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 
   useEffect(() => {
     if (envelope) {
@@ -96,7 +96,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
     }
   }, [envelope]);
 
-  if (!isRendered || !envelope) return null;
+  if (!isOpen || !envelope) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +116,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
         icon,
         rolloverPolicy,
       });
-      requestClose();
+      onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update envelope.');
     } finally {
@@ -129,7 +129,7 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
     setIsDeleting(true);
     try {
       await onDelete(envelope.id);
-      requestClose();
+      onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete envelope.');
     } finally {
@@ -143,11 +143,11 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg ${overlayClass}`}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
       >
-        <div className={`max-w-md w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto ${panelClass}`}>
+        <div className="max-w-md w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto modal-panel">
         <button
-          onClick={requestClose}
+          onClick={onClose}
           className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
         >
           <X className="w-5 h-5" />

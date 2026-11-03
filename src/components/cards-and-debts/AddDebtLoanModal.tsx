@@ -36,9 +36,9 @@ export const AddDebtLoanModal: React.FC<AddDebtLoanModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, onClose);
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 
-  if (!isRendered) return null;
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +88,7 @@ export const AddDebtLoanModal: React.FC<AddDebtLoanModalProps> = ({
       setBorrowedRupees('');
       setRemainingRupees('');
       setNotes('');
-      requestClose();
+      onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to record debt/loan';
       setError(msg);
@@ -102,9 +102,9 @@ export const AddDebtLoanModal: React.FC<AddDebtLoanModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay ${overlayClass}`}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
       >
-        <div className={`bg-neutral-900 border border-white/15 w-full max-w-lg rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto ${panelClass}`}>
+        <div className="bg-neutral-900 border border-white/15 w-full max-w-lg rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl modal-panel max-h-[90vh] sm:max-h-[88vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -117,7 +117,7 @@ export const AddDebtLoanModal: React.FC<AddDebtLoanModalProps> = ({
               </div>
             </div>
             <button
-              onClick={requestClose}
+              onClick={onClose}
               className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center active:scale-95 transition"
             >
               <X className="w-5 h-5" />
@@ -250,7 +250,7 @@ export const AddDebtLoanModal: React.FC<AddDebtLoanModalProps> = ({
             <div className="pt-2 flex items-center justify-end space-x-3">
               <button
                 type="button"
-                onClick={requestClose}
+                onClick={onClose}
                 className="flex-1 sm:flex-none px-4 py-2.5 min-h-[44px] rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition active:scale-95 cursor-pointer"
               >
                 Cancel

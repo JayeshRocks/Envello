@@ -27,7 +27,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { isRendered, requestClose, handleBackdropClick, handleBackdropTouchMove, overlayClass, panelClass } = useModalDismiss(isOpen, onClose);
+  const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 
   useEffect(() => {
     if (envelopes.length >= 2) {
@@ -41,7 +41,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     }
   }, [envelopes, initialFromEnvelopeId, isOpen]);
 
-  if (!isRendered || envelopes.length < 2) return null;
+  if (!isOpen || envelopes.length < 2) return null;
 
   const fromEnvelope = envelopes.find((e) => e.id === fromId);
   const toEnvelope = envelopes.find((e) => e.id === toId);
@@ -75,7 +75,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     setIsSubmitting(true);
     try {
       await onTransfer(fromId, toId, transferPaise);
-      requestClose();
+      onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Transfer failed.');
     } finally {
@@ -88,11 +88,11 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       <div
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
-        className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg ${overlayClass}`}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/65 backdrop-blur-md sm:backdrop-blur-lg modal-overlay animate-fade-in"
       >
-        <div className={`max-w-md w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto ${panelClass}`}>
+        <div className="max-w-md w-full bg-neutral-900 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-5 border border-white/15 shadow-2xl relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto modal-panel">
         <button
-          onClick={requestClose}
+          onClick={onClose}
           className="absolute top-4 right-4 p-2 sm:p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 modal-close-btn min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95 transition"
         >
           <X className="w-5 h-5" />

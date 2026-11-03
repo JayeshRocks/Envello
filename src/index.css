@@ -218,9 +218,9 @@
   }
 }
 
-/* Modal backdrop overlay with deep frosted blur & Apple fade */
+/* Modal backdrop overlay with deep frosted blur & Apple smooth fade */
 .modal-overlay {
-  animation: appleBackdropFadeIn 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: appleBackdropFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -229,10 +229,13 @@
   will-change: opacity;
 }
 
-.modal-overlay.closing,
-.animate-backdrop-out {
-  animation: appleBackdropFadeOut 220ms cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
-  pointer-events: none;
+@keyframes appleBackdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
@@ -241,35 +244,14 @@
   }
 }
 
-/* Centered modal entry & exit animation for all screen sizes */
+/* Centered modal entry animation with Apple fluid spring deceleration */
 .modal-panel {
-  animation: appleModalPresent 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: appleModalPresent 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   overscroll-behavior: contain;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   will-change: transform, opacity;
   transform-origin: center center;
-}
-
-.modal-panel.closing,
-.animate-apple-dismiss {
-  animation: appleModalDismiss 220ms cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
-  pointer-events: none;
-}
-
-@keyframes modalIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.92) translateY(14px);
-  }
-  65% {
-    opacity: 0.96;
-    transform: scale(1.006) translateY(-1px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 /* Prevent background scroll when any modal is open without resetting scroll position */
@@ -309,36 +291,6 @@ body.modal-open {
     opacity: 0;
     transform: scale(0.95) translateY(8px);
   }
-}
-
-/* Backdrop Fade In / Out */
-@keyframes appleBackdropFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes appleBackdropFadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-.animate-apple-present {
-  animation: appleModalPresent 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: transform, opacity;
-  transform-origin: center center;
-}
-
-.animate-backdrop-in {
-  animation: appleBackdropFadeIn 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity;
 }
 
 /* Reduced motion support */

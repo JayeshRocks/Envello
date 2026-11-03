@@ -1,67 +1,23 @@
-import { useEffect, useRef, useState, useCallback, MouseEvent, TouchEvent } from 'react';
+import { useEffect, useRef, MouseEvent, TouchEvent } from 'react';
 
 /**
- * Hook providing uniform Apple-grade modal dismiss behaviors & fluid transitions:
- * 1. Escape key press handler with fluid exit
+ * Hook providing uniform modal dismiss behaviors:
+ * 1. Escape key press handler
  * 2. Backdrop click handler (safeguards against mouse-drag text selection originating inside the modal)
- * 3. Body & documentElement scroll locking and background coordination while any modal is rendered
+ * 3. Body & documentElement scroll locking and background coordination while any modal is open
  * 4. Backdrop touchmove preventer to block mobile background dragging
- * 5. Coordinated 220ms Apple-grade fluid dismissal animation before unmounting
  */
 
 let activeModalsCount = 0;
 let savedScrollY = 0;
 
 export function useModalDismiss(isOpen: boolean, onClose: () => void) {
-  const [isRendered, setIsRendered] = useState(isOpen);
-  const [isClosing, setIsClosing] = useState(false);
-  const closeTimerRef = useRef<number | null>(null);
+  // Track where the mouse was pressed down. If user dragged text from inside the modal
+  // and released on the backdrop, this prevents accidental modal closure.
   const mouseDownTargetRef = useRef<EventTarget | null>(null);
 
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current !== null) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, []);
-
-  // Request close: triggers Apple fluid dismissal (220ms), then unmounts & calls onClose
-  const requestClose = useCallback(() => {
-    if (isClosing) return;
-
-    clearCloseTimer();
-
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    setIsClosing(true);
-
-    const duration = prefersReducedMotion ? 10 : 220;
-    closeTimerRef.current = window.setTimeout(() => {
-      setIsRendered(false);
-      setIsClosing(false);
-      onClose();
-    }, duration);
-  }, [isClosing, clearCloseTimer, onClose]);
-
-  // Synchronize when parent changes isOpen prop
   useEffect(() => {
-    if (isOpen) {
-      clearCloseTimer();
-      setIsRendered(true);
-      setIsClosing(false);
-    } else {
-      // If isOpen changes to false from outside while still rendered, trigger clean dismissal
-      if (isRendered && !isClosing) {
-        requestClose();
-      }
-    }
-  }, [isOpen, isRendered, isClosing, clearCloseTimer, requestClose]);
-
-  // Body scroll lock and Escape key handling
-  useEffect(() => {
-    if (!isRendered) return;
+    if (!isOpen) return;
 
     if (activeModalsCount === 0) {
       savedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
@@ -71,7 +27,7 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        requestClose();
+        onClose();
       }
     };
 
@@ -89,21 +45,18 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
       if (activeModalsCount <= 0) {
         activeModalsCount = 0;
         document.body.classList.remove('modal-open');
+        // Seamlessly restore scroll position without jumping to top
         window.scrollTo({ top: savedScrollY, behavior: 'instant' as ScrollBehavior });
       }
     };
-  }, [isRendered, requestClose]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      clearCloseTimer();
-    };
-  }, [clearCloseTimer]);
+  }, [isOpen, onClose]);
 
   const handleBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && mouseDownTargetRef.current === e.currentTarget) {
-      requestClose();
+    // Only dismiss if the click was directly on the backdrop container.
+    // Also ensures that if a mouse drag originated inside the modal (mouseDownTargetRef is a child),
+    // releasing on the backdrop does not accidentally dismiss the modal.
+    if (e.target === e.currentTarget && (!mouseDownTargetRef.current || mouseDownTargetRef.current === e.currentTarget)) {
+      onClose();
     }
     mouseDownTargetRef.current = null;
   };
@@ -114,13 +67,5 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
     }
   };
 
-  return {
-    isRendered,
-    isClosing,
-    requestClose,
-    handleBackdropClick,
-    handleBackdropTouchMove,
-    overlayClass: `modal-overlay ${isClosing ? 'closing animate-backdrop-out' : 'animate-backdrop-in'}`,
-    panelClass: `modal-panel ${isClosing ? 'closing animate-apple-dismiss' : 'animate-apple-present'}`,
-  };
+  return { handleBackdropClick, handleBackdropTouchMove };
 }
