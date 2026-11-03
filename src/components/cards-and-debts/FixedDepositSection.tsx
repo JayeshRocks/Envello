@@ -100,13 +100,13 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center space-x-2">
-            <h3 className="text-base font-semibold text-white">Fixed Deposits & Recurring Deposits</h3>
+            <h3 className="text-base font-semibold text-white">FDs & RDs</h3>
             <span className="text-xs text-neutral-400">
-              ({activeFDs.length} active term deposits)
+              ({activeFDs.length} active)
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Locked principal and disciplined monthly recurring deposits isolated from daily spending.
+            Locked principal and disciplined monthly recurring contributions isolated from daily spending.
           </p>
         </div>
 
@@ -115,17 +115,17 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
           className="px-3.5 py-2 sm:py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs sm:text-sm shadow-sm flex items-center space-x-1.5 self-start sm:self-auto transition active:scale-95 min-h-[44px] sm:min-h-[38px] cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Add Term Deposit</span>
+          <span>Add FD / RD</span>
         </button>
       </div>
 
       {/* Metric Cards Strip (Watermelon UI Metric Blocks) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 sm:p-5 rounded-2xl bg-[#0f1011] border border-white/10 shadow-lg">
-        {/* Fixed Deposits Metric */}
+        {/* FDs Metric */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-              Fixed Deposits (FD)
+              FDs
             </span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
               {fdsList.length} active
@@ -139,11 +139,11 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
           </div>
         </div>
 
-        {/* Recurring Deposits Metric */}
+        {/* RDs Metric */}
         <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-4">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-              Recurring Deposits (RD)
+              RDs
             </span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               {rdsList.length} active
@@ -214,7 +214,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
               : 'text-neutral-400 hover:text-white'
           }`}
         >
-          Fixed Deposits ({fdsList.length})
+          FDs ({fdsList.length})
         </button>
         <button
           onClick={() => setFilterType('rd')}
@@ -224,27 +224,27 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
               : 'text-neutral-400 hover:text-white'
           }`}
         >
-          Recurring Deposits ({rdsList.length})
+          RDs ({rdsList.length})
         </button>
       </div>
 
       {/* Grid of Deposits */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading term deposits...</div>
+        <div className="p-8 text-center text-xs text-neutral-500">Loading FDs & RDs...</div>
       ) : filteredDeposits.length === 0 ? (
         <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3 bg-white/[0.01]">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20">
             <Landmark className="w-5 h-5" />
           </div>
-          <div className="text-xs font-semibold text-white">No Term Deposits Found</div>
+          <div className="text-xs font-semibold text-white">No FDs or RDs Found</div>
           <p className="text-[11px] text-neutral-400 max-w-sm mx-auto">
-            Track your Fixed Deposits (FD) or Recurring Deposits (RD) to monitor your long-term wealth growth deterministically.
+            Track your FDs & RDs to monitor your long-term wealth growth deterministically.
           </p>
           <button
             onClick={() => setIsAddOpen(true)}
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm"
           >
-            + Add First Deposit
+            + Add First FD / RD
           </button>
         </div>
       ) : (
@@ -271,7 +271,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
                             : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}
                       >
-                        {isRD ? 'Recurring Deposit (RD)' : 'Fixed Deposit (FD)'}
+                        {isRD ? 'RD' : 'FD'}
                       </span>
                     </div>
                     <div className="text-sm font-semibold text-white group-hover:text-amber-200 transition pt-1">

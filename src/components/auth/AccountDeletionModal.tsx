@@ -313,7 +313,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                 <li>All checking, savings, and cash accounts and balances.</li>
                 <li>All envelopes, rollover policies, and historical period allocations.</li>
                 <li>Full transaction journal records and notes.</li>
-                <li>Credit card statements, debt tracking horizons, and fixed deposits.</li>
+                <li>Credit card statements, debt tracking horizons, and FDs & RDs.</li>
                 <li>Authentication credentials and user profile.</li>
               </ul>
             </div>

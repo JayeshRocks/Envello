@@ -107,8 +107,8 @@ export async function createFixedDeposit(
           transaction_date: start_date,
           type: 'fd_movement',
           total_amount_paise: principal_paise,
-          description: `Fixed Deposit funded: ${institution}`,
-          notes: `Created FD ID: ${fd.id}`,
+          description: `${deposit_type === 'rd' ? 'RD' : 'FD'} funded: ${institution}`,
+          notes: `Created ${deposit_type === 'rd' ? 'RD' : 'FD'} ID: ${fd.id}`,
         })
         .select()
         .single();
@@ -180,7 +180,7 @@ export async function liquidateFixedDeposit(
       transaction_date: dateStr,
       type: 'fd_movement',
       total_amount_paise: finalAmount,
-      description: `Fixed Deposit liquidated: ${fd.institution}`,
+      description: `${fd.deposit_type === 'rd' ? 'RD' : 'FD'} liquidated: ${fd.institution}`,
       notes: `Matured/liquidated to ${account.name}`,
     })
     .select()

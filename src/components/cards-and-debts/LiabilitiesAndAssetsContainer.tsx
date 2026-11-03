@@ -186,7 +186,7 @@ export const LiabilitiesAndAssetsContainer: React.FC<LiabilitiesAndAssetsContain
     },
     {
       id: 'fds' as const,
-      name: 'Fixed Deposits & RDs',
+      name: 'FDs & RDs',
       icon: Landmark,
       count: props.fixedDeposits.filter((f) => !f.is_liquidated).length,
       badgeColor: 'text-amber-400',

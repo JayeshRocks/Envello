@@ -569,7 +569,7 @@ export const App: React.FC = () => {
                   </div>
                 </SpotlightCard>
 
-                {/* 3. Savings & Fixed Deposits */}
+                {/* 3. FDs & RDs */}
                 <SpotlightCard
                   as="button"
                   onClick={() => {
@@ -578,11 +578,11 @@ export const App: React.FC = () => {
                   }}
                   spotlightColor="rgba(251, 191, 36, 0.18)"
                   className="space-y-3 relative overflow-hidden group cursor-pointer"
-                  title="Scroll to Fixed Deposits & Savings"
+                  title="Scroll to FDs & RDs"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider group-hover:text-amber-300 transition-colors">
-                      3. Fixed Deposits & RDs
+                      3. FDs & RDs
                     </span>
                     <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500/20 group-hover:scale-105 transition-all">
                       <Landmark className="w-5 h-5" />
@@ -593,7 +593,7 @@ export const App: React.FC = () => {
                       {formatINR(effectiveSavingsAndFDsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Term Deposits & Growth</span>
+                      <span>FDs, RDs & Term Growth</span>
                       <span className="text-[10px] text-amber-400/80 group-hover:text-amber-300 font-medium transition-colors">Manage &rarr;</span>
                     </div>
                   </div>
@@ -809,12 +809,12 @@ export const App: React.FC = () => {
               onAddFD={async (params) => {
                 await addFD(params);
                 await handleTransactionRecorded();
-                showToast('Fixed deposit registered', 'success');
+                showToast('FD / RD registered', 'success');
               }}
               onLiquidateFD={async (params) => {
                 await liquidateFD(params);
                 await handleTransactionRecorded();
-                showToast('Fixed deposit liquidated to account', 'success');
+                showToast('FD / RD liquidated to account', 'success');
               }}
 
               selfEmis={selfEmis}

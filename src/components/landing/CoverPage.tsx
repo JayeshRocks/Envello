@@ -225,7 +225,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             <div className="mt-3 space-y-1.5">
               <div className="text-base font-bold text-white">Liquid Cash Accounts</div>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Checking accounts, liquid savings, and physical cash. Never inflated by your credit card limits or locked fixed deposits.
+                Checking accounts, liquid savings, and physical cash. Never inflated by your credit card limits or locked FDs & RDs.
               </p>
               <div className="pt-2 text-[10px] text-sky-300 font-mono border-t border-white/5">
                 Rule: Only liquid funds can fund envelope purchases.
@@ -254,11 +254,11 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             </div>
           </SpotlightCard>
 
-          {/* Pillar 3: Savings & Locked FDs */}
+          {/* Pillar 3: FDs & RDs */}
           <SpotlightCard spotlightColor="rgba(251, 191, 36, 0.18)">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                3. Savings & Locked FDs
+                3. FDs & RDs
               </span>
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <PiggyBank className="w-4 h-4" />
@@ -267,7 +267,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             <div className="mt-3 space-y-1.5">
               <div className="text-base font-bold text-white">Protected Fixed Assets</div>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Fixed deposits, term instruments, and locked savings with maturity dates. Completely isolated from your daily spendable cash.
+                FDs, RDs, and term instruments with maturity dates. Completely isolated from your daily spendable cash.
               </p>
               <div className="pt-2 text-[10px] text-amber-300 font-mono border-t border-white/5">
                 Rule: Cannot be drawn without formal liquidation entry.

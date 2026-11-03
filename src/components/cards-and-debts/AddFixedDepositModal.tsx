@@ -138,7 +138,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
       setMaturityRupees('');
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to create term deposit';
+      const msg = err instanceof Error ? err.message : 'Failed to create FD / RD';
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -160,8 +160,8 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 <Landmark className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Add Term Deposit</h3>
-                <p className="text-xs text-neutral-400">Fixed Deposits (FD) & Recurring Deposits (RD)</p>
+                <h3 className="text-base font-semibold text-white">Add FD / RD</h3>
+                <p className="text-xs text-neutral-400">FDs & RDs</p>
               </div>
             </div>
             <button
@@ -187,7 +187,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               }`}
             >
               <Landmark className="w-4 h-4" />
-              <span>Fixed Deposit (FD)</span>
+              <span>FD</span>
             </button>
             <button
               type="button"
@@ -202,7 +202,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
               }`}
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Recurring Deposit (RD)</span>
+              <span>RD</span>
             </button>
           </div>
 
@@ -401,8 +401,8 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                 {isSubmitting
                   ? 'Saving...'
                   : depositType === 'rd'
-                  ? 'Add Recurring Deposit'
-                  : 'Add Fixed Deposit'}
+                  ? 'Add RD'
+                  : 'Add FD'}
               </button>
             </div>
           </form>
