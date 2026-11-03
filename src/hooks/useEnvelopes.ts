@@ -66,8 +66,8 @@ export function useEnvelopes() {
       // Auto-generalize any legacy envelope names (e.g. 'Savings (Super.Money)')
       const sanitized = data.map((env) => {
         if (env.name.toLowerCase().includes('super.money')) {
-          updateEnvelope(env.id, user.id, { name: 'FDs & RDs' }).catch(() => {});
-          return { ...env, name: 'FDs & RDs' };
+          updateEnvelope(env.id, user.id, { name: 'Savings & Fixed Deposits' }).catch(() => {});
+          return { ...env, name: 'Savings & Fixed Deposits' };
         }
         return env;
       });

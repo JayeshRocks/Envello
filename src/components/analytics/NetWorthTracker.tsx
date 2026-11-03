@@ -117,7 +117,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
           />
         </div>
         <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">
-          <span>Spendable Cash: {formatINR(spendableCashPaise)} • FDs: {formatINR(savingsAndFDsPaise)}</span>
+          <span>Spendable Cash: {formatINR(spendableCashPaise)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
           <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
         </div>
       </div>

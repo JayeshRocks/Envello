@@ -27,7 +27,7 @@ export function useFixedDeposits() {
       const data = await fetchFixedDeposits(user.id);
       setFixedDeposits(data);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to fetch FDs & RDs';
+      const msg = err instanceof Error ? err.message : 'Failed to fetch term deposits';
       setError(msg);
     } finally {
       setIsLoading(false);

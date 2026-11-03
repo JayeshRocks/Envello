@@ -225,7 +225,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             <div className="mt-3 space-y-1.5">
               <div className="text-base font-bold text-white">Liquid Cash Accounts</div>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Checking accounts, liquid savings, and physical cash. Never inflated by your credit card limits or locked FDs & RDs.
+                Checking accounts, liquid savings, and physical cash. Never inflated by your credit card limits or locked fixed deposits.
               </p>
               <div className="pt-2 text-[10px] text-sky-300 font-mono border-t border-white/5">
                 Rule: Only liquid funds can fund envelope purchases.
@@ -267,7 +267,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             <div className="mt-3 space-y-1.5">
               <div className="text-base font-bold text-white">Protected Fixed Assets</div>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                FDs, RDs, and term instruments with maturity dates. Completely isolated from your daily spendable cash.
+                Fixed deposits, RDs, and term instruments with maturity dates. Completely isolated from your daily spendable cash.
               </p>
               <div className="pt-2 text-[10px] text-amber-300 font-mono border-t border-white/5">
                 Rule: Cannot be drawn without formal liquidation entry.
