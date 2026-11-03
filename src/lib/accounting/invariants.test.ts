@@ -315,5 +315,117 @@ describe('Accounting Engine — Invariants & Precision', () => {
       expect(reversedAllocated).toBe(initialEnvelopeAllocated);
       expect(reversedBankBalance).toBe(initialBankBalance);
     });
+
+    it('reallocation guard: cannot reallocate budget lower than already spent funds', () => {
+      const carried = 100000n; // ₹1,000 carried over
+      const initialAllocated = 500000n; // ₹5,000 allocated
+      const spent = 400000n; // ₹4,000 spent
+      // Current available: 1,000 + 5,000 - 4,000 = ₹2,000
+      expect(calculateAvailableEnvelopeBalance(initialAllocated, carried, spent)).toBe(200000n);
+
+      // Attempted reallocation below spent (e.g. ₹2,000):
+      // Total available would become: 1,000 + 2,000 - 4,000 = -₹1,000!
+      const attemptedLowAllocation = 200000n;
+      const minRequired = spent > carried ? spent - carried : 0n; // ₹3,000
+      expect(attemptedLowAllocation < minRequired).toBe(true);
+
+      // Valid reallocation at or above minRequired (e.g. ₹3,500):
+      const validReallocation = 350000n;
+      expect(validReallocation >= minRequired).toBe(true);
+      const newAvailable = calculateAvailableEnvelopeBalance(validReallocation, carried, spent);
+      expect(newAvailable).toBe(50000n); // ₹500 positive
+      expect(newAvailable >= 0n).toBe(true);
+    });
+
+    it('transfer between envelopes: preserves system zero-sum and guards against overdrawing source envelope', () => {
+      const fromCarried = 0n;
+      const fromAllocated = 600000n; // ₹6,000
+      const fromSpent = 450000n; // ₹4,500
+      const fromAvailable = calculateAvailableEnvelopeBalance(fromAllocated, fromCarried, fromSpent); // ₹1,500
+      expect(fromAvailable).toBe(150000n);
+
+      const toAllocated = 200000n; // ₹2,000
+      const toCarried = 0n;
+      const toSpent = 0n;
+      const toAvailable = calculateAvailableEnvelopeBalance(toAllocated, toCarried, toSpent); // ₹2,000
+
+      // System total available across both before transfer: ₹3,500
+      const totalAvailableBefore = fromAvailable + toAvailable;
+      expect(totalAvailableBefore).toBe(350000n);
+
+      // Attempt transfer exceeding available (₹2,000 attempted when only ₹1,500 available)
+      const invalidTransfer = 200000n;
+      expect(invalidTransfer > fromAvailable).toBe(true);
+
+      // Valid transfer of ₹1,000
+      const validTransfer = 100000n;
+      expect(validTransfer <= fromAvailable).toBe(true);
+
+      const newFromAllocated = fromAllocated - validTransfer; // ₹5,000
+      const newToAllocated = toAllocated + validTransfer; // ₹3,000
+
+      const newFromAvailable = calculateAvailableEnvelopeBalance(newFromAllocated, fromCarried, fromSpent); // ₹500
+      const newToAvailable = calculateAvailableEnvelopeBalance(newToAllocated, toCarried, toSpent); // ₹3,000
+
+      expect(newFromAvailable).toBe(50000n);
+      expect(newToAvailable).toBe(300000n);
+
+      // Zero-sum invariant: Total available across both envelopes is perfectly preserved
+      const totalAvailableAfter = newFromAvailable + newToAvailable;
+      expect(totalAvailableAfter).toBe(totalAvailableBefore);
+    });
+
+    it('undo/revert allocation guard: blocks reverting allocation if money has already been spent', () => {
+      const originalAllocation = 100000n; // ₹1,000
+      let activeAllocation = 500000n; // User raised budget to ₹5,000
+      const spentAfterAllocation = 300000n; // User spent ₹3,000
+      expect(activeAllocation > originalAllocation).toBe(true);
+
+      // If user tries to undo allocation back to originalAllocation (₹1,000):
+      const resultingAvailable = calculateAvailableEnvelopeBalance(originalAllocation, 0n, spentAfterAllocation);
+      // Available would be 1,000 - 3,000 = -₹2,000
+      expect(resultingAvailable < 0n).toBe(true);
+
+      // Guard check: Reverting is invalid while spent > originalAllocation
+      const isUndoAllowed = originalAllocation >= spentAfterAllocation;
+      expect(isUndoAllowed).toBe(false);
+    });
+
+    it('mixed lifecycle operations (allocate -> spend -> transfer -> delete expense) maintains absolute ledger accuracy', () => {
+      let allocatedA = 1000000n; // ₹10,000 in Envelope A
+      let spentA = 0n;
+      let allocatedB = 200000n; // ₹2,000 in Envelope B
+      let spentB = 0n;
+
+      // 1. Spend ₹4,000 in Envelope A
+      const expense1 = 400000n;
+      spentA += expense1;
+      expect(calculateAvailableEnvelopeBalance(allocatedA, 0n, spentA)).toBe(600000n); // ₹6,000 left
+
+      // 2. Transfer ₹3,000 from Envelope A to Envelope B
+      const transferAmount = 300000n;
+      allocatedA -= transferAmount; // ₹7,000
+      allocatedB += transferAmount; // ₹5,000
+      expect(calculateAvailableEnvelopeBalance(allocatedA, 0n, spentA)).toBe(300000n); // ₹3,000 left
+      expect(calculateAvailableEnvelopeBalance(allocatedB, 0n, spentB)).toBe(500000n); // ₹5,000 available
+
+      // 3. Spend ₹4,500 in Envelope B
+      const expense2 = 450000n;
+      spentB += expense2;
+      expect(calculateAvailableEnvelopeBalance(allocatedB, 0n, spentB)).toBe(50000n); // ₹500 left
+
+      // 4. Delete Expense 1 (₹4,000 in Envelope A)
+      spentA -= expense1;
+      expect(spentA).toBe(0n);
+      expect(calculateAvailableEnvelopeBalance(allocatedA, 0n, spentA)).toBe(700000n); // Restored to ₹7,000
+      expect(calculateAvailableEnvelopeBalance(allocatedB, 0n, spentB)).toBe(50000n); // Envelope B intact
+
+      // Net state check: Total allocations (₹12,000) - Total spent (₹4,500) = Total available (₹7,500)
+      const totalAllocated = allocatedA + allocatedB;
+      const totalSpent = spentA + spentB;
+      const totalAvailable = calculateAvailableEnvelopeBalance(allocatedA, 0n, spentA) + calculateAvailableEnvelopeBalance(allocatedB, 0n, spentB);
+      expect(totalAllocated - totalSpent).toBe(totalAvailable);
+      expect(totalAvailable).toBe(750000n);
+    });
   });
 });

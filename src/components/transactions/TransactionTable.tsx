@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
   X,
+  Layers,
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import { formatINR } from '@/lib/accounting/currency';
@@ -180,6 +181,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               const isIncome = tx.type === 'income';
               const isExpense = tx.type === 'expense';
               const isTransfer = tx.type === 'transfer';
+              const isEnvelopeAllocation = tx.type === 'envelope_allocation';
 
               const envelopeEntry = tx.entries.find((e) => e.envelopeName);
               const accountEntry = tx.entries.find((e) => e.accountName);
@@ -204,6 +206,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                           ? 'text-emerald-400'
                           : isExpense
                           ? 'text-white'
+                          : isEnvelopeAllocation
+                          ? 'text-sky-300'
                           : 'text-indigo-300'
                       }`}
                     >
@@ -240,6 +244,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-medium flex-shrink-0">
                           <ArrowRightLeft className="w-2.5 h-2.5" />
                           <span>Transfer</span>
+                        </span>
+                      )}
+                      {isEnvelopeAllocation && (
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-medium flex-shrink-0">
+                          <Layers className="w-2.5 h-2.5" />
+                          <span>Reallocation</span>
                         </span>
                       )}
 
@@ -346,6 +356,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     const isIncome = tx.type === 'income';
                     const isExpense = tx.type === 'expense';
                     const isTransfer = tx.type === 'transfer';
+                    const isEnvelopeAllocation = tx.type === 'envelope_allocation';
 
                     const envelopeEntry = tx.entries.find((e) => e.envelopeName);
                     const accountEntry = tx.entries.find((e) => e.accountName);
@@ -383,6 +394,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                               <span>Transfer</span>
                             </span>
                           )}
+                          {isEnvelopeAllocation && (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-medium">
+                              <Layers className="w-2.5 h-2.5" />
+                              <span>Reallocation</span>
+                            </span>
+                          )}
                         </td>
 
                         {/* Envelope & Account */}
@@ -408,10 +425,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                               ? 'text-emerald-400'
                               : isExpense
                               ? 'text-white'
+                              : isEnvelopeAllocation
+                              ? 'text-sky-300'
                               : 'text-indigo-300'
                           }`}
                         >
-                          {isIncome ? `+${formatINR(tx.totalAmountPaise)}` : isExpense ? `-${formatINR(tx.totalAmountPaise)}` : formatINR(tx.totalAmountPaise)}
+                          {isIncome
+                            ? `+${formatINR(tx.totalAmountPaise)}`
+                            : isExpense
+                            ? `-${formatINR(tx.totalAmountPaise)}`
+                            : formatINR(tx.totalAmountPaise)}
                         </td>
 
                         {/* Actions */}

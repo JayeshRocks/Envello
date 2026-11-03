@@ -38,6 +38,12 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
   const hasChanged = currentEnteredPaise !== initialAllocatedPaise;
   const deltaPaise = currentEnteredPaise - initialAllocatedPaise;
 
+  const minRequiredPaise =
+    envelope.spentPaise > envelope.carriedOverPaise
+      ? envelope.spentPaise - envelope.carriedOverPaise
+      : 0n;
+  const isBelowMin = currentEnteredPaise < minRequiredPaise;
+
   const handleShortcutAdd = (amountRupees: number) => {
     const current = parseFloat(rupeesInput) || 0;
     setRupeesInput((current + amountRupees).toString());
@@ -53,6 +59,13 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
 
     if (currentEnteredPaise < 0n) {
       setError('Allocation amount cannot be negative.');
+      return;
+    }
+
+    if (currentEnteredPaise < minRequiredPaise) {
+      setError(
+        `Cannot set allocation to ${formatINR(currentEnteredPaise)}. This envelope has already spent ${formatINR(envelope.spentPaise)} this month. Minimum allowable budget is ${formatINR(minRequiredPaise)}.`
+      );
       return;
     }
 
@@ -128,15 +141,26 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
                 <input
                   type="number"
                   step="any"
-                  min="0"
+                  min={toRupees(minRequiredPaise)}
                   value={rupeesInput}
                   onChange={(e) => setRupeesInput(e.target.value)}
                   placeholder="0.00"
                   required
                   autoFocus
-                  className="w-full pl-8 pr-3.5 py-2.5 rounded-xl glass-input text-base font-mono text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500 tabular-nums"
+                  className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl glass-input text-base font-mono text-white placeholder-neutral-500 focus:ring-1 tabular-nums ${
+                    isBelowMin ? 'border-red-500/50 focus:ring-red-500' : 'focus:ring-sky-500'
+                  }`}
                 />
               </div>
+
+              {isBelowMin && (
+                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+                  <span>
+                    Already spent {formatINR(envelope.spentPaise)}. Budget cannot be set lower than {formatINR(minRequiredPaise)}.
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Quick Increment Shortcuts & In-Modal Undo / Reset */}
@@ -153,14 +177,25 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
                     +₹{amt.toLocaleString('en-IN')}
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => setRupeesInput('0')}
-                  className="text-xs px-2 py-1.5 min-h-[36px] rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-white/5 text-neutral-400 hover:text-white transition active:scale-95 flex items-center"
-                  title="Clear to ₹0"
-                >
-                  Clear
-                </button>
+                {minRequiredPaise > 0n ? (
+                  <button
+                    type="button"
+                    onClick={() => setRupeesInput(toRupees(minRequiredPaise).toString())}
+                    className="text-xs px-2.5 py-1.5 min-h-[36px] rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 font-mono transition active:scale-95 flex items-center"
+                    title={`Reset to minimum allowable budget (${formatINR(minRequiredPaise)})`}
+                  >
+                    Min ({formatINR(minRequiredPaise)})
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setRupeesInput('0')}
+                    className="text-xs px-2 py-1.5 min-h-[36px] rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-white/5 text-neutral-400 hover:text-white transition active:scale-95 flex items-center"
+                    title="Clear to ₹0"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
 
               {hasChanged && (

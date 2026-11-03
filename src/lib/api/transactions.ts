@@ -711,8 +711,8 @@ export async function deleteTransaction(transactionId: string, userId: string): 
       }
     }
 
-    // 4. Reverse envelope spent_paise if this entry was debit on an envelope
-    if (entry.envelope_id && entry.direction === 'debit') {
+    // 4. Reverse envelope spent_paise if this entry was debit on an envelope (expense)
+    if (entry.envelope_id && entry.direction === 'debit' && tx.type !== 'envelope_allocation') {
       const yearMonth = tx.transaction_date.substring(0, 7);
       const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
 
@@ -737,7 +737,7 @@ export async function deleteTransaction(transactionId: string, userId: string): 
     }
 
     // 5. Reverse envelope allocated_paise if this entry was credit on an envelope (income assignment)
-    if (entry.envelope_id && entry.direction === 'credit') {
+    if (entry.envelope_id && entry.direction === 'credit' && tx.type === 'income') {
       const yearMonth = tx.transaction_date.substring(0, 7);
       const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
 
@@ -758,6 +758,41 @@ export async function deleteTransaction(transactionId: string, userId: string): 
             updated_at: new Date().toISOString(),
           })
           .eq('id', alloc.id);
+      }
+    }
+
+    // 6. Reverse envelope allocation transfer if tx was an internal envelope reallocation
+    if (entry.envelope_id && tx.type === 'envelope_allocation') {
+      const yearMonth = tx.transaction_date.substring(0, 7);
+      const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+
+      const { data: alloc } = await supabase
+        .from('envelope_allocations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('envelope_id', entry.envelope_id)
+        .eq('period_id', periodId)
+        .maybeSingle();
+
+      if (alloc) {
+        if (entry.direction === 'credit') {
+          await supabase
+            .from('envelope_allocations')
+            .update({
+              allocated_paise: alloc.allocated_paise + entry.amount_paise,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', alloc.id);
+        } else if (entry.direction === 'debit') {
+          const newAlloc = Math.max(0, alloc.allocated_paise - entry.amount_paise);
+          await supabase
+            .from('envelope_allocations')
+            .update({
+              allocated_paise: newAlloc,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', alloc.id);
+        }
       }
     }
   }

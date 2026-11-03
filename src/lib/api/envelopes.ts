@@ -214,6 +214,7 @@ export async function fetchEnvelopesWithAllocations(
 
 /**
  * Sets or updates the planned monthly allocation for an envelope in integer paise.
+ * Invariant: New allocation + carried over must NOT be less than already spent funds for this period.
  */
 export async function upsertEnvelopeAllocation(
   envelopeId: string,
@@ -221,15 +222,30 @@ export async function upsertEnvelopeAllocation(
   yearMonth: string,
   allocatedPaise: bigint
 ): Promise<void> {
+  if (allocatedPaise < 0n) {
+    throw new Error('Allocation amount cannot be negative.');
+  }
+
   const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
 
   const { data: existing } = await supabase
     .from('envelope_allocations')
-    .select('id')
+    .select('id, allocated_paise, carried_over_paise, spent_paise')
     .eq('user_id', userId)
     .eq('envelope_id', envelopeId)
     .eq('period_id', periodId)
     .maybeSingle();
+
+  const carriedOverPaise = BigInt(existing?.carried_over_paise ?? 0);
+  const spentPaise = BigInt(existing?.spent_paise ?? 0);
+
+  // Invariant Guard: New allocation cannot violate already spent money
+  if (allocatedPaise + carriedOverPaise < spentPaise) {
+    const minRequired = spentPaise > carriedOverPaise ? spentPaise - carriedOverPaise : 0n;
+    throw new Error(
+      `Cannot set allocation to ₹${(Number(allocatedPaise) / 100).toFixed(2)}. This envelope has already spent ₹${(Number(spentPaise) / 100).toFixed(2)} this month. Minimum allowable budget is ₹${(Number(minRequired) / 100).toFixed(2)}.`
+    );
+  }
 
   if (existing?.id) {
     const { error } = await supabase
@@ -264,6 +280,10 @@ export async function upsertEnvelopeAllocation(
 /**
  * Reallocates budget between two envelopes in the same period.
  * (e.g. Move ₹2,000 from Regular to Gym)
+ * Invariants:
+ * - Amount must be positive.
+ * - From envelope must have at least amountPaise available.
+ * - Updates both envelope balances and logs an audit transaction in transactions table.
  */
 export async function transferBetweenEnvelopes(
   userId: string,
@@ -274,6 +294,10 @@ export async function transferBetweenEnvelopes(
 ): Promise<void> {
   if (amountPaise <= 0n) {
     throw new Error('Transfer amount must be greater than zero.');
+  }
+
+  if (fromEnvelopeId === toEnvelopeId) {
+    throw new Error('Cannot transfer budget to the same envelope.');
   }
 
   const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
@@ -295,15 +319,121 @@ export async function transferBetweenEnvelopes(
     .eq('period_id', periodId)
     .maybeSingle();
 
-  const currentFromPaise = BigInt(fromAlloc?.allocated_paise ?? 0);
-  const currentToPaise = BigInt(toAlloc?.allocated_paise ?? 0);
+  const currentFromAllocated = BigInt(fromAlloc?.allocated_paise ?? 0);
+  const currentFromCarried = BigInt(fromAlloc?.carried_over_paise ?? 0);
+  const currentFromSpent = BigInt(fromAlloc?.spent_paise ?? 0);
+  const currentFromAvailable = calculateAvailableEnvelopeBalance(
+    currentFromAllocated,
+    currentFromCarried,
+    currentFromSpent
+  );
 
-  const newFromPaise = currentFromPaise - amountPaise;
-  const newToPaise = currentToPaise + amountPaise;
+  if (amountPaise > currentFromAvailable) {
+    throw new Error(
+      `Insufficient available funds in source envelope (available: ₹${(Number(currentFromAvailable) / 100).toFixed(2)}). Cannot transfer more than available balance.`
+    );
+  }
 
-  // 2. Save both sides
-  await upsertEnvelopeAllocation(fromEnvelopeId, userId, yearMonth, newFromPaise);
-  await upsertEnvelopeAllocation(toEnvelopeId, userId, yearMonth, newToPaise);
+  // 2. Compute new balances for fromEnvelope
+  let newFromAllocated = currentFromAllocated;
+  let newFromCarried = currentFromCarried;
+
+  if (currentFromAllocated >= amountPaise) {
+    newFromAllocated = currentFromAllocated - amountPaise;
+  } else {
+    // Deduct remaining from carried_over_paise
+    const remainder = amountPaise - currentFromAllocated;
+    newFromAllocated = 0n;
+    newFromCarried = currentFromCarried - remainder;
+  }
+
+  // 3. Compute new balances for toEnvelope
+  const currentToAllocated = BigInt(toAlloc?.allocated_paise ?? 0);
+  const newToAllocated = currentToAllocated + amountPaise;
+
+  // 4. Update fromEnvelope
+  if (fromAlloc?.id) {
+    await supabase
+      .from('envelope_allocations')
+      .update({
+        allocated_paise: Number(newFromAllocated),
+        carried_over_paise: Number(newFromCarried),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', fromAlloc.id);
+  } else {
+    await supabase.from('envelope_allocations').insert({
+      envelope_id: fromEnvelopeId,
+      period_id: periodId,
+      user_id: userId,
+      allocated_paise: Number(newFromAllocated),
+      carried_over_paise: Number(newFromCarried),
+      spent_paise: 0,
+    });
+  }
+
+  // 5. Update toEnvelope
+  if (toAlloc?.id) {
+    await supabase
+      .from('envelope_allocations')
+      .update({
+        allocated_paise: Number(newToAllocated),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', toAlloc.id);
+  } else {
+    await supabase.from('envelope_allocations').insert({
+      envelope_id: toEnvelopeId,
+      period_id: periodId,
+      user_id: userId,
+      allocated_paise: Number(newToAllocated),
+      carried_over_paise: 0,
+      spent_paise: 0,
+    });
+  }
+
+  // 6. Log audit transaction into double-entry ledger
+  const { data: envs } = await supabase
+    .from('envelopes')
+    .select('id, name')
+    .in('id', [fromEnvelopeId, toEnvelopeId]);
+
+  const fromName = envs?.find((e) => e.id === fromEnvelopeId)?.name || 'Envelope';
+  const toName = envs?.find((e) => e.id === toEnvelopeId)?.name || 'Envelope';
+
+  const { data: tx } = await supabase
+    .from('transactions')
+    .insert({
+      user_id: userId,
+      transaction_date: `${yearMonth}-01`,
+      type: 'envelope_allocation',
+      total_amount_paise: Number(amountPaise),
+      description: `Reallocation: ${fromName} → ${toName}`,
+      notes: `Reallocated budget allowance from ${fromName} to ${toName}`,
+    })
+    .select('id')
+    .single();
+
+  if (tx) {
+    await supabase.from('transaction_entries').insert([
+      {
+        transaction_id: tx.id,
+        user_id: userId,
+        account_id: null,
+        envelope_id: fromEnvelopeId,
+        direction: 'credit',
+        amount_paise: Number(amountPaise),
+      },
+      {
+        transaction_id: tx.id,
+        user_id: userId,
+        account_id: null,
+        envelope_id: toEnvelopeId,
+        direction: 'debit',
+        amount_paise: Number(amountPaise),
+      },
+    ]);
+  }
 }
 
 /**
