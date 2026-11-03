@@ -39,8 +39,10 @@ export function exportTransactionsToCSV(transactions: TransactionWithEntries[]):
 
   const rows = transactions.map((tx) => {
     const amountRupees = (Number(tx.totalAmountPaise) / 100).toFixed(2);
-    const accountName = tx.entries?.[0]?.accountName || '';
-    const envelopeName = tx.entries?.[0]?.envelopeName || '';
+    const accountNames = Array.from(
+      new Set(tx.entries?.filter((e) => e.accountName).map((e) => e.accountName!))
+    ).join(' + ');
+    const envelopeName = tx.entries?.find((e) => e.envelopeName)?.envelopeName || '';
 
     return [
       `"${tx.transactionDate}"`,
@@ -48,7 +50,7 @@ export function exportTransactionsToCSV(transactions: TransactionWithEntries[]):
       amountRupees,
       `"${(tx.description || '').replace(/"/g, '""')}"`,
       `"${(tx.notes || '').replace(/"/g, '""')}"`,
-      `"${accountName.replace(/"/g, '""')}"`,
+      `"${accountNames.replace(/"/g, '""')}"`,
       `"${envelopeName.replace(/"/g, '""')}"`,
     ].join(',');
   });
