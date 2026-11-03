@@ -344,11 +344,11 @@ export const CoverPage: React.FC<CoverPageProps> = ({
           3. SPECIALIZED SUBSYSTEMS (Watermelon UI Bento Grid Block)
           ========================================================================= */}
       <section id="subsystems" className="space-y-8 scroll-mt-24 max-w-5xl mx-auto px-3 sm:px-6">
-        <div className="text-center space-y-2 max-w-2xl mx-auto">
+        <div className="text-center space-y-2 max-w-3xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Engineered for Precision & Convenience
           </h2>
-          <p className="text-xs sm:text-sm text-neutral-400">
+          <p className="text-xs sm:text-sm text-neutral-400 max-w-2xl mx-auto leading-relaxed">
             Four specialized subsystems designed to automate routine budgeting while preserving mathematical accounting truth.
           </p>
         </div>
@@ -369,19 +369,38 @@ export const CoverPage: React.FC<CoverPageProps> = ({
 
             {/* Interactive Policy Switcher Demo */}
             <div className="space-y-3 pt-2">
-              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-neutral-900 border border-white/10">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 p-1.5 rounded-xl bg-neutral-900 border border-white/10 w-full">
                 {[
-                  { id: 'carry', label: 'Carry Forward', desc: 'Accumulates surplus for holidays or annual goals.' },
-                  { id: 'sweep', label: 'Sweep to Spendable', desc: 'Returns unused dining/outing surplus to liquid pool.' },
-                  { id: 'reset', label: 'Reset to Zero', desc: 'Clears allocation clean for fixed recurring budgets.' },
+                  {
+                    id: 'carry',
+                    label: 'Carry Forward',
+                    rule: 'Accumulates unspent envelope surplus into next month.',
+                    example: 'Remaining ₹4,200 in Outing carries forward into next month for a ₹9,200 total pool.',
+                    badge: 'Sinking Funds',
+                  },
+                  {
+                    id: 'sweep',
+                    label: 'Sweep to Spendable',
+                    rule: 'Returns unused category surplus back to your liquid Spendable pool.',
+                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable Cash on the 1st of the month.',
+                    badge: 'Liquid Surplus',
+                  },
+                  {
+                    id: 'reset',
+                    label: 'Reset to Zero',
+                    rule: 'Clears allocation clean for fresh, fixed monthly budgets.',
+                    example: 'Envelope resets to ₹0 unspent, ready for a fresh monthly allocation without drift.',
+                    badge: 'Strict Budgets',
+                  },
                 ].map((item) => (
                   <button
                     key={item.id}
+                    type="button"
                     onClick={() => setActiveRolloverDemo(item.id as any)}
-                    className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-medium transition min-h-[38px] cursor-pointer ${
+                    className={`w-full py-2.5 px-3 rounded-lg text-xs font-semibold transition-all duration-150 min-h-[40px] flex items-center justify-center text-center cursor-pointer active:scale-95 ${
                       activeRolloverDemo === item.id
-                        ? 'bg-sky-500 text-neutral-950 font-semibold shadow-md'
-                        : 'text-neutral-400 hover:text-white'
+                        ? 'bg-sky-500 text-neutral-950 font-bold shadow-md shadow-sky-500/25'
+                        : 'text-neutral-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     {item.label}
@@ -389,14 +408,47 @@ export const CoverPage: React.FC<CoverPageProps> = ({
                 ))}
               </div>
 
-              <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-white/5 text-xs text-neutral-300 flex items-center space-x-2.5">
-                <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>
-                  {activeRolloverDemo === 'carry' && 'Carry Forward: Remaining ₹4,200 in Outing carries into next month for a ₹9,200 pool.'}
-                  {activeRolloverDemo === 'sweep' && 'Sweep to Spendable: Unspent ₹3,500 automatically swept back to Spendable cash on the 1st.'}
-                  {activeRolloverDemo === 'reset' && 'Reset to Zero: Cleans envelope balance for fresh monthly allocations without drift.'}
-                </span>
-              </div>
+              {/* Active Policy Dynamic Card */}
+              {(() => {
+                const policies: Record<string, { label: string; rule: string; example: string; badge: string }> = {
+                  carry: {
+                    label: 'Carry Forward',
+                    rule: 'Accumulates unspent envelope surplus into next month.',
+                    example: 'Remaining ₹4,200 in Outing carries forward into next month for a ₹9,200 total pool.',
+                    badge: 'Sinking Funds',
+                  },
+                  sweep: {
+                    label: 'Sweep to Spendable',
+                    rule: 'Returns unused category surplus back to your liquid Spendable pool.',
+                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable Cash on the 1st of the month.',
+                    badge: 'Liquid Surplus',
+                  },
+                  reset: {
+                    label: 'Reset to Zero',
+                    rule: 'Clears allocation clean for fresh, fixed monthly budgets.',
+                    example: 'Envelope resets to ₹0 unspent, ready for a fresh monthly allocation without drift.',
+                    badge: 'Strict Budgets',
+                  },
+                };
+                const active = policies[activeRolloverDemo] || policies.carry;
+
+                return (
+                  <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-white/5 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-sky-400 font-semibold">
+                        <Check className="w-4 h-4 flex-shrink-0 text-sky-400" />
+                        <span>{active.label}: {active.rule}</span>
+                      </div>
+                      <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/20 font-mono">
+                        {active.badge}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-neutral-400 font-mono bg-neutral-950/60 p-2.5 rounded-lg border border-white/5 leading-relaxed">
+                      <span className="text-sky-300 font-semibold">Simulation:</span> {active.example}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
