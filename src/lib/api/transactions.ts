@@ -246,6 +246,35 @@ export async function recordExpenseTransaction(
           amountPaise: BigInt(a.balance_paise),
         }));
       }
+    } else {
+      // If envelope has carried-over balance, current period sources might be less than available budget
+      const totalSourcesPaise = sources.reduce((sum, s) => sum + s.amountPaise, 0n);
+      if (totalSourcesPaise < params.amountPaise) {
+        const existingAccountIds = new Set(sources.map((s) => s.accountId));
+        const { data: activeAccs } = await supabase
+          .from('accounts')
+          .select('id, name, balance_paise')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .order('balance_paise', { ascending: false });
+
+        for (const acc of activeAccs || []) {
+          if (existingAccountIds.has(acc.id)) {
+            const match = sources.find((s) => s.accountId === acc.id);
+            if (match) {
+              match.amountPaise += BigInt(acc.balance_paise);
+            }
+          } else {
+            sources.push({
+              id: `supplement-${acc.id}`,
+              allocationId: envelopeAllocData!.id,
+              accountId: acc.id,
+              accountName: acc.name,
+              amountPaise: BigInt(acc.balance_paise),
+            });
+          }
+        }
+      }
     }
 
     const deductionPlan = calculateGreedyAccountDeduction(
