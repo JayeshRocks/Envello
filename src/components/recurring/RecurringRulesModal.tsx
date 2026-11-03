@@ -19,6 +19,7 @@ import type { CreditCardRow } from '@/lib/api/creditCards';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
+import { useConfirm } from '@/context/ConfirmContext';
 
 interface RecurringRulesModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
   const activeAccounts = accounts.filter(a => a.isActive);
 
   const [isAdding, setIsAdding] = useState(false);
+  const confirm = useConfirm();
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
   const [paymentSource, setPaymentSource] = useState(
@@ -245,7 +247,19 @@ export const RecurringRulesModal: React.FC<RecurringRulesModalProps> = ({
 
                     {/* Delete Button */}
                     <button
-                      onClick={() => onDeleteRule(rule.id)}
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: 'Delete Recurring Rule',
+                          message: `Are you sure you want to delete the standing rule "${rule.title}"?`,
+                          details: 'Future automated transaction executions for this rule will be stopped.',
+                          confirmText: 'Delete Rule',
+                          cancelText: 'Cancel',
+                          variant: 'danger',
+                        });
+                        if (confirmed) {
+                          onDeleteRule(rule.id);
+                        }
+                      }}
                       className="p-1.5 rounded-lg text-neutral-400 hover:text-red-400 hover:bg-white/5 transition"
                       title="Delete Rule"
                     >

@@ -9,6 +9,7 @@ import { AddSelfEmiModal } from './AddSelfEmiModal';
 import { EditSelfEmiModal } from './EditSelfEmiModal';
 import { AddExternalEmiModal } from './AddExternalEmiModal';
 import { EditExternalEmiModal } from './EditExternalEmiModal';
+import { useConfirm } from '@/context/ConfirmContext';
 
 interface EmiSectionProps {
   selfEmis: SelfEmiWithProgress[];
@@ -67,6 +68,7 @@ export const EmiSection: React.FC<EmiSectionProps> = ({
   const [isAddExternalOpen, setIsAddExternalOpen] = useState(false);
   const [editingSelfEmi, setEditingSelfEmi] = useState<SelfEmiWithProgress | null>(null);
   const [editingExternalEmi, setEditingExternalEmi] = useState<ActualDebtRow | null>(null);
+  const confirm = useConfirm();
 
   // Self EMI inline payment state
   const [reimbursingSelfEmiId, setReimbursingSelfEmiId] = useState<string | null>(null);
@@ -343,8 +345,16 @@ export const EmiSection: React.FC<EmiSectionProps> = ({
                       )}
                       {onDeleteSelfEmi && (
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete Self EMI "${emi.description}"?`)) {
+                          onClick={async () => {
+                            const confirmed = await confirm({
+                              title: 'Delete Self EMI',
+                              message: `Are you sure you want to delete Self EMI "${emi.description}"?`,
+                              details: 'Ledger transactions already recorded for this EMI will remain safely logged.',
+                              confirmText: 'Delete EMI',
+                              cancelText: 'Cancel',
+                              variant: 'danger',
+                            });
+                            if (confirmed) {
                               onDeleteSelfEmi(emi.id);
                             }
                           }}
@@ -483,8 +493,16 @@ export const EmiSection: React.FC<EmiSectionProps> = ({
                       )}
                       {onDeleteExternalEmi && (
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete External EMI "${emi.lender_name}"?`)) {
+                          onClick={async () => {
+                            const confirmed = await confirm({
+                              title: 'Delete External EMI',
+                              message: `Are you sure you want to delete External EMI "${emi.lender_name}"?`,
+                              details: 'Ledger transactions already recorded for this EMI will remain safely logged.',
+                              confirmText: 'Delete EMI',
+                              cancelText: 'Cancel',
+                              variant: 'danger',
+                            });
+                            if (confirmed) {
                               onDeleteExternalEmi(emi.id);
                             }
                           }}

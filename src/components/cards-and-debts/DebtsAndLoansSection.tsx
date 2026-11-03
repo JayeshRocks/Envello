@@ -6,6 +6,7 @@ import { formatINR } from '@/lib/accounting/currency';
 import { AddDebtLoanModal } from './AddDebtLoanModal';
 import { EditDebtLoanModal } from './EditDebtLoanModal';
 import { RecordLoanPaymentModal } from './RecordLoanPaymentModal';
+import { useConfirm } from '@/context/ConfirmContext';
 
 interface DebtsAndLoansSectionProps {
   debtsLoans: DebtLoanRow[];
@@ -50,6 +51,7 @@ export const DebtsAndLoansSection: React.FC<DebtsAndLoansSectionProps> = ({
   const [payingLoanId, setPayingLoanId] = useState<string | null>(null);
   const [editingLoan, setEditingLoan] = useState<DebtLoanRow | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'active' | 'settled'>('active');
+  const confirm = useConfirm();
 
   const activeLoans = useMemo(() => debtsLoans.filter((d) => !d.is_settled), [debtsLoans]);
   const settledLoans = useMemo(() => debtsLoans.filter((d) => d.is_settled), [debtsLoans]);
@@ -270,8 +272,16 @@ export const DebtsAndLoansSection: React.FC<DebtsAndLoansSectionProps> = ({
                     )}
                     {onDeleteDebtLoan && (
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete debt record for "${loan.lender_name}"?`)) {
+                        onClick={async () => {
+                          const confirmed = await confirm({
+                            title: 'Delete Debt / Loan',
+                            message: `Are you sure you want to delete the debt record for "${loan.lender_name}"?`,
+                            details: 'Existing payment transactions and ledger records will remain safely preserved.',
+                            confirmText: 'Delete Record',
+                            cancelText: 'Cancel',
+                            variant: 'danger',
+                          });
+                          if (confirmed) {
                             onDeleteDebtLoan(loan.id);
                           }
                         }}

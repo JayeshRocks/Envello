@@ -5,6 +5,7 @@ import type { AccountType } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
+import { useConfirm } from '@/context/ConfirmContext';
 
 interface AccountListModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   // New account form state
   const [name, setName] = useState('');
@@ -98,7 +100,15 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
 
   const handleDelete = async (accountId: string, accountName: string) => {
     if (!onDeleteAccount) return;
-    if (!window.confirm(`Are you sure you want to delete or deactivate "${accountName}"?`)) {
+    const confirmed = await confirm({
+      title: 'Delete Liquid Account',
+      message: `Are you sure you want to delete "${accountName}"?`,
+      details: 'Historical transaction entries and past transfers linked to this account will remain safely preserved in your ledger.',
+      confirmText: 'Delete Account',
+      cancelText: 'Keep Account',
+      variant: 'danger',
+    });
+    if (!confirmed) {
       return;
     }
 

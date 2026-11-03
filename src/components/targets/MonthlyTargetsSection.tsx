@@ -3,6 +3,7 @@ import { Target, Plus, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 import type { MonthlyTargetWithProgress } from '@/hooks/useMonthlyTargets';
 import { formatINR, toPaise } from '@/lib/accounting/currency';
 import { AddMonthlyTargetModal } from './AddMonthlyTargetModal';
+import { useConfirm } from '@/context/ConfirmContext';
 
 interface MonthlyTargetsSectionProps {
   targets: MonthlyTargetWithProgress[];
@@ -32,6 +33,7 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
   const [contributingTargetId, setContributingTargetId] = useState<string | null>(null);
   const [customAmountRupees, setCustomAmountRupees] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const confirm = useConfirm();
 
   const activeTargets = targets.filter((t) => !t.is_achieved);
 
@@ -197,7 +199,19 @@ export const MonthlyTargetsSection: React.FC<MonthlyTargetsSectionProps> = ({
                   ) : (
                     <div className="flex items-center justify-between">
                       <button
-                        onClick={() => onRemoveTarget(target.id)}
+                        onClick={async () => {
+                          const confirmed = await confirm({
+                            title: 'Delete Monthly Target',
+                            message: `Are you sure you want to remove the target "${target.title}"?`,
+                            details: 'Historical contributions and envelope budgets will remain intact in your ledger.',
+                            confirmText: 'Delete Target',
+                            cancelText: 'Cancel',
+                            variant: 'danger',
+                          });
+                          if (confirmed) {
+                            await onRemoveTarget(target.id);
+                          }
+                        }}
                         className="p-2.5 -ml-2 text-neutral-500 hover:text-red-400 transition rounded-xl hover:bg-white/5 min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
                         title="Delete target"
                         aria-label="Delete target"

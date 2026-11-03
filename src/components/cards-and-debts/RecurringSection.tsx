@@ -18,6 +18,7 @@ import type { RecurringRule, CreateRecurringRuleParams } from '@/types/recurring
 import type { AccountItem } from '@/lib/api/accounts';
 import type { CreditCardRow } from '@/lib/api/creditCards';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import { useConfirm } from '@/context/ConfirmContext';
 
 interface RecurringSectionProps {
   rules: RecurringRule[];
@@ -66,8 +67,8 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loggingRuleId, setLoggingRuleId] = useState<string | null>(null);
   const [isLoggingAll, setIsLoggingAll] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +125,6 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
 
   const handleDelete = async (ruleId: string) => {
     await onDeleteRule(ruleId);
-    setDeleteConfirmId(null);
   };
 
   return (
@@ -450,30 +450,25 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
                       <Power className="w-3.5 h-3.5" />
                     </button>
 
-                    {deleteConfirmId === rule.id ? (
-                      <div className="flex items-center space-x-1 bg-red-500/10 border border-red-500/30 rounded-lg p-0.5">
-                        <button
-                          onClick={() => handleDelete(rule.id)}
-                          className="px-1.5 py-0.5 text-[10px] font-semibold text-red-300 hover:text-white"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(null)}
-                          className="px-1 py-0.5 text-[10px] text-neutral-400 hover:text-white"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setDeleteConfirmId(rule.id)}
-                        className="p-1.5 rounded-lg border border-white/5 text-neutral-400 hover:text-red-400 hover:bg-white/5 transition"
-                        title="Delete rule"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <button
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: 'Delete Recurring Rule',
+                          message: `Are you sure you want to delete "${rule.title}"?`,
+                          details: 'Future automated transaction postings for this rule will be stopped.',
+                          confirmText: 'Delete Rule',
+                          cancelText: 'Cancel',
+                          variant: 'danger',
+                        });
+                        if (confirmed) {
+                          await handleDelete(rule.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg border border-white/5 text-neutral-400 hover:text-red-400 hover:bg-white/5 transition"
+                      title="Delete rule"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
