@@ -7,6 +7,7 @@ import {
   recordAccountTransfer,
   deleteTransaction,
   type TransactionRecord,
+  type RecordExpenseResult,
 } from '@/lib/api/transactions';
 
 export function useTransactions() {
@@ -50,17 +51,18 @@ export function useTransactions() {
     accountId?: string | null;
     cardId?: string | null;
     envelopeId?: string | null;
+    isGhostBank?: boolean;
     amountPaise: bigint;
     payee: string;
     date: string;
     notes?: string;
-  }) => {
+  }): Promise<RecordExpenseResult> => {
     if (!user) throw new Error('User not authenticated');
     setError(null);
     try {
-      const txId = await recordExpenseTransaction(user.id, params);
+      const result = await recordExpenseTransaction(user.id, params);
       await loadTransactions();
-      return txId;
+      return result;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to record expense.';
       setError(message);

@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase/client';
 import { getOrCreateBudgetPeriod } from './envelopes';
 import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
 import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
+import { fetchEnvelopeAllocationSources } from './envelopes';
+import { calculateGreedyAccountDeduction, type GreedyDeductionPlan } from '@/lib/accounting/greedyDeduction';
 
 export interface TransactionEntryRecord {
   id: string;
@@ -42,10 +44,16 @@ export interface RecordExpenseParams {
   accountId?: string | null;
   cardId?: string | null;
   envelopeId?: string | null;
+  isGhostBank?: boolean;
   amountPaise: bigint;
   payee: string;
   date: string; // YYYY-MM-DD
   notes?: string;
+}
+
+export interface RecordExpenseResult {
+  transactionId: string;
+  deductionPlan?: GreedyDeductionPlan;
 }
 
 /**
@@ -64,18 +72,20 @@ export interface RecordExpenseParams {
 export async function recordExpenseTransaction(
   userId: string,
   params: RecordExpenseParams
-): Promise<string> {
+): Promise<RecordExpenseResult> {
   if (params.amountPaise <= 0n) {
     throw new Error('Expense amount must be greater than zero.');
   }
 
   const isCard = Boolean(params.cardId);
-  if (!isCard && !params.accountId) {
-    throw new Error('Please select a payment account or credit card.');
+  const hasEnvelope = Boolean(params.envelopeId && params.envelopeId !== 'none');
+  const isGhostEnvelope = Boolean(params.isGhostBank || (!isCard && !params.accountId && hasEnvelope));
+
+  if (!isCard && !params.accountId && !isGhostEnvelope) {
+    throw new Error('Please select a payment method (Envelope, Bank Account, or Credit Card).');
   }
 
   const numAmount = Number(params.amountPaise);
-  const hasEnvelope = Boolean(params.envelopeId && params.envelopeId !== 'none');
   let budgetPeriodId: string | null = null;
   let envelopeAllocData: { id: string; allocated_paise: number; carried_over_paise: number; spent_paise: number } | null = null;
 
@@ -203,18 +213,198 @@ export async function recordExpenseTransaction(
       console.error('[Envello Transactions API] Error inserting card entries:', entriesError.message);
     }
 
-    return tx.id;
+    return { transactionId: tx.id };
+  } else if (isGhostEnvelope && hasEnvelope) {
+    // 2. Ghost Bank / Envelope Spending:
+    // Greedily deduct from backing liquid accounts according to available hold amounts.
+    if (!envelopeAllocData?.id) {
+      throw new Error('Envelope allocation record not found for active period.');
+    }
+
+    const allocatedPaise = BigInt(envelopeAllocData.allocated_paise ?? 0);
+    const carriedOverPaise = BigInt(envelopeAllocData.carried_over_paise ?? 0);
+    const spentPaise = BigInt(envelopeAllocData.spent_paise ?? 0);
+    const availablePaise = calculateAvailableEnvelopeBalance(allocatedPaise, carriedOverPaise, spentPaise);
+
+    let sources = await fetchEnvelopeAllocationSources(userId, envelopeAllocData.id);
+
+    // Fallback if no explicit source rows found: draw from user's active liquid accounts
+    if (sources.length === 0) {
+      const { data: activeAccs } = await supabase
+        .from('accounts')
+        .select('id, name, balance_paise')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('balance_paise', { ascending: false });
+
+      if (activeAccs && activeAccs.length > 0) {
+        sources = activeAccs.map((a) => ({
+          id: `fallback-${a.id}`,
+          allocationId: envelopeAllocData!.id,
+          accountId: a.id,
+          accountName: a.name,
+          amountPaise: BigInt(a.balance_paise),
+        }));
+      }
+    }
+
+    const deductionPlan = calculateGreedyAccountDeduction(
+      params.amountPaise,
+      availablePaise,
+      sources.map((s) => ({
+        accountId: s.accountId,
+        accountName: s.accountName,
+        remainingPaise: s.amountPaise,
+      }))
+    );
+
+    // Insert master transaction
+    const userNotes = params.notes?.trim() || '';
+    const systemNotes = `[ghost_bank] Paid via envelope • ${deductionPlan.summaryText}${userNotes ? ` • ${userNotes}` : ''}`;
+
+    const { data: tx, error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: userId,
+        transaction_date: params.date,
+        type: 'expense',
+        total_amount_paise: numAmount,
+        description: params.payee.trim(),
+        notes: systemNotes,
+      })
+      .select('id')
+      .single();
+
+    if (txError || !tx) {
+      console.error('[Envello Transactions API] Error inserting ghost-bank transaction:', txError?.message);
+      throw txError || new Error('Transaction creation failed.');
+    }
+
+    const entries: {
+      transaction_id: string;
+      user_id: string;
+      account_id: string | null;
+      envelope_id: string | null;
+      direction: 'debit' | 'credit';
+      amount_paise: number;
+    }[] = [];
+
+    // Deduct physical money and adjust allocation holds for each backing account
+    for (const d of deductionPlan.deductions) {
+      const { data: accData } = await supabase
+        .from('accounts')
+        .select('balance_paise')
+        .eq('id', d.accountId)
+        .eq('user_id', userId)
+        .single();
+
+      if (accData) {
+        await supabase
+          .from('accounts')
+          .update({
+            balance_paise: accData.balance_paise - Number(d.deductedPaise),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', d.accountId)
+          .eq('user_id', userId);
+      }
+
+      // Decrement backing source hold
+      const { data: srcRow } = await supabase
+        .from('envelope_allocation_sources')
+        .select('id, amount_paise')
+        .eq('allocation_id', envelopeAllocData.id)
+        .eq('account_id', d.accountId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (srcRow) {
+        const remainingHold = srcRow.amount_paise - Number(d.deductedPaise);
+        if (remainingHold <= 0) {
+          await supabase
+            .from('envelope_allocation_sources')
+            .delete()
+            .eq('id', srcRow.id);
+        } else {
+          await supabase
+            .from('envelope_allocation_sources')
+            .update({
+              amount_paise: remainingHold,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', srcRow.id);
+        }
+      }
+
+      // Add double-entry credit entry (money leaves account)
+      entries.push({
+        transaction_id: tx.id,
+        user_id: userId,
+        account_id: d.accountId,
+        envelope_id: null,
+        direction: 'credit',
+        amount_paise: Number(d.deductedPaise),
+      });
+    }
+
+    // Increment envelope spent
+    await supabase
+      .from('envelope_allocations')
+      .update({
+        spent_paise: (envelopeAllocData.spent_paise || 0) + numAmount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', envelopeAllocData.id);
+
+    // Add double-entry debit entry (money charged to envelope)
+    entries.push({
+      transaction_id: tx.id,
+      user_id: userId,
+      account_id: null,
+      envelope_id: params.envelopeId!,
+      direction: 'debit',
+      amount_paise: numAmount,
+    });
+
+    const { error: entriesError } = await supabase.from('transaction_entries').insert(entries);
+    if (entriesError) {
+      console.error('[Envello Transactions API] Error inserting entries:', entriesError.message);
+      throw entriesError;
+    }
+
+    return { transactionId: tx.id, deductionPlan };
   } else {
-    // 2. Bank Account / Cash Expense
+    // 3. Direct Bank Account Expense
     const { data: accData, error: accError } = await supabase
       .from('accounts')
-      .select('balance_paise')
+      .select('id, name, balance_paise')
       .eq('id', params.accountId!)
       .eq('user_id', userId)
       .single();
 
     if (accError || !accData) {
       throw new Error('Selected payment account not found.');
+    }
+
+    // Direct spend guard: check free unallocated balance
+    if (!hasEnvelope) {
+      const { data: holds } = await supabase
+        .from('envelope_allocation_sources')
+        .select('amount_paise')
+        .eq('account_id', params.accountId!)
+        .eq('user_id', userId);
+
+      const totalHoldPaise = (holds || []).reduce((sum, h) => sum + BigInt(h.amount_paise), 0n);
+      const unallocatedPaise = BigInt(accData.balance_paise ?? 0) - totalHoldPaise;
+
+      if (params.amountPaise > unallocatedPaise) {
+        const fmtAmount = (Number(params.amountPaise) / 100).toFixed(2);
+        const fmtUnalloc = (Number(unallocatedPaise > 0n ? unallocatedPaise : 0n) / 100).toFixed(2);
+        const fmtHold = (Number(totalHoldPaise) / 100).toFixed(2);
+        throw new Error(
+          `Cannot spend ₹${fmtAmount} directly from ${accData.name}. You only have ₹${fmtUnalloc} free unallocated balance (₹${fmtHold} is reserved across your envelopes). Pay via an envelope or reallocate budget first.`
+        );
+      }
     }
 
     const { data: tx, error: txError } = await supabase
@@ -282,6 +472,30 @@ export async function recordExpenseTransaction(
             updated_at: new Date().toISOString(),
           })
           .eq('id', envelopeAllocData.id);
+
+        // Also decrement allocation source for this account if it exists
+        const { data: srcRow } = await supabase
+          .from('envelope_allocation_sources')
+          .select('id, amount_paise')
+          .eq('allocation_id', envelopeAllocData.id)
+          .eq('account_id', params.accountId!)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (srcRow) {
+          const remainingHold = srcRow.amount_paise - numAmount;
+          if (remainingHold <= 0) {
+            await supabase.from('envelope_allocation_sources').delete().eq('id', srcRow.id);
+          } else {
+            await supabase
+              .from('envelope_allocation_sources')
+              .update({
+                amount_paise: remainingHold,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', srcRow.id);
+          }
+        }
       } else {
         await supabase.from('envelope_allocations').insert({
           envelope_id: params.envelopeId!,
@@ -300,7 +514,7 @@ export async function recordExpenseTransaction(
       throw entriesError;
     }
 
-    return tx.id;
+    return { transactionId: tx.id };
   }
 }
 
@@ -719,6 +933,39 @@ export async function deleteTransaction(transactionId: string, userId: string): 
             updated_at: new Date().toISOString(),
           })
           .eq('id', alloc.id);
+
+        // Also restore allocation hold for each credited account
+        const creditedAccEntries = (entries || []).filter((e) => e.account_id && e.direction === 'credit');
+        for (const cAcc of creditedAccEntries) {
+          try {
+            const { data: existingSrc } = await supabase
+              .from('envelope_allocation_sources')
+              .select('id, amount_paise')
+              .eq('allocation_id', alloc.id)
+              .eq('account_id', cAcc.account_id!)
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            if (existingSrc?.id) {
+              await supabase
+                .from('envelope_allocation_sources')
+                .update({
+                  amount_paise: existingSrc.amount_paise + cAcc.amount_paise,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existingSrc.id);
+            } else {
+              await supabase.from('envelope_allocation_sources').insert({
+                user_id: userId,
+                allocation_id: alloc.id,
+                account_id: cAcc.account_id!,
+                amount_paise: cAcc.amount_paise,
+              });
+            }
+          } catch (err) {
+            console.warn('[Envello API] Error restoring allocation source on reversal:', err);
+          }
+        }
       }
     }
 

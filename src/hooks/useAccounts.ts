@@ -106,11 +106,21 @@ export function useAccounts() {
     );
   }, [accounts]);
 
+  const totalAllocatedPaise = useMemo(() => {
+    return accounts.reduce((sum, acc) => sum + (acc.allocatedPaise ?? 0n), 0n);
+  }, [accounts]);
+
+  const totalUnallocatedPaise = useMemo(() => {
+    return accounts.reduce((sum, acc) => sum + (acc.unallocatedPaise ?? 0n), 0n);
+  }, [accounts]);
+
   return {
     accounts,
     isLoading,
     error,
     totalLiquidFundsPaise,
+    totalAllocatedPaise,
+    totalUnallocatedPaise,
     totalSpendableCashPaise: totalLiquidFundsPaise,
     addAccount,
     editAccount,

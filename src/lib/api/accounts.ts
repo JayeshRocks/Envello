@@ -10,6 +10,8 @@ export interface AccountItem {
   institution: string;
   accountType: AccountType;
   balancePaise: bigint;
+  allocatedPaise: bigint;
+  unallocatedPaise: bigint;
   isActive: boolean;
   createdAt: string;
 }
@@ -67,9 +69,13 @@ export async function ensureDefaultAccounts(userId: string): Promise<void> {
 }
 
 /**
- * Fetches all active accounts for a user.
+ * Fetches all active accounts for a user and calculates active envelope holds
+ * and free unallocated balances for the specified or current budget period.
  */
-export async function fetchAccounts(userId: string): Promise<AccountItem[]> {
+export async function fetchAccounts(
+  userId: string,
+  periodKey?: string
+): Promise<AccountItem[]> {
   await ensureDefaultAccounts(userId);
 
   const { data, error } = await supabase
@@ -84,15 +90,65 @@ export async function fetchAccounts(userId: string): Promise<AccountItem[]> {
     throw error;
   }
 
-  return (data || []).map((acc) => ({
-    id: acc.id,
-    name: acc.name,
-    institution: acc.institution,
-    accountType: acc.account_type as AccountType,
-    balancePaise: BigInt(acc.balance_paise),
-    isActive: acc.is_active,
-    createdAt: acc.created_at,
-  }));
+  // Calculate allocation holds per account for the period
+  const holdsMap = new Map<string, bigint>();
+  try {
+    const now = new Date();
+    const activePeriod =
+      periodKey ||
+      `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    const { data: periodData } = await supabase
+      .from('budget_periods')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('period_key', activePeriod)
+      .maybeSingle();
+
+    if (periodData?.id) {
+      const { data: allocs } = await supabase
+        .from('envelope_allocations')
+        .select('id')
+        .eq('period_id', periodData.id)
+        .eq('user_id', userId);
+
+      const allocIds = (allocs || []).map((a) => a.id);
+      if (allocIds.length > 0) {
+        const { data: sources, error: srcError } = await supabase
+          .from('envelope_allocation_sources')
+          .select('account_id, amount_paise')
+          .eq('user_id', userId)
+          .in('allocation_id', allocIds);
+
+        if (!srcError && sources) {
+          for (const src of sources) {
+            const current = holdsMap.get(src.account_id) ?? 0n;
+            holdsMap.set(src.account_id, current + BigInt(src.amount_paise));
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Envello Accounts API] Error computing account holds:', err);
+  }
+
+  return (data || []).map((acc) => {
+    const balancePaise = BigInt(acc.balance_paise);
+    const allocatedPaise = holdsMap.get(acc.id) ?? 0n;
+    const unallocatedPaise = balancePaise - allocatedPaise;
+
+    return {
+      id: acc.id,
+      name: acc.name,
+      institution: acc.institution,
+      accountType: acc.account_type as AccountType,
+      balancePaise,
+      allocatedPaise,
+      unallocatedPaise,
+      isActive: acc.is_active,
+      createdAt: acc.created_at,
+    };
+  });
 }
 
 /**
@@ -125,12 +181,15 @@ export async function createAccount(
     throw error;
   }
 
+  const balancePaise = BigInt(created.balance_paise);
   return {
     id: created.id,
     name: created.name,
     institution: created.institution,
     accountType: created.account_type as AccountType,
-    balancePaise: BigInt(created.balance_paise),
+    balancePaise,
+    allocatedPaise: 0n,
+    unallocatedPaise: balancePaise,
     isActive: created.is_active,
     createdAt: created.created_at,
   };
@@ -194,12 +253,15 @@ export async function updateAccount(
     throw error;
   }
 
+  const balancePaise = BigInt(updated.balance_paise);
   return {
     id: updated.id,
     name: updated.name,
     institution: updated.institution,
     accountType: updated.account_type as AccountType,
-    balancePaise: BigInt(updated.balance_paise),
+    balancePaise,
+    allocatedPaise: 0n,
+    unallocatedPaise: balancePaise,
     isActive: updated.is_active,
     createdAt: updated.created_at,
   };

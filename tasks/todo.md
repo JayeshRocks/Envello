@@ -45,7 +45,7 @@
 
 ## Phase 2: API Layer & Double-Entry Ledger Integration
 
-- [ ] **Task 2.1: Account API with Allocated/Unallocated Hold Calculations**
+- [x] **Task 2.1: Account API with Allocated/Unallocated Hold Calculations**
   - **Description:** Update `src/lib/api/accounts.ts` and `src/hooks/useAccounts.ts` to fetch allocation sources for the active budget period and attach `allocatedPaise` and `unallocatedPaise` to every account domain object.
   - **Acceptance criteria:**
     - `fetchAccounts` returns `allocatedPaise` and `unallocatedPaise` alongside `balancePaise`.
@@ -56,7 +56,7 @@
   - **Files likely touched:** `src/lib/api/accounts.ts`, `src/hooks/useAccounts.ts`
   - **Estimated scope:** S (2 files)
 
-- [ ] **Task 2.2: Envelope Allocation Sources CRUD & Transfer Support**
+- [x] **Task 2.2: Envelope Allocation Sources CRUD & Transfer Support**
   - **Description:** Update `src/lib/api/envelopes.ts` to manage `envelope_allocation_sources` during `upsertEnvelopeAllocation` and budget transfers.
   - **Acceptance criteria:**
     - Allocations record backing account source(s).
@@ -68,7 +68,7 @@
   - **Files likely touched:** `src/lib/api/envelopes.ts`, `src/hooks/useEnvelopes.ts`
   - **Estimated scope:** M (2 files)
 
-- [ ] **Task 2.3: Ghost Bank Envelope Transactions & Direct Spend Guards**
+- [x] **Task 2.3: Ghost Bank Envelope Transactions & Direct Spend Guards**
   - **Description:** Update `src/lib/api/transactions.ts` (`recordExpenseTransaction`) to support paying from an Envelope (Ghost Bank) with greedy multi-account deduction, and strictly guard direct account spending against `unallocatedPaise`.
   - **Acceptance criteria:**
     - Envelope payment runs greedy deduction across backing accounts, debits each account for its share, decrements its allocation hold, and records explicit double-entry transaction entries.
@@ -79,7 +79,7 @@
   - **Files likely touched:** `src/lib/api/transactions.ts`
   - **Estimated scope:** M (2 files)
 
-- [ ] **Task 2.4: Multi-Account Reversion & Refund Restoration**
+- [x] **Task 2.4: Multi-Account Reversion & Refund Restoration**
   - **Description:** Update `src/lib/accounting/revertPolicy.ts` and transaction deletion logic to preview and execute multi-account refunds, restoring debited funds to accounts and restoring allocation holds to envelopes.
   - **Acceptance criteria:**
     - Reversion preview displays exact refund amounts for every debited account.
@@ -91,10 +91,10 @@
   - **Estimated scope:** M (2 files)
 
 ### Checkpoint 2: API & Ledger Consistency
-- [ ] Accounts compute allocated and unallocated balances
-- [ ] Envelopes store and update backing account sources
-- [ ] Ghost bank transactions debit underlying accounts and adjust holds
-- [ ] Reversions restore multi-account funds and holds cleanly
+- [x] Accounts compute allocated and unallocated balances
+- [x] Envelopes store and update backing account sources
+- [x] Ghost bank transactions debit underlying accounts and adjust holds
+- [x] Reversions restore multi-account funds and holds cleanly
 
 ---
 

@@ -100,14 +100,24 @@ export function useEnvelopes() {
     setSelectedPeriod((current) => shiftYearMonth(current, 1));
   }, []);
 
-  const allocateFunds = async (envelopeId: string, amountPaise: bigint) => {
+  const allocateFunds = async (
+    envelopeId: string,
+    amountPaise: bigint,
+    fundingSources?: Array<{ accountId: string; amountPaise: bigint }>
+  ) => {
     if (!user) throw new Error('User is not authenticated.');
     setError(null);
     const target = envelopes.find((e) => e.id === envelopeId);
     const prevAllocated = target ? target.allocatedPaise : 0n;
 
     try {
-      await upsertEnvelopeAllocation(envelopeId, user.id, selectedPeriod, amountPaise);
+      await upsertEnvelopeAllocation(
+        envelopeId,
+        user.id,
+        selectedPeriod,
+        amountPaise,
+        fundingSources
+      );
 
       // Record in undo stack if allocation actually changed
       if (prevAllocated !== amountPaise) {

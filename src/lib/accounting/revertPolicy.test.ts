@@ -238,4 +238,63 @@ describe('analyzeTransactionReversion — Financial Ledger Impact & Negative Env
     expect(analysis.blockingReason).toContain('Dining Out');
     expect(analysis.blockingReason).toContain('already spent these funds');
   });
+
+  it('accurately previews multi-account ghost bank expense reversion refunding each backing account', () => {
+    const multiAccExpenseTx: TransactionRecord = {
+      id: 'tx-5',
+      userId: 'user-1',
+      transactionDate: '2026-11-02',
+      type: 'expense',
+      totalAmountPaise: 500000n, // ₹5,000 total
+      description: 'Big Supermarket Order',
+      notes: '[ghost_bank] Paid via envelope',
+      createdAt: '2026-11-02T12:00:00Z',
+      entries: [
+        {
+          id: 'e-8',
+          accountId: 'acc-hdfc',
+          envelopeId: null,
+          accountName: 'HDFC Bank',
+          direction: 'credit',
+          amountPaise: 350000n, // ₹3,500 from HDFC
+        },
+        {
+          id: 'e-9',
+          accountId: 'acc-cash',
+          envelopeId: null,
+          accountName: 'Cash in Hand',
+          direction: 'credit',
+          amountPaise: 150000n, // ₹1,500 from Cash
+        },
+        {
+          id: 'e-10',
+          accountId: null,
+          envelopeId: 'env-groceries',
+          envelopeName: 'Groceries',
+          direction: 'debit',
+          amountPaise: 500000n, // ₹5,000 to envelope
+        },
+      ],
+    };
+
+    const analysis = analyzeTransactionReversion(multiAccExpenseTx, mockEnvelopes, refDate);
+    expect(analysis.eligibility.isReversible).toBe(true);
+    expect(analysis.canSafelyRevert).toBe(true);
+    expect(analysis.impacts.length).toBe(3);
+
+    const hdfcImpact = analysis.impacts.find((i) => i.targetName === 'HDFC Bank');
+    expect(hdfcImpact?.isRefund).toBe(true);
+    expect(hdfcImpact?.amountPaise).toBe(350000n);
+    expect(hdfcImpact?.description).toContain('refunded back to HDFC Bank');
+
+    const cashImpact = analysis.impacts.find((i) => i.targetName === 'Cash in Hand');
+    expect(cashImpact?.isRefund).toBe(true);
+    expect(cashImpact?.amountPaise).toBe(150000n);
+    expect(cashImpact?.description).toContain('refunded back to Cash in Hand');
+
+    const envImpact = analysis.impacts.find((i) => i.targetName === 'Groceries');
+    expect(envImpact?.isRefund).toBe(true);
+    expect(envImpact?.amountPaise).toBe(500000n);
+    expect(envImpact?.description).toContain('refunded back into available budget');
+  });
 });

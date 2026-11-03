@@ -98,9 +98,9 @@ export function analyzeTransactionReversion(
 
   switch (tx.type) {
     case 'expense': {
-      // 1. Account entry (money leaves account): Reversion credits account back
-      const accEntry = tx.entries.find((e) => e.accountId);
-      if (accEntry) {
+      // 1. Account entries (money leaves account(s)): Reversion credits each account back
+      const accEntries = tx.entries.filter((e) => e.accountId);
+      for (const accEntry of accEntries) {
         impacts.push({
           targetType: 'account',
           targetName: accEntry.accountName || 'Bank Account',

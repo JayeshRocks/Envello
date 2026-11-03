@@ -1,6 +1,43 @@
+
+/**
+ * Fetches all backing liquid account sources and hold amounts for a given allocation ID.
+ */
+export async function fetchEnvelopeAllocationSources(
+  userId: string,
+  allocationId: string
+): Promise<AllocationSourceRecord[]> {
+  try {
+    const { data: sources, error } = await supabase
+      .from('envelope_allocation_sources')
+      .select('id, allocation_id, account_id, amount_paise')
+      .eq('allocation_id', allocationId)
+      .eq('user_id', userId);
+
+    if (error || !sources || sources.length === 0) return [];
+
+    const { data: accounts } = await supabase
+      .from('accounts')
+      .select('id, name')
+      .eq('user_id', userId);
+
+    const nameMap = new Map((accounts || []).map((a) => [a.id, a.name]));
+
+    return sources.map((s) => ({
+      id: s.id,
+      allocationId: s.allocation_id,
+      accountId: s.account_id,
+      accountName: nameMap.get(s.account_id) || 'Liquid Account',
+      amountPaise: BigInt(s.amount_paise),
+    }));
+  } catch (err) {
+    console.warn('[Envello API] Error fetching allocation sources:', err);
+    return [];
+  }
+}
+
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/types/database.types';
-import type { EnvelopeWithAllocation, EnvelopeRolloverPolicy } from '@/types/accounting.types';
+import type { EnvelopeWithAllocation, EnvelopeRolloverPolicy, AllocationSourceRecord } from '@/types/accounting.types';
 import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
 
 export type EnvelopeWithDetails = EnvelopeWithAllocation;
@@ -248,6 +285,40 @@ export async function fetchEnvelopesWithAllocations(
     .eq('user_id', userId)
     .eq('period_id', periodId);
 
+  // 4b. Fetch allocation sources for all allocations in this period
+  const sourcesMap = new Map<string, AllocationSourceRecord[]>();
+  const allocIds = (allocationsData || []).map((a) => a.id);
+  if (allocIds.length > 0) {
+    try {
+      const { data: sourcesData } = await supabase
+        .from('envelope_allocation_sources')
+        .select('id, allocation_id, account_id, amount_paise')
+        .eq('user_id', userId)
+        .in('allocation_id', allocIds);
+
+      const { data: accountsData } = await supabase
+        .from('accounts')
+        .select('id, name')
+        .eq('user_id', userId);
+
+      const accMap = new Map((accountsData || []).map((a) => [a.id, a.name]));
+
+      for (const src of sourcesData || []) {
+        const list = sourcesMap.get(src.allocation_id) || [];
+        list.push({
+          id: src.id,
+          allocationId: src.allocation_id,
+          accountId: src.account_id,
+          accountName: accMap.get(src.account_id) || 'Liquid Account',
+          amountPaise: BigInt(src.amount_paise),
+        });
+        sourcesMap.set(src.allocation_id, list);
+      }
+    } catch (err) {
+      console.warn('[Envello API] Error loading allocation sources for period:', err);
+    }
+  }
+
   if (allocError) {
     console.error('[Envello API] Error fetching allocations:', allocError.message);
     throw allocError;
@@ -281,6 +352,7 @@ export async function fetchEnvelopesWithAllocations(
       carriedOverPaise,
       spentPaise,
       availablePaise,
+      sources: alloc?.id ? sourcesMap.get(alloc.id) || [] : [],
     };
   });
 }
@@ -293,7 +365,8 @@ export async function upsertEnvelopeAllocation(
   envelopeId: string,
   userId: string,
   yearMonth: string,
-  allocatedPaise: bigint
+  allocatedPaise: bigint,
+  fundingSources?: Array<{ accountId: string; amountPaise: bigint }>
 ): Promise<void> {
   if (allocatedPaise < 0n) {
     throw new Error('Allocation amount cannot be negative.');
@@ -320,6 +393,8 @@ export async function upsertEnvelopeAllocation(
     );
   }
 
+  let allocationId = existing?.id;
+
   if (existing?.id) {
     const { error } = await supabase
       .from('envelope_allocations')
@@ -334,18 +409,106 @@ export async function upsertEnvelopeAllocation(
       throw error;
     }
   } else {
-    const { error } = await supabase.from('envelope_allocations').insert({
-      envelope_id: envelopeId,
-      period_id: periodId,
-      user_id: userId,
-      allocated_paise: Number(allocatedPaise),
-      carried_over_paise: 0,
-      spent_paise: 0,
-    });
+    const { data: inserted, error } = await supabase
+      .from('envelope_allocations')
+      .insert({
+        envelope_id: envelopeId,
+        period_id: periodId,
+        user_id: userId,
+        allocated_paise: Number(allocatedPaise),
+        carried_over_paise: 0,
+        spent_paise: 0,
+      })
+      .select('id')
+      .single();
 
-    if (error) {
-      console.error('[Envello API] Error inserting allocation:', error.message);
-      throw error;
+    if (error || !inserted) {
+      console.error('[Envello API] Error inserting allocation:', error?.message);
+      throw error || new Error('Failed to create allocation.');
+    }
+    allocationId = inserted.id;
+  }
+
+  // Synchronize backing sources in envelope_allocation_sources
+  if (allocationId) {
+    try {
+      if (fundingSources && fundingSources.length > 0) {
+        // Delete previous sources for this allocation
+        await supabase
+          .from('envelope_allocation_sources')
+          .delete()
+          .eq('allocation_id', allocationId)
+          .eq('user_id', userId);
+
+        if (allocatedPaise > 0n) {
+          const rows = fundingSources
+            .filter((s) => s.amountPaise > 0n)
+            .map((s) => ({
+              user_id: userId,
+              allocation_id: allocationId!,
+              account_id: s.accountId,
+              amount_paise: Number(s.amountPaise),
+            }));
+
+          if (rows.length > 0) {
+            await supabase.from('envelope_allocation_sources').insert(rows);
+          }
+        }
+      } else if (allocatedPaise > 0n) {
+        // Auto-assign to primary/first liquid account if no specific sources passed
+        const { data: existingSources } = await supabase
+          .from('envelope_allocation_sources')
+          .select('id')
+          .eq('allocation_id', allocationId)
+          .eq('user_id', userId)
+          .limit(1);
+
+        if (!existingSources || existingSources.length === 0) {
+          const { data: firstAcc } = await supabase
+            .from('accounts')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          if (firstAcc?.id) {
+            await supabase.from('envelope_allocation_sources').insert({
+              user_id: userId,
+              allocation_id: allocationId,
+              account_id: firstAcc.id,
+              amount_paise: Number(allocatedPaise),
+            });
+          }
+        } else {
+          // Update single existing source amount if exactly one exists
+          const { data: singleSource } = await supabase
+            .from('envelope_allocation_sources')
+            .select('id, account_id')
+            .eq('allocation_id', allocationId)
+            .eq('user_id', userId);
+
+          if (singleSource && singleSource.length === 1) {
+            await supabase
+              .from('envelope_allocation_sources')
+              .update({
+                amount_paise: Number(allocatedPaise),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', singleSource[0].id);
+          }
+        }
+      } else {
+        // Zero allocation -> clear sources
+        await supabase
+          .from('envelope_allocation_sources')
+          .delete()
+          .eq('allocation_id', allocationId)
+          .eq('user_id', userId);
+      }
+    } catch (err) {
+      console.warn('[Envello API] Error synchronizing allocation sources:', err);
     }
   }
 }
@@ -506,6 +669,70 @@ export async function transferBetweenEnvelopes(
         amount_paise: Number(amountPaise),
       },
     ]);
+  }
+
+  // 7. Transfer backing sources between envelopes to preserve account hold mapping
+  if (fromAlloc?.id && toAlloc?.id && amountPaise > 0n) {
+    try {
+      const fromSources = await fetchEnvelopeAllocationSources(userId, fromAlloc.id);
+      if (fromSources.length > 0) {
+        // Sort descending to transfer from largest hold
+        const sorted = [...fromSources].sort((a, b) =>
+          b.amountPaise > a.amountPaise ? 1 : -1
+        );
+
+        let needed = amountPaise;
+        for (const src of sorted) {
+          if (needed <= 0n) break;
+          const shift = src.amountPaise >= needed ? needed : src.amountPaise;
+
+          // Deduct shift from source envelope allocation source
+          if (src.amountPaise === shift) {
+            await supabase
+              .from('envelope_allocation_sources')
+              .delete()
+              .eq('id', src.id);
+          } else {
+            await supabase
+              .from('envelope_allocation_sources')
+              .update({
+                amount_paise: Number(src.amountPaise - shift),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', src.id);
+          }
+
+          // Add shift to target envelope allocation source
+          const { data: existingToSrc } = await supabase
+            .from('envelope_allocation_sources')
+            .select('id, amount_paise')
+            .eq('allocation_id', toAlloc.id)
+            .eq('account_id', src.accountId)
+            .maybeSingle();
+
+          if (existingToSrc?.id) {
+            await supabase
+              .from('envelope_allocation_sources')
+              .update({
+                amount_paise: existingToSrc.amount_paise + Number(shift),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', existingToSrc.id);
+          } else {
+            await supabase.from('envelope_allocation_sources').insert({
+              user_id: userId,
+              allocation_id: toAlloc.id,
+              account_id: src.accountId,
+              amount_paise: Number(shift),
+            });
+          }
+
+          needed -= shift;
+        }
+      }
+    } catch (err) {
+      console.warn('[Envello API] Error transferring allocation sources:', err);
+    }
   }
 }
 
@@ -673,7 +900,26 @@ export async function updateEnvelope(
  * Past transaction records retain ledger history by unlinking envelope_id.
  */
 export async function deleteEnvelope(envelopeId: string, userId: string): Promise<void> {
-  // 1. Delete envelope allocations first
+  // 1. Delete envelope allocation sources first
+  try {
+    const { data: allocs } = await supabase
+      .from('envelope_allocations')
+      .select('id')
+      .eq('envelope_id', envelopeId)
+      .eq('user_id', userId);
+
+    if (allocs && allocs.length > 0) {
+      await supabase
+        .from('envelope_allocation_sources')
+        .delete()
+        .in('allocation_id', allocs.map((a) => a.id))
+        .eq('user_id', userId);
+    }
+  } catch (err) {
+    console.warn('[Envello API] Error deleting allocation sources on envelope deletion:', err);
+  }
+
+  // 2. Delete envelope allocations
   await supabase
     .from('envelope_allocations')
     .delete()
