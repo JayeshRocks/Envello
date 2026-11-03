@@ -11,10 +11,12 @@ import {
   Wallet,
   Layers,
   ShieldAlert,
+  Landmark,
 } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { CreditCardRow } from '@/lib/api/creditCards';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import type { RecordExpenseResult } from '@/lib/api/transactions';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
@@ -30,11 +32,12 @@ interface RecordTransactionModalProps {
     accountId?: string | null;
     cardId?: string | null;
     envelopeId?: string | null;
+    isGhostBank?: boolean;
     amountPaise: bigint;
     payee: string;
     date: string;
     notes?: string;
-  }) => Promise<void>;
+  }) => Promise<RecordExpenseResult | void>;
   onRecordIncome: (params: {
     accountId: string;
     envelopeId?: string | null;
@@ -99,13 +102,15 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
       }
     }
     if (!selectedPaymentSource) {
-      if (accounts.length > 0) {
+      if (envelopes && envelopes.length > 0) {
+        setSelectedPaymentSource('envelope:' + envelopes[0].id);
+      } else if (accounts.length > 0) {
         setSelectedPaymentSource('account:' + accounts[0].id);
       } else if (creditCards && creditCards.length > 0) {
         setSelectedPaymentSource('card:' + creditCards[0].id);
       }
     }
-  }, [accounts, creditCards, selectedAccountId, selectedPaymentSource, isOpen]);
+  }, [accounts, creditCards, envelopes, selectedAccountId, selectedPaymentSource, isOpen]);
 
   // Reset envelope selection and confirmation when modal closes or selection changes
   useEffect(() => {
@@ -118,18 +123,40 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
 
   useEffect(() => {
     setReserveConfirmed(false);
-  }, [selectedEnvelopeId]);
+  }, [selectedEnvelopeId, selectedPaymentSource]);
 
   if (!isRendered) return null;
 
   const currentEnteredPaise = toPaise(amountRupees || '0');
-  const selectedEnvelope = envelopes.find((e) => e.id === selectedEnvelopeId);
-  const isEnvelopeSelected = Boolean(selectedEnvelopeId && selectedEnvelopeId !== 'none' && selectedEnvelope);
-  const isProtectedEnvelope = mode === 'expense' && Boolean(selectedEnvelope?.isProtected ?? selectedEnvelope?.isSystemReserved);
+
+  // Expense Payment Methods Analysis
+  const isGhostEnvelope = mode === 'expense' && selectedPaymentSource.startsWith('envelope:');
+  const ghostEnvelopeId = isGhostEnvelope ? selectedPaymentSource.replace('envelope:', '') : null;
+  const ghostEnvelope = envelopes.find((e) => e.id === ghostEnvelopeId);
+
+  const isDirectAccount = mode === 'expense' && selectedPaymentSource.startsWith('account:');
+  const directAccountId = isDirectAccount ? selectedPaymentSource.replace('account:', '') : null;
+  const directAccount = accounts.find((a) => a.id === directAccountId);
+
+  const isCardExpense = mode === 'expense' && selectedPaymentSource.startsWith('card:');
+  const cardId = isCardExpense ? selectedPaymentSource.replace('card:', '') : null;
+  const cardEnvelope = isCardExpense && selectedEnvelopeId !== 'none'
+    ? envelopes.find((e) => e.id === selectedEnvelopeId)
+    : null;
+
+  // Active envelope evaluation for Ghost Envelope or Card Envelope
+  const activeExpenseEnvelope = isGhostEnvelope ? ghostEnvelope : cardEnvelope;
+  const isProtectedEnvelope = mode === 'expense' && Boolean(activeExpenseEnvelope?.isProtected ?? activeExpenseEnvelope?.isSystemReserved);
   const isExpenseExceedingEnvelope =
-    mode === 'expense' && isEnvelopeSelected && selectedEnvelope
-      ? currentEnteredPaise > selectedEnvelope.availablePaise
+    mode === 'expense' && activeExpenseEnvelope
+      ? currentEnteredPaise > activeExpenseEnvelope.availablePaise
       : false;
+
+  // Direct spend unallocated check
+  const directAccountFreePaise = directAccount ? (directAccount.unallocatedPaise ?? directAccount.balancePaise) : 0n;
+  const isDirectSpendExceedingUnallocated = isDirectAccount && directAccount
+    ? currentEnteredPaise > directAccountFreePaise
+    : false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,41 +177,77 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     setIsSubmitting(true);
     try {
       if (mode === 'expense') {
-        const isCard = selectedPaymentSource.startsWith('card:');
-        const sourceId = selectedPaymentSource.replace(/^(account|card):/, '');
-        if (!sourceId) {
+        if (!selectedPaymentSource) {
           setError('Please select a payment method.');
           return;
         }
 
-        // Enforce that an expense cannot exceed available envelope balance
-        if (isEnvelopeSelected && selectedEnvelope) {
-          if (currentEnteredPaise > selectedEnvelope.availablePaise) {
+        if (isGhostEnvelope && ghostEnvelope) {
+          if (currentEnteredPaise > ghostEnvelope.availablePaise) {
             setError(
-              `Expense amount (${formatINR(currentEnteredPaise)}) exceeds available balance in "${selectedEnvelope.name}" (${formatINR(selectedEnvelope.availablePaise)}). Cannot overspend an envelope into negative. Please select "None" for a direct bill or allocate budget first.`
+              `Expense amount (${formatINR(currentEnteredPaise)}) exceeds available balance in "${ghostEnvelope.name}" (${formatINR(ghostEnvelope.availablePaise)}). Envelopes cannot go negative.`
             );
             return;
           }
 
           if (isProtectedEnvelope && !reserveConfirmed) {
-            setError(`Please confirm that you explicitly authorize spending from your protected reserve ("${selectedEnvelope.name}").`);
+            setError(`Please confirm that you explicitly authorize spending from your protected reserve ("${ghostEnvelope.name}").`);
             return;
           }
-        }
 
-        await onRecordExpense({
-          accountId: !isCard ? sourceId : undefined,
-          cardId: isCard ? sourceId : undefined,
-          envelopeId: isEnvelopeSelected ? selectedEnvelopeId : null,
-          amountPaise: currentEnteredPaise,
-          payee: payeeOrSource.trim() || 'Expense',
-          date,
-          notes: notes.trim() || undefined,
-        });
+          await onRecordExpense({
+            envelopeId: ghostEnvelope.id,
+            isGhostBank: true,
+            amountPaise: currentEnteredPaise,
+            payee: payeeOrSource.trim() || 'Expense',
+            date,
+            notes: notes.trim() || undefined,
+          });
+        } else if (isDirectAccount && directAccount) {
+          if (currentEnteredPaise > directAccountFreePaise) {
+            setError(
+              `Cannot spend ${formatINR(currentEnteredPaise)} directly from ${directAccount.name}. You only have ${formatINR(directAccountFreePaise)} free unallocated balance (${formatINR(directAccount.allocatedPaise ?? 0n)} is reserved across your envelopes). Pay via an envelope or reallocate budget first.`
+            );
+            return;
+          }
+
+          await onRecordExpense({
+            accountId: directAccount.id,
+            envelopeId: null,
+            amountPaise: currentEnteredPaise,
+            payee: payeeOrSource.trim() || 'Expense',
+            date,
+            notes: notes.trim() || undefined,
+          });
+        } else if (isCardExpense && cardId) {
+          if (cardEnvelope) {
+            if (currentEnteredPaise > cardEnvelope.availablePaise) {
+              setError(
+                `Expense amount (${formatINR(currentEnteredPaise)}) exceeds available balance in "${cardEnvelope.name}" (${formatINR(cardEnvelope.availablePaise)}). Envelopes cannot go negative.`
+              );
+              return;
+            }
+
+            if (isProtectedEnvelope && !reserveConfirmed) {
+              setError(`Please confirm that you explicitly authorize spending from your protected reserve ("${cardEnvelope.name}").`);
+              return;
+            }
+          }
+
+          await onRecordExpense({
+            cardId,
+            envelopeId: cardEnvelope ? cardEnvelope.id : null,
+            amountPaise: currentEnteredPaise,
+            payee: payeeOrSource.trim() || 'Expense',
+            date,
+            notes: notes.trim() || undefined,
+          });
+        }
       } else if (mode === 'income') {
+        const hasEnv = selectedEnvelopeId && selectedEnvelopeId !== 'none';
         await onRecordIncome({
           accountId: selectedAccountId,
-          envelopeId: isEnvelopeSelected ? selectedEnvelopeId : null,
+          envelopeId: hasEnv ? selectedEnvelopeId : null,
           amountPaise: currentEnteredPaise,
           source: payeeOrSource.trim() || 'Income',
           date,
@@ -394,55 +457,64 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             />
           </div>
 
-          {/* Expense: Payment Method (Account or Card) & Optional Envelope */}
+          {/* Expense: Payment Method (Ghost Bank Envelope, Direct Bank Account, or Card) */}
           {mode === 'expense' && (
             <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-neutral-300">Payment Method</label>
-                  <select
-                    value={selectedPaymentSource}
-                    onChange={(e) => setSelectedPaymentSource(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
-                  >
-                    <optgroup label="🏦 Bank Accounts & Cash">
-                      {accounts.map((acc) => (
-                        <option key={acc.id} value={`account:${acc.id}`} className="bg-neutral-900 text-white">
-                          {acc.name} ({formatINR(acc.balancePaise)})
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-neutral-300">Payment Method</label>
+                <select
+                  value={selectedPaymentSource}
+                  onChange={(e) => setSelectedPaymentSource(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                >
+                  {envelopes.length > 0 && (
+                    <optgroup label="✉️ Envelopes (Ghost Banks)">
+                      {envelopes.map((env) => (
+                        <option key={env.id} value={`envelope:${env.id}`} className="bg-neutral-900 text-white">
+                          {env.name} ({formatINR(env.availablePaise)} available)
                         </option>
                       ))}
                     </optgroup>
-                    {creditCards && creditCards.length > 0 && (
-                      <optgroup label="💳 Credit Cards">
-                        {creditCards.map((card) => {
-                          const availablePaise = BigInt(card.credit_limit_paise) - BigInt(card.outstanding_balance_paise);
-                          return (
-                            <option key={card.id} value={`card:${card.id}`} className="bg-neutral-900 text-white">
-                              {card.card_name} ({formatINR(availablePaise)} available)
-                            </option>
-                          );
-                        })}
-                      </optgroup>
-                    )}
-                  </select>
-                </div>
+                  )}
+                  <optgroup label="🏦 Bank Accounts & Cash (Direct Spending)">
+                    {accounts.map((acc) => {
+                      const free = acc.unallocatedPaise ?? acc.balancePaise;
+                      return (
+                        <option key={acc.id} value={`account:${acc.id}`} className="bg-neutral-900 text-white">
+                          {acc.name} • Free: {formatINR(free)} (Total: {formatINR(acc.balancePaise)})
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                  {creditCards && creditCards.length > 0 && (
+                    <optgroup label="💳 Credit Cards">
+                      {creditCards.map((card) => {
+                        const availablePaise = BigInt(card.credit_limit_paise) - BigInt(card.outstanding_balance_paise);
+                        return (
+                          <option key={card.id} value={`card:${card.id}`} className="bg-neutral-900 text-white">
+                            {card.card_name} ({formatINR(availablePaise)} available limit)
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
 
+              {/* If paying via Credit Card, offer optional Envelope assignment */}
+              {isCardExpense && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-neutral-300">Budget Envelope</label>
-                    <span className="text-[10px] text-neutral-400">Optional for direct bills</span>
+                    <span className="text-[10px] text-neutral-400">Optional for direct card bills</span>
                   </div>
                   <select
                     value={selectedEnvelopeId}
                     onChange={(e) => setSelectedEnvelopeId(e.target.value)}
-                    className={`w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border focus:ring-1 ${
-                      isExpenseExceedingEnvelope
-                        ? 'border-red-500/50 focus:ring-red-500'
-                        : 'border-white/10 focus:ring-sky-500'
-                    }`}
+                    className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
                   >
                     <option value="none" className="bg-neutral-900 text-neutral-400 font-medium">
-                      None (Direct Account / Card Bill)
+                      None (Direct Card Bill)
                     </option>
                     {envelopes.map((env) => (
                       <option key={env.id} value={env.id} className="bg-neutral-900 text-white">
@@ -451,37 +523,67 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                     ))}
                   </select>
                 </div>
-              </div>
+              )}
 
-              {/* Real-time Envelope Warning / Info Pill */}
-              {isEnvelopeSelected && selectedEnvelope && (
+              {/* Status / Warning / Info Pills */}
+              {isGhostEnvelope && ghostEnvelope && (
                 isExpenseExceedingEnvelope ? (
                   <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
                     <span>
-                      Exceeds available balance in {selectedEnvelope.name} ({formatINR(selectedEnvelope.availablePaise)}). Envelopes cannot go negative; choose &quot;None&quot; or allocate budget first.
+                      Exceeds available balance in {ghostEnvelope.name} ({formatINR(ghostEnvelope.availablePaise)}). Envelopes cannot go negative; allocate budget first or select a direct bank account.
                     </span>
                   </div>
                 ) : (
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 min-w-0">
                       <Layers className="w-4 h-4 flex-shrink-0 text-emerald-400" />
-                      <span>Debits from {selectedEnvelope.name} envelope</span>
+                      <span className="truncate">Ghost Bank: Pays via {ghostEnvelope.name}</span>
                     </div>
-                    <span className="font-mono text-emerald-400 font-semibold">{formatINR(selectedEnvelope.availablePaise)} available</span>
+                    <span className="font-mono text-emerald-400 font-semibold flex-shrink-0">
+                      {formatINR(ghostEnvelope.availablePaise)} available
+                    </span>
                   </div>
                 )
               )}
 
+              {isDirectAccount && directAccount && (
+                isDirectSpendExceedingUnallocated ? (
+                  <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+                    <span>
+                      Exceeds free unallocated balance in {directAccount.name} ({formatINR(directAccountFreePaise)} free, {formatINR(directAccount.allocatedPaise ?? 0n)} reserved across envelopes). Direct spend cannot breach envelope holds.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs flex items-center justify-between">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <Landmark className="w-4 h-4 flex-shrink-0 text-sky-400" />
+                      <span className="truncate">Direct Spend: {directAccount.name}</span>
+                    </div>
+                    <span className="font-mono text-sky-400 font-semibold flex-shrink-0">
+                      {formatINR(directAccountFreePaise)} free
+                    </span>
+                  </div>
+                )
+              )}
+
+              {isCardExpense && (
+                <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs flex items-center space-x-2">
+                  <CreditCard className="w-4 h-4 flex-shrink-0 text-purple-400" />
+                  <span>Charged to Credit Card. Increases card outstanding debt; liquid accounts are untouched.</span>
+                </div>
+              )}
+
               {/* Protected Reserve Confirmation Banner */}
-              {isProtectedEnvelope && selectedEnvelope && (
+              {isProtectedEnvelope && activeExpenseEnvelope && (
                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-2">
                   <div className="flex items-center space-x-2 font-semibold text-amber-300">
                     <ShieldAlert className="w-4 h-4 text-amber-400 flex-shrink-0" />
                     <span>Protected Reserve Confirmation</span>
                   </div>
                   <p className="text-[11px] leading-relaxed text-amber-200/90">
-                    "{selectedEnvelope.name}" is designated as a protected reserve. Confirm you explicitly intend to draw funds from it.
+                    "{activeExpenseEnvelope.name}" is designated as a protected reserve. Confirm you explicitly intend to draw funds from it.
                   </p>
                   <label className="flex items-start space-x-2.5 pt-1 cursor-pointer select-none min-h-[36px]">
                     <input
@@ -491,22 +593,9 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                       className="mt-0.5 w-4 h-4 rounded border-white/20 text-amber-500 focus:ring-amber-500 bg-black/40 cursor-pointer"
                     />
                     <span className="text-[11px] text-amber-200 font-medium">
-                      I explicitly confirm spending from {selectedEnvelope.name}.
+                      I explicitly confirm spending from {activeExpenseEnvelope.name}.
                     </span>
                   </label>
-                </div>
-              )}
-
-              {/* Dynamic Payment Impact Pill */}
-              {selectedPaymentSource.startsWith('card:') ? (
-                <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs flex items-center space-x-2">
-                  <CreditCard className="w-4 h-4 flex-shrink-0 text-purple-400" />
-                  <span>Charged to Credit Card. Increases card outstanding debt; liquid cash is untouched.</span>
-                </div>
-              ) : (
-                <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs flex items-center space-x-2">
-                  <Wallet className="w-4 h-4 flex-shrink-0 text-sky-400" />
-                  <span>Paid from Liquid Cash. Directly debits your bank account balance.</span>
                 </div>
               )}
             </div>
@@ -554,13 +643,13 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               </div>
 
               {/* Dynamic Income Impact Pill */}
-              {isEnvelopeSelected && selectedEnvelope ? (
+              {selectedEnvelopeId !== 'none' && envelopes.find((e) => e.id === selectedEnvelopeId) ? (
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center space-x-2">
                   <Layers className="w-4 h-4 flex-shrink-0 text-emerald-400" />
                   <span>
                     Deposited into {accounts.find((a) => a.id === selectedAccountId)?.name || 'account'} AND adds{' '}
                     <span className="font-mono font-semibold text-white">{formatINR(currentEnteredPaise)}</span> directly to{' '}
-                    <span className="font-semibold text-white">{selectedEnvelope.name}</span>&apos;s budget allocation.
+                    <span className="font-semibold text-white">{envelopes.find((e) => e.id === selectedEnvelopeId)?.name}</span>&apos;s budget allocation.
                   </span>
                 </div>
               ) : (

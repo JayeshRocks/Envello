@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, AlertCircle, ArrowRight, RotateCcw, ShieldAlert } from 'lucide-react';
+import { X, Sparkles, AlertCircle, ArrowRight, RotateCcw, ShieldAlert, Landmark } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import type { AccountItem } from '@/lib/api/accounts';
 import { toPaise, toRupees, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
@@ -8,28 +9,50 @@ import { ModalPortal } from '@/components/common/ModalPortal';
 interface AllocateModalProps {
   isOpen: boolean;
   envelope: EnvelopeWithAllocation | null;
+  accounts?: AccountItem[];
   onClose: () => void;
-  onAllocate: (envelopeId: string, amountPaise: bigint) => Promise<void>;
+  onAllocate: (
+    envelopeId: string,
+    amountPaise: bigint,
+    fundingSources?: Array<{ accountId: string; amountPaise: bigint }>
+  ) => Promise<void>;
 }
 
 export const AllocateModal: React.FC<AllocateModalProps> = ({
   isOpen,
   envelope,
+  accounts = [],
   onClose,
   onAllocate,
 }) => {
   const [rupeesInput, setRupeesInput] = useState<string>('');
+  const [selectedFundingAccountId, setSelectedFundingAccountId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { handleBackdropClick, handleBackdropTouchMove } = useModalDismiss(isOpen, onClose);
 
+  const activeAccounts = accounts.filter((a) => a.isActive !== false);
+
   useEffect(() => {
     if (envelope) {
       setRupeesInput(toRupees(envelope.allocatedPaise).toString());
       setError(null);
+
+      // Default funding account to first source or first active account with free funds
+      if (envelope.sources && envelope.sources.length > 0) {
+        setSelectedFundingAccountId(envelope.sources[0].accountId);
+      } else if (activeAccounts.length > 0) {
+        // Choose account with highest unallocated balance
+        const sorted = [...activeAccounts].sort((a, b) => {
+          const freeA = a.unallocatedPaise ?? a.balancePaise;
+          const freeB = b.unallocatedPaise ?? b.balancePaise;
+          return freeB > freeA ? 1 : -1;
+        });
+        setSelectedFundingAccountId(sorted[0].id);
+      }
     }
-  }, [envelope]);
+  }, [envelope, accounts]);
 
   if (!isOpen || !envelope) return null;
 
@@ -43,6 +66,13 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
       ? envelope.spentPaise - envelope.carriedOverPaise
       : 0n;
   const isBelowMin = currentEnteredPaise < minRequiredPaise;
+
+  // Selected funding account free balance check
+  const selectedAcc = activeAccounts.find((a) => a.id === selectedFundingAccountId);
+  const selectedAccFreePaise = selectedAcc
+    ? (selectedAcc.unallocatedPaise ?? selectedAcc.balancePaise)
+    : 0n;
+  const isDeltaExceedingAccount = deltaPaise > 0n && deltaPaise > selectedAccFreePaise;
 
   const handleShortcutAdd = (amountRupees: number) => {
     const current = parseFloat(rupeesInput) || 0;
@@ -69,9 +99,50 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
       return;
     }
 
+    if (isDeltaExceedingAccount && selectedAcc) {
+      setError(
+        `Cannot allocate ${formatINR(deltaPaise)} from ${selectedAcc.name}. It only has ${formatINR(selectedAccFreePaise)} free unallocated funds (${formatINR(selectedAcc.allocatedPaise ?? 0n)} is on hold). Select an account with sufficient free balance.`
+      );
+      return;
+    }
+
+    // Build backing fundingSources array
+    const existingSources = envelope.sources || [];
+    let fundingSources: Array<{ accountId: string; amountPaise: bigint }> = [];
+
+    if (currentEnteredPaise === 0n) {
+      fundingSources = [];
+    } else if (deltaPaise > 0n) {
+      const match = existingSources.find((s) => s.accountId === selectedFundingAccountId);
+      const otherSources = existingSources.filter((s) => s.accountId !== selectedFundingAccountId);
+      const currentForAcc = match ? match.amountPaise : 0n;
+      fundingSources = [
+        ...otherSources.map((s) => ({ accountId: s.accountId, amountPaise: s.amountPaise })),
+        { accountId: selectedFundingAccountId, amountPaise: currentForAcc + deltaPaise },
+      ];
+    } else if (deltaPaise < 0n) {
+      let toReduce = -deltaPaise;
+      const sorted = [...existingSources].sort((a, b) => (b.amountPaise > a.amountPaise ? 1 : -1));
+      if (sorted.length === 0) {
+        fundingSources = [{ accountId: selectedFundingAccountId, amountPaise: currentEnteredPaise }];
+      } else {
+        fundingSources = [];
+        for (const src of sorted) {
+          const red = src.amountPaise >= toReduce ? toReduce : src.amountPaise;
+          const remain = src.amountPaise - red;
+          if (remain > 0n) {
+            fundingSources.push({ accountId: src.accountId, amountPaise: remain });
+          }
+          toReduce -= red;
+        }
+      }
+    } else {
+      fundingSources = existingSources.map((s) => ({ accountId: s.accountId, amountPaise: s.amountPaise }));
+    }
+
     setIsSubmitting(true);
     try {
-      await onAllocate(envelope.id, currentEnteredPaise);
+      await onAllocate(envelope.id, currentEnteredPaise, fundingSources);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update allocation.');
@@ -221,6 +292,42 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
                 <p className="text-[11px] text-amber-200/90 leading-relaxed">
                   You are reducing your planned allocation for "{envelope.name}" by {formatINR(-deltaPaise)}.
                 </p>
+              </div>
+            )}
+
+            {/* Funding Account Selector when increasing budget */}
+            {deltaPaise > 0n && activeAccounts.length > 0 && (
+              <div className="space-y-1.5 p-3 rounded-xl bg-neutral-950/60 border border-white/5">
+                <div className="flex items-center justify-between text-xs font-medium text-neutral-300">
+                  <div className="flex items-center space-x-1.5">
+                    <Landmark className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Funding Bank Account</span>
+                  </div>
+                  <span className="text-[10px] text-neutral-400">Puts a hold on this bank</span>
+                </div>
+                <select
+                  value={selectedFundingAccountId}
+                  onChange={(e) => setSelectedFundingAccountId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg glass-input text-base sm:text-xs text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
+                >
+                  {activeAccounts.map((acc) => {
+                    const free = acc.unallocatedPaise ?? acc.balancePaise;
+                    return (
+                      <option key={acc.id} value={acc.id} className="bg-neutral-900 text-white">
+                        {acc.name} • Free: {formatINR(free)} (Total: {formatINR(acc.balancePaise)})
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {isDeltaExceedingAccount && (
+                  <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 text-red-400" />
+                    <span>
+                      Exceeds free unallocated balance in {selectedAcc?.name} ({formatINR(selectedAccFreePaise)} free).
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

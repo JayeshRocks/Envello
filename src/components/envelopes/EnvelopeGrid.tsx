@@ -9,11 +9,13 @@ import {
   Check,
 } from 'lucide-react';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
+import { useAccounts } from '@/hooks/useAccounts';
 import { EnvelopeCard } from './EnvelopeCard';
 import { AllocateModal } from './AllocateModal';
 import { TransferModal } from './TransferModal';
 import { EditEnvelopeModal } from './EditEnvelopeModal';
 import { CreateEnvelopeModal } from './CreateEnvelopeModal';
+import { EnvelopeAllocationViewModal } from './EnvelopeAllocationViewModal';
 import { BudgetPeriodSelector } from './BudgetPeriodSelector';
 import { formatINR } from '@/lib/accounting/currency';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
@@ -42,7 +44,10 @@ export const EnvelopeGrid: React.FC = () => {
     lastAllocation,
   } = useEnvelopes();
 
+  const { accounts } = useAccounts();
+
   const [allocatingEnvelope, setAllocatingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
+  const [viewingAllocationEnvelope, setViewingAllocationEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [transferringEnvelopeId, setTransferringEnvelopeId] = useState<string | null>(null);
   const [editingEnvelope, setEditingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -329,6 +334,7 @@ export const EnvelopeGrid: React.FC = () => {
               onAllocate={() => setAllocatingEnvelope(env)}
               onTransfer={() => setTransferringEnvelopeId(env.id)}
               onEdit={() => setEditingEnvelope(env)}
+              onViewAllocation={() => setViewingAllocationEnvelope(env)}
               onMoveLeft={() => handleMove(index, 'left')}
               onMoveRight={() => handleMove(index, 'right')}
               onDragStart={(e) => handleDragStart(e, index)}
@@ -343,15 +349,29 @@ export const EnvelopeGrid: React.FC = () => {
       <AllocateModal
         isOpen={Boolean(allocatingEnvelope)}
         envelope={allocatingEnvelope}
+        accounts={accounts}
         onClose={() => setAllocatingEnvelope(null)}
-        onAllocate={async (envelopeId, amount) => {
+        onAllocate={async (envelopeId, amount, sources) => {
           const prevAlloc = allocatingEnvelope?.allocatedPaise ?? 0n;
           const envName = allocatingEnvelope?.name ?? 'Envelope';
-          await allocateFunds(envelopeId, amount);
+          await allocateFunds(envelopeId, amount, sources);
 
           if (prevAlloc !== amount) {
             showToast(`Allocated ${formatINR(amount)} to ${envName}`, 'success');
           }
+        }}
+      />
+
+      {/* View Backing Allocation Sources Modal */}
+      <EnvelopeAllocationViewModal
+        isOpen={Boolean(viewingAllocationEnvelope)}
+        envelope={viewingAllocationEnvelope}
+        accounts={accounts}
+        onClose={() => setViewingAllocationEnvelope(null)}
+        onModifyBudget={() => {
+          const target = viewingAllocationEnvelope;
+          setViewingAllocationEnvelope(null);
+          if (target) setAllocatingEnvelope(target);
         }}
       />
 

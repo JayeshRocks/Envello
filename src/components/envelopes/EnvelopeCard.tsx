@@ -8,7 +8,7 @@ import {
   Gift,
   Folder,
   ArrowRightLeft,
-  PlusCircle,
+  SlidersHorizontal,
   ShieldCheck,
   Pencil,
   Heart,
@@ -35,6 +35,7 @@ interface EnvelopeCardProps {
   onAllocate: () => void;
   onTransfer: () => void;
   onEdit: () => void;
+  onViewAllocation?: () => void;
   onMoveLeft?: () => void;
   onMoveRight?: () => void;
   onDragStart?: (e: React.DragEvent<HTMLElement>) => void;
@@ -84,6 +85,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   onAllocate,
   onTransfer,
   onEdit,
+  onViewAllocation,
   onMoveLeft,
   onMoveRight,
   onDragStart,
@@ -205,10 +207,10 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
             </button>
             <button
               onClick={onAllocate}
-              title="Set Monthly Budget"
+              title="Modify Budget"
               className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
             >
-              <PlusCircle className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
@@ -279,13 +281,28 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
         </div>
       </div>
 
-      {/* Footer Pill */}
-      {envelope.carriedOverPaise > 0n && (
-        <div className="text-[10px] text-neutral-400 bg-neutral-900/60 px-2.5 py-1.5 rounded-lg border border-white/5 flex items-center justify-between">
-          <span>Rolled over from last month:</span>
-          <span className="font-mono text-neutral-300 font-medium">{formatINR(envelope.carriedOverPaise)}</span>
-        </div>
-      )}
+      {/* Footer Pill & View Allocation Link */}
+      <div className="flex items-center justify-between pt-1 gap-2">
+        {envelope.carriedOverPaise > 0n ? (
+          <div className="text-[10px] text-neutral-400 bg-neutral-900/60 px-2.5 py-1.5 rounded-lg border border-white/5 flex items-center space-x-1">
+            <span>Rolled over:</span>
+            <span className="font-mono text-neutral-300 font-medium">{formatINR(envelope.carriedOverPaise)}</span>
+          </div>
+        ) : (
+          <div />
+        )}
+
+        {onViewAllocation && (
+          <button
+            type="button"
+            onClick={onViewAllocation}
+            className="text-xs text-sky-400 hover:text-sky-300 font-medium inline-flex items-center space-x-1 cursor-pointer transition active:scale-95 ml-auto py-1 px-1.5 rounded-md hover:bg-sky-500/10 min-h-[32px]"
+          >
+            <span>View Allocation</span>
+            <span aria-hidden="true">&rarr;</span>
+          </button>
+        )}
+      </div>
     </SpotlightCard>
   );
 };

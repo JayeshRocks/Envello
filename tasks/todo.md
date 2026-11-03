@@ -100,7 +100,7 @@
 
 ## Phase 3: User Interface & Real-Life Settlement Prompt
 
-- [ ] **Task 3.1: Post-Transaction Real-Life Settlement Prompt Modal**
+- [x] **Task 3.1: Post-Transaction Real-Life Settlement Prompt Modal**
   - **Description:** Create `src/components/transactions/EnvelopePaymentReceiptModal.tsx` showing the real-world account breakdown after an envelope payment, with "Mark as completed" and "Revert this Transaction" buttons.
   - **Acceptance criteria:**
     - Displays each account name and formatted deduction amount in Indian numbering format.
@@ -113,7 +113,7 @@
   - **Files likely touched:** `src/components/transactions/EnvelopePaymentReceiptModal.tsx`
   - **Estimated scope:** M (1 file)
 
-- [ ] **Task 3.2: Record Transaction Modal Overhaul (Ghost Banks & Direct Accounts)**
+- [x] **Task 3.2: Record Transaction Modal Overhaul (Ghost Banks & Direct Accounts)**
   - **Description:** Update `src/components/transactions/RecordTransactionModal.tsx` to let users choose payment source between: 1) Envelopes (Ghost Banks), 2) Direct Bank Accounts (with unallocated indicators), or 3) Credit Cards.
   - **Acceptance criteria:**
     - Envelopes are selectable as primary payment sources.
@@ -125,7 +125,7 @@
   - **Files likely touched:** `src/components/transactions/RecordTransactionModal.tsx`
   - **Estimated scope:** M (1 file)
 
-- [ ] **Task 3.3: Allocate Modal Multi-Account Funding Selector**
+- [x] **Task 3.3: Allocate Modal Multi-Account Funding Selector**
   - **Description:** Update `src/components/envelopes/AllocateModal.tsx` to allow selecting which liquid account funds the envelope allocation, showing each account's free and total balance.
   - **Acceptance criteria:**
     - Lists active liquid accounts with free and total balances.
@@ -136,18 +136,19 @@
   - **Files likely touched:** `src/components/envelopes/AllocateModal.tsx`
   - **Estimated scope:** S (1 file)
 
-- [ ] **Task 3.4: Account List & Overview Balance Breakdown**
-  - **Description:** Update `src/components/accounts/AccountListModal.tsx` and dashboard summary cards to display the 3-tier balance taxonomy: Bank Balance, Envelope Holds, and Free Balance.
+- [x] **Task 3.4: Account List & Overview Balance Breakdown**
+  - **Description:** Update `src/components/accounts/AccountListModal.tsx` and dashboard summary cards to display the 3-tier balance taxonomy: Bank Balance, Envelope Holds, and Free Balance. Also added `EnvelopeAllocationViewModal.tsx`, updated Modify Budget icon to `SlidersHorizontal`, and added "View Allocation →" link to EnvelopeCard.
   - **Acceptance criteria:**
     - Each account card shows: Bank Balance (actual physical balance), Reserved in Envelopes, and Free Unallocated.
     - Visual indicators in emerald/sky for free funds and neutral/purple for envelope holds.
     - Prevents deleting an account that has active envelope holds with clear explanatory toast.
+    - Envelope card displays "View Allocation →" opening account breakdown prompt.
   - **Verification:** Visual layout responsive on mobile and desktop without overflow.
   - **Dependencies:** Task 2.1
-  - **Files likely touched:** `src/components/accounts/AccountListModal.tsx`, `src/components/dashboard/BalanceOverview.tsx`
-  - **Estimated scope:** M (2 files)
+  - **Files likely touched:** `src/components/accounts/AccountListModal.tsx`, `src/components/envelopes/EnvelopeCard.tsx`, `src/components/envelopes/EnvelopeAllocationViewModal.tsx`
+  - **Estimated scope:** M (3 files)
 
-- [ ] **Task 3.5: Card & Debt Payment Unallocated Guard**
+- [x] **Task 3.5: Card & Debt Payment Unallocated Guard**
   - **Description:** Update `RecordCardPaymentModal.tsx` and `RecordLoanPaymentModal.tsx` so users cannot select a bank account that lacks sufficient unallocated funds to cover the debt payment.
   - **Acceptance criteria:**
     - Payment dropdowns display each account's free unallocated balance.
@@ -158,7 +159,7 @@
   - **Estimated scope:** S (2 files)
 
 ### Checkpoint 3: End-to-End Verification & Definition of Done
-- [ ] All unit and invariant tests pass (`npm test`)
-- [ ] TypeScript compiles with 0 errors (`npm run lint`)
-- [ ] Production build succeeds (`npm run build`)
-- [ ] User testing: Allocation hold placement, ghost bank envelope spending, receipt prompt, and reversion flow
+- [x] All unit and invariant tests pass (`npm test`)
+- [x] TypeScript compiles with 0 errors (`npm run lint`)
+- [x] Production build succeeds (`npm run build`)
+- [x] User testing: Allocation hold placement, ghost bank envelope spending, receipt prompt, and reversion flow

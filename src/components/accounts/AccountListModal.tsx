@@ -100,6 +100,15 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
 
   const handleDelete = async (accountId: string, accountName: string) => {
     if (!onDeleteAccount) return;
+
+    const targetAcc = accounts.find((a) => a.id === accountId);
+    if ((targetAcc?.allocatedPaise ?? 0n) > 0n) {
+      setError(
+        `Cannot delete "${accountName}". It currently has ${formatINR(targetAcc!.allocatedPaise!)} reserved in your envelopes. Please reallocate or remove envelope allocations backed by this account first.`
+      );
+      return;
+    }
+
     const confirmed = await confirm({
       title: 'Delete Liquid Account',
       message: `Are you sure you want to delete "${accountName}"?`,
@@ -310,8 +319,20 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  <div className="font-mono text-sm font-bold text-white tabular-nums">
-                    {formatINR(acc.balancePaise)}
+                  <div className="text-right">
+                    <div className="font-mono text-sm font-bold text-white tabular-nums">
+                      {formatINR(acc.balancePaise)}
+                    </div>
+                    <div className="flex items-center justify-end space-x-1.5 text-[10px] font-mono mt-0.5">
+                      <span className="text-emerald-400 font-medium" title="Free Spendable Balance">
+                        Free: {formatINR(acc.unallocatedPaise ?? acc.balancePaise)}
+                      </span>
+                      {(acc.allocatedPaise ?? 0n) > 0n && (
+                        <span className="text-neutral-400" title="Reserved across Envelopes">
+                          • Held: {formatINR(acc.allocatedPaise!)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center space-x-1">
                     {onOpenReconcileModal && (

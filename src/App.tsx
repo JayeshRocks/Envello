@@ -48,6 +48,8 @@ import { ChangeEmailModal } from '@/components/auth/ChangeEmailModal';
 import { AccountDeletionModal } from '@/components/auth/AccountDeletionModal';
 import { LegalModal, LegalTab } from '@/components/legal/LegalModal';
 import { SpotlightTour } from '@/components/tutorial/SpotlightTour';
+import { EnvelopePaymentReceiptModal } from '@/components/transactions/EnvelopePaymentReceiptModal';
+import type { GreedyDeductionPlan } from '@/lib/accounting/greedyDeduction';
 import {
   isEmailConfirmationUrl,
   broadcastAuthEvent,
@@ -87,6 +89,13 @@ export const App: React.FC = () => {
   const [isTourOpen, setIsTourOpen] = useState(false);
   const [isCancelingDeletion, setIsCancelingDeletion] = useState(false);
   const [liabilitiesActiveTab, setLiabilitiesActiveTab] = useState<SubTabType>('cards');
+  const [receiptModalData, setReceiptModalData] = useState<{
+    transactionId: string;
+    payee: string;
+    totalAmountPaise: bigint;
+    envelopeName: string;
+    deductionPlan?: GreedyDeductionPlan;
+  } | null>(null);
 
   // Guided on-screen tour: ONLY for first-time users inside their workspace
   // Once completed or skipped, it is saved to localStorage and NEVER shown again.
@@ -215,6 +224,7 @@ export const App: React.FC = () => {
   const {
     accounts,
     totalLiquidFundsPaise,
+    totalUnallocatedPaise,
     addAccount,
     editAccount,
     removeAccount,
@@ -565,7 +575,9 @@ export const App: React.FC = () => {
                       {formatINR(effectiveLiquidFundsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Liquid Bank Accounts & Cash</span>
+                      <span className="text-[11px] font-mono text-emerald-400/90 font-medium">
+                        Free: {formatINR(totalUnallocatedPaise)}
+                      </span>
                       <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">Manage &rarr;</span>
                     </div>
                   </div>
@@ -958,9 +970,21 @@ export const App: React.FC = () => {
         envelopes={envelopes}
         onClose={() => setIsRecordTxModalOpen(false)}
         onRecordExpense={async (params) => {
-          await addExpense(params);
+          const result = await addExpense(params);
           await handleTransactionRecorded();
           showToast('Expense recorded successfully', 'success');
+
+          if (result?.deductionPlan && result.deductionPlan.deductions.length > 0) {
+            const envName = envelopes.find((e) => e.id === params.envelopeId)?.name || 'Envelope';
+            setReceiptModalData({
+              transactionId: result.transactionId,
+              payee: params.payee,
+              totalAmountPaise: params.amountPaise,
+              envelopeName: envName,
+              deductionPlan: result.deductionPlan,
+            });
+          }
+          return result;
         }}
         onRecordIncome={async (params) => {
           await addIncome(params);
@@ -976,6 +1000,24 @@ export const App: React.FC = () => {
           showToast('Account transfer recorded', 'success');
         }}
       />
+
+      {/* Real-Life Settlement Receipt Modal */}
+      {receiptModalData && (
+        <EnvelopePaymentReceiptModal
+          isOpen={Boolean(receiptModalData)}
+          onClose={() => setReceiptModalData(null)}
+          transactionId={receiptModalData.transactionId}
+          payee={receiptModalData.payee}
+          totalAmountPaise={receiptModalData.totalAmountPaise}
+          envelopeName={receiptModalData.envelopeName}
+          deductionPlan={receiptModalData.deductionPlan}
+          onRevert={async (txId) => {
+            await removeTransaction(txId);
+            await handleTransactionRecorded();
+            showToast('Transaction reverted and refunded to accounts', 'info');
+          }}
+        />
+      )}
 
       {/* Accounts Management Modal */}
       <AccountListModal

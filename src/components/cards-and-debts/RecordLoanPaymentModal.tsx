@@ -153,9 +153,10 @@ export const RecordLoanPaymentModal: React.FC<RecordLoanPaymentModalProps> = ({
       return;
     }
 
-    if (currentAccount && currentAccount.balancePaise < BigInt(amountPaise)) {
+    const freePaise = currentAccount ? (currentAccount.unallocatedPaise ?? currentAccount.balancePaise) : 0n;
+    if (BigInt(amountPaise) > freePaise) {
       setError(
-        `Insufficient funds in ${currentAccount.name}. Available balance is ${formatINR(currentAccount.balancePaise)}, but payment is ${formatINR(amountPaise)}.`
+        `Cannot pay ${formatINR(amountPaise)} from ${currentAccount?.name || 'this account'}. It only has ${formatINR(freePaise)} free unallocated balance (${formatINR(currentAccount?.allocatedPaise ?? 0n)} is reserved across your envelopes). Free up budget or select another account.`
       );
       return;
     }

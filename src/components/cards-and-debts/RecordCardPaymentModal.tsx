@@ -178,6 +178,15 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
       return;
     }
 
+    // Guard against paying with funds on hold in envelopes
+    const freePaise = currentAccount ? (currentAccount.unallocatedPaise ?? currentAccount.balancePaise) : 0n;
+    if (BigInt(amountPaise) > freePaise) {
+      setError(
+        `Cannot pay ${formatINR(amountPaise)} from ${currentAccount?.name || 'this account'}. It only has ${formatINR(freePaise)} free unallocated balance (${formatINR(currentAccount?.allocatedPaise ?? 0n)} is reserved across your envelopes). Free up budget or select another account.`
+      );
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await onRecordPayment({
@@ -268,7 +277,7 @@ export const RecordCardPaymentModal: React.FC<RecordCardPaymentModalProps> = ({
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.name} ({a.institution}) — Balance: {formatINR(a.balancePaise)}
+                    {a.name} • Free: {formatINR(a.unallocatedPaise ?? a.balancePaise)} (Total: {formatINR(a.balancePaise)})
                   </option>
                 ))}
               </select>
