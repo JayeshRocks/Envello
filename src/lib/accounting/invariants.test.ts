@@ -33,7 +33,7 @@ describe('Accounting Engine — Invariants & Precision', () => {
     });
   });
 
-  describe('Spendable Cash Invariants', () => {
+  describe('Liquid Funds Invariants', () => {
     it('sums only active liquid accounts (checking, savings, cash)', () => {
       const accounts = [
         { balancePaise: 5000000n, accountType: 'checking', isActive: true },
@@ -183,7 +183,7 @@ describe('Accounting Engine — Invariants & Precision', () => {
   });
 
   describe('Unified Payment Sources & Envelope Invariants', () => {
-    it('credit card purchase increases card liability and preserves liquid spendable cash', () => {
+    it('credit card purchase increases card liability and preserves liquid funds in bank', () => {
       const initialBankCash = 5000000n; // ₹50,000 liquid cash
       const initialCardOutstanding = 500000n; // ₹5,000 outstanding debt
       const purchaseAmount = 250000n; // ₹2,500 Dining

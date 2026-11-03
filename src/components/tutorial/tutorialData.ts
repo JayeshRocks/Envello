@@ -18,13 +18,13 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'The Six Financial Pillars',
     badge: 'Explicit Taxonomy',
     summary:
-      'Envello strictly rejects an ambiguous single "Total Balance". Mixing credit card limits or locked term deposits with spendable cash causes accidental overdrafts and false security.',
+      'Envello strictly rejects an ambiguous single "Total Balance". Mixing credit card limits or locked term deposits with liquid bank funds causes accidental overdrafts and false security.',
     whyItMatters:
       'In traditional apps, seeing "₹1,50,000 Total Balance" might make you feel wealthy until you realize ₹80,000 is locked in an FD and ₹40,000 is credit card debt due in 3 days. Envello separates wealth into six distinct, deterministic pillars.',
     realWorldExample:
-      'You have ₹50,000 in your checking account, ₹1,00,000 locked in a 1-year Fixed Deposit, and ₹15,000 outstanding on your HDFC credit card. Envello reports your Spendable Cash as exactly ₹50,000, your FDs as ₹1,00,000, and your Liabilities as ₹15,000—never an ambiguous ₹1,35,000.',
+      'You have ₹50,000 in your checking account, ₹1,00,000 locked in a 1-year Fixed Deposit, and ₹15,000 outstanding on your HDFC credit card. Envello reports your Liquid Funds as exactly ₹50,000, your FDs as ₹1,00,000, and your Liabilities as ₹15,000—never an ambiguous ₹1,35,000.',
     keyRules: [
-      'Pillar 1: Spendable Cash (Liquid checking, savings, physical cash).',
+      'Pillar 1: Liquid Funds (Liquid checking, savings, physical cash).',
       'Pillar 2: Envelope Allocations (Assigned monthly spending funds).',
       'Pillar 3: FDs & RDs (Locked term deposits and recurring deposit assets).',
       'Pillar 4: Credit Card Liabilities (Unsettled debt; managed in Cards & Debts).',
@@ -36,17 +36,18 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'envelopes',
     stepNumber: 2,
     category: 'Budgeting',
-    title: 'Core Envelopes & Anti-Negative Guard',
+    title: 'Envelopes & Anti-Negative Guard',
     badge: 'Zero-Based Truth',
     summary:
-      'Earmark monthly cash into isolated envelopes. Every rupee of spendable cash has an assigned purpose. Overspending in one category never silently drains another.',
+      'Earmark monthly funds into isolated envelopes. Every rupee has an assigned purpose. Overspending in one category never silently drains another.',
     whyItMatters:
       'A personal finance app must never allow negative envelope balances. If an envelope goes negative, your entire financial projection breaks and you spend money you do not have.',
     realWorldExample:
-      'If your "Dining Out" envelope has ₹1,500 available, you cannot log a ₹2,000 dinner against it. Envello guards you from overspending. You must either reallocate ₹500 from "Spendable" first, or choose "None" for direct non-budgeted bills.',
+      'If your "Dining Out" envelope has ₹1,500 available, you cannot log a ₹2,000 dinner against it. Envello guards you from overspending. You must either reallocate ₹500 first, or choose "None" for direct non-budgeted bills.',
     keyRules: [
-      'Three permanent core compartments: Spendable (clearinghouse), Emergency (safety reserve), and Savings (untouched liquid capital earning interest).',
-      'Emergency & Savings compartments require explicit user confirmation before any withdrawal or debit.',
+      'Default Starter Envelopes: Spendable, Emergency, and Savings spawn automatically for new accounts.',
+      'Total User Control: Every envelope can be edited, renamed, customized, or deleted at any time.',
+      'Protected Reserve Feature: Any envelope can be toggled as a Protected Reserve to require explicit confirmation before spending or withdrawing funds.',
       'Anti-Negative Invariant: Envelopes can NEVER be overspent into negative (amount <= available).',
       'Direct bills and overhead without envelope deduction use envelope "None".',
       'Income recording can optionally allocate directly into an envelope in one click.',

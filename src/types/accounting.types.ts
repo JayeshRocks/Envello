@@ -63,6 +63,7 @@ export interface EnvelopeSummary {
   carriedOverPaise: bigint;
   availablePaise: bigint;
   isSystemReserved: boolean;
+  isProtected?: boolean;
   rolloverPolicy: EnvelopeRolloverPolicy;
   sortOrder?: number;
   allocationId?: string;

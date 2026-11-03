@@ -11,7 +11,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     slug: 'regular',
     icon: 'Mail',
     color: '#38bdf8', // sky-400
-    is_system_reserved: true,
+    is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
   },
   {
@@ -19,7 +19,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     slug: 'emergency',
     icon: 'ShieldAlert',
     color: '#f87171', // red-400
-    is_system_reserved: true,
+    is_system_reserved: true, // Default protected reserve
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
   },
   {
@@ -27,7 +27,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     slug: 'savings',
     icon: 'PiggyBank',
     color: '#10b981', // emerald-500
-    is_system_reserved: true,
+    is_system_reserved: true, // Default protected reserve
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
   },
   {
@@ -125,43 +125,8 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
     throw checkError;
   }
 
-  // If user already has envelopes, ensure legacy names and reserves are standardized
+  // If user already has envelopes, clean up unreferenced legacy envelopes (credit-cards, emis, monthly-targets)
   if (existing && existing.length > 0) {
-    // 1. Ensure legacy "Regular / Balance" is renamed to "Spendable"
-    await supabase
-      .from('envelopes')
-      .update({ name: 'Spendable' })
-      .eq('user_id', userId)
-      .in('name', ['Regular / Balance', 'Regular/Balance']);
-
-    // 2. Ensure "Savings" envelope exists, is named "Savings", and is marked as system-reserved
-    const savingsEnv = existing.find((env) => env.slug === 'savings');
-    if (savingsEnv) {
-      if (savingsEnv.name !== 'Savings') {
-        await supabase
-          .from('envelopes')
-          .update({
-            name: 'Savings',
-            icon: 'PiggyBank',
-            color: '#10b981',
-            is_system_reserved: true,
-          })
-          .eq('id', savingsEnv.id);
-      }
-    } else {
-      // Seed missing Savings core envelope
-      await supabase.from('envelopes').insert({
-        user_id: userId,
-        name: 'Savings',
-        slug: 'savings',
-        icon: 'PiggyBank',
-        color: '#10b981',
-        is_system_reserved: true,
-        rollover_policy: 'carry_forward',
-      });
-    }
-
-    // 3. Clean up unreferenced deprecated envelopes (credit-cards, emis, monthly-targets)
     const deprecatedEnvs = existing.filter((env) =>
       ['credit-cards', 'emis', 'monthly-targets'].includes(env.slug)
     );
@@ -262,6 +227,7 @@ export async function fetchEnvelopesWithAllocations(
       icon: env.icon ?? undefined,
       color: env.color ?? undefined,
       isSystemReserved: env.is_system_reserved,
+      isProtected: env.is_system_reserved,
       rolloverPolicy: env.rollover_policy as EnvelopeRolloverPolicy,
       allocationId: alloc?.id,
       allocatedPaise,
@@ -507,6 +473,7 @@ export async function createCustomEnvelope(
     icon?: string;
     color?: string;
     rolloverPolicy: EnvelopeRolloverPolicy;
+    isProtected?: boolean;
   }
 ): Promise<void> {
   // Generate safe slug
@@ -537,7 +504,7 @@ export async function createCustomEnvelope(
     slug: finalSlug,
     icon: data.icon || 'Folder',
     color: data.color || '#38bdf8',
-    is_system_reserved: false,
+    is_system_reserved: Boolean(data.isProtected),
     rollover_policy: data.rolloverPolicy,
   });
 
@@ -548,7 +515,7 @@ export async function createCustomEnvelope(
 }
 
 /**
- * Updates an envelope's name, icon, color, or rollover policy.
+ * Updates an envelope's name, icon, color, rollover policy, or protected reserve status.
  */
 export async function updateEnvelope(
   envelopeId: string,
@@ -558,6 +525,7 @@ export async function updateEnvelope(
     icon?: string;
     color?: string;
     rolloverPolicy?: EnvelopeRolloverPolicy;
+    isProtected?: boolean;
   }
 ): Promise<void> {
   const updatePayload: Database['public']['Tables']['envelopes']['Update'] = {
@@ -568,6 +536,7 @@ export async function updateEnvelope(
   if (data.icon !== undefined) updatePayload.icon = data.icon;
   if (data.color !== undefined) updatePayload.color = data.color;
   if (data.rolloverPolicy !== undefined) updatePayload.rollover_policy = data.rolloverPolicy;
+  if (data.isProtected !== undefined) updatePayload.is_system_reserved = data.isProtected;
 
   const { error } = await supabase
     .from('envelopes')
@@ -582,32 +551,25 @@ export async function updateEnvelope(
 }
 
 /**
- * Deletes a user envelope and cleans up its allocations.
- * System-reserved envelopes cannot be deleted.
+ * Deletes any user envelope and cleans up its allocations.
+ * Past transaction records retain ledger history by unlinking envelope_id.
  */
 export async function deleteEnvelope(envelopeId: string, userId: string): Promise<void> {
-  // Check if system reserved
-  const { data: env, error: fetchErr } = await supabase
-    .from('envelopes')
-    .select('is_system_reserved, name')
-    .eq('id', envelopeId)
-    .eq('user_id', userId)
-    .single();
-
-  if (fetchErr || !env) throw new Error('Envelope not found');
-
-  if (env.is_system_reserved) {
-    throw new Error(`The "${env.name}" envelope is system-reserved and cannot be deleted.`);
-  }
-
-  // Delete envelope allocations first
+  // 1. Delete envelope allocations first
   await supabase
     .from('envelope_allocations')
     .delete()
     .eq('envelope_id', envelopeId)
     .eq('user_id', userId);
 
-  // Delete envelope
+  // 2. Unlink envelope_id from transaction entries to preserve double-entry ledger history
+  await supabase
+    .from('transaction_entries')
+    .update({ envelope_id: null })
+    .eq('envelope_id', envelopeId)
+    .eq('user_id', userId);
+
+  // 3. Delete the envelope
   const { error } = await supabase
     .from('envelopes')
     .delete()

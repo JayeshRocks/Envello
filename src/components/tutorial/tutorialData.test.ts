@@ -31,7 +31,7 @@ describe('Interactive Tutorial Specifications & Math', () => {
     });
   });
 
-  it('verifies Step 1 taxonomy math: Spendable Cash never conflates with FDs or Liabilities', () => {
+  it('verifies Step 1 taxonomy math: Liquid Funds never conflate with FDs or Liabilities', () => {
     const liquidCash = 6500000n; // ₹65,000
     const fdAssets = 10000000n;  // ₹100,000
     const cardLiabilities = 1800000n; // ₹18,000
@@ -40,7 +40,7 @@ describe('Interactive Tutorial Specifications & Math', () => {
     const trueNetWorth = liquidCash + fdAssets - (cardLiabilities + actualDebts);
     expect(trueNetWorth).toBe(13700000n); // ₹1,37,000
 
-    // But Spendable Cash is strictly the liquid checking balance
+    // But Liquid Funds are strictly the liquid checking balance
     expect(liquidCash).toBe(6500000n);
     expect(liquidCash).not.toBe(trueNetWorth);
   });

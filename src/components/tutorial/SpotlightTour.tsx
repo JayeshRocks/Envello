@@ -47,7 +47,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
       title: 'Six Financial Pillars',
       badge: 'Balance Taxonomy',
       description:
-        'Envello never shows an ambiguous "Total Balance". Spendable cash is always separated from locked FDs, credit card liabilities, and debts.',
+        'Envello never shows an ambiguous "Total Balance". Liquid funds in bank accounts and cash are always separated from locked FDs & RDs, card debt, and loans.',
       actionText: 'Scroll to Envelopes',
       onAction: () => {
         document.getElementById('core-system-envelopes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -70,11 +70,11 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
       id: 'envelopes',
       targetId: 'core-system-envelopes',
       fallbackTargetId: 'envelope-budgeting',
-      title: 'Core Envelopes & Anti-Negative Guard',
+      title: 'Envelopes & Anti-Negative Guard',
       badge: 'Budgeting',
       description:
-        'Spendable is your liquid pool; Emergency and Savings are guarded reserves. Envelopes can NEVER be overspent into negative.',
-      actionText: 'Inspect Core Envelopes',
+        'Assign every rupee a job. Envelopes can NEVER be overspent into negative. You can edit, customize, delete, or mark any envelope as a Protected Reserve.',
+      actionText: 'Inspect Envelopes',
       onAction: () => {
         document.getElementById('core-system-envelopes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       },

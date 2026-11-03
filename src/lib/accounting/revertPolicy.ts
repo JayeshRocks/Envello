@@ -106,7 +106,7 @@ export function analyzeTransactionReversion(
           targetName: accEntry.accountName || 'Bank Account',
           action: 'credit',
           amountPaise: accEntry.amountPaise,
-          description: `${formatINR(accEntry.amountPaise)} will be refunded back to spendable cash.`,
+          description: `${formatINR(accEntry.amountPaise)} will be refunded back to ${accEntry.accountName || 'account balance'}.`,
           isRefund: true,
         });
       }
@@ -161,7 +161,7 @@ export function analyzeTransactionReversion(
           targetName: accEntry.accountName || 'Bank Account',
           action: 'debit',
           amountPaise: accEntry.amountPaise,
-          description: `${formatINR(accEntry.amountPaise)} will be deducted from account balance.`,
+          description: `${formatINR(accEntry.amountPaise)} will be deducted from ${accEntry.accountName || 'account balance'}.`,
           isRefund: false,
         });
       }
@@ -238,7 +238,7 @@ export function analyzeTransactionReversion(
           targetName: accEntry.accountName || 'Bank Account',
           action: 'credit',
           amountPaise: accEntry.amountPaise,
-          description: `${formatINR(accEntry.amountPaise)} will be restored back into your bank account.`,
+          description: `${formatINR(accEntry.amountPaise)} will be restored back into ${accEntry.accountName || 'your account'}.`,
           isRefund: true,
         });
       }
@@ -261,7 +261,7 @@ export function analyzeTransactionReversion(
           targetName: accEntry.accountName || 'Bank Account',
           action: 'credit',
           amountPaise: accEntry.amountPaise,
-          description: `${formatINR(accEntry.amountPaise)} will be restored back into your bank account.`,
+          description: `${formatINR(accEntry.amountPaise)} will be restored back into ${accEntry.accountName || 'your account'}.`,
           isRefund: true,
         });
       }
@@ -286,7 +286,7 @@ export function analyzeTransactionReversion(
           targetName: fromAcc.accountName || 'Origin Account',
           action: 'credit',
           amountPaise: fromAcc.amountPaise,
-          description: `${formatINR(fromAcc.amountPaise)} will be restored back to origin account.`,
+          description: `${formatINR(fromAcc.amountPaise)} will be restored back to ${fromAcc.accountName || 'origin account'}.`,
           isRefund: true,
         });
       }
@@ -296,7 +296,7 @@ export function analyzeTransactionReversion(
           targetName: toAcc.accountName || 'Destination Account',
           action: 'debit',
           amountPaise: toAcc.amountPaise,
-          description: `${formatINR(toAcc.amountPaise)} will be deducted from destination account.`,
+          description: `${formatINR(toAcc.amountPaise)} will be deducted from ${toAcc.accountName || 'destination account'}.`,
           isRefund: false,
         });
       }

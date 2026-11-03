@@ -139,11 +139,11 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             {/* Micro Dashboard Strip */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-white/5 space-y-1">
-                <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider">Spendable Cash</div>
+                <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider">Liquid Funds</div>
                 <div className="text-lg font-bold font-mono text-white">₹82,450.00</div>
                 <div className="text-[10px] text-emerald-400 flex items-center space-x-1">
                   <ArrowUpRight className="w-3 h-3" />
-                  <span>Checking + Liquid Cash</span>
+                  <span>Checking + Cash in Hand</span>
                 </div>
               </div>
 
@@ -212,11 +212,11 @@ export const CoverPage: React.FC<CoverPageProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Pillar 1: Spendable Cash */}
+          {/* Pillar 1: Liquid Funds */}
           <SpotlightCard spotlightColor="rgba(56, 189, 248, 0.18)">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">
-                1. Spendable Cash
+                1. Liquid Funds
               </span>
               <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
                 <Wallet className="w-4 h-4" />
@@ -267,7 +267,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             <div className="mt-3 space-y-1.5">
               <div className="text-base font-bold text-white">Protected Fixed Assets</div>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Fixed deposits, RDs, and term instruments with maturity dates. Completely isolated from your daily spendable cash.
+                Fixed deposits, RDs, and term instruments with maturity dates. Completely isolated from your daily liquid accounts.
               </p>
               <div className="pt-2 text-[10px] text-amber-300 font-mono border-t border-white/5">
                 Rule: Cannot be drawn without formal liquidation entry.
@@ -382,7 +382,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
                     id: 'sweep',
                     label: 'Sweep to Spendable',
                     rule: 'Returns unused category surplus back to your liquid Spendable pool.',
-                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable Cash on the 1st of the month.',
+                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable envelope on the 1st of the month.',
                     badge: 'Liquid Surplus',
                   },
                   {
@@ -420,7 +420,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
                   sweep: {
                     label: 'Sweep to Spendable',
                     rule: 'Returns unused category surplus back to your liquid Spendable pool.',
-                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable Cash on the 1st of the month.',
+                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable envelope on the 1st of the month.',
                     badge: 'Liquid Surplus',
                   },
                   reset: {

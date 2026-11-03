@@ -4,20 +4,24 @@ import { formatINR } from '@/lib/accounting/currency';
 import { SpotlightCard } from '@/components/common/SpotlightCard';
 
 interface NetWorthTrackerProps {
-  spendableCashPaise: bigint;
+  liquidFundsPaise?: bigint;
+  spendableCashPaise?: bigint;
   savingsAndFDsPaise: bigint;
   creditCardLiabilitiesPaise: bigint;
   actualDebtsPaise: bigint;
 }
 
 export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
+  liquidFundsPaise,
   spendableCashPaise,
   savingsAndFDsPaise,
   creditCardLiabilitiesPaise,
   actualDebtsPaise,
 }) => {
+  const effectiveLiquidFunds = liquidFundsPaise ?? spendableCashPaise ?? 0n;
+
   const { totalAssetsPaise, totalLiabilitiesPaise, netWorthPaise, isSolvent } = useMemo(() => {
-    const assets = spendableCashPaise + savingsAndFDsPaise;
+    const assets = effectiveLiquidFunds + savingsAndFDsPaise;
     const liabilities = creditCardLiabilitiesPaise + actualDebtsPaise;
     const netWorth = assets - liabilities;
     const solvent = netWorth >= 0n;
@@ -28,7 +32,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
       netWorthPaise: netWorth,
       isSolvent: solvent,
     };
-  }, [spendableCashPaise, savingsAndFDsPaise, creditCardLiabilitiesPaise, actualDebtsPaise]);
+  }, [effectiveLiquidFunds, savingsAndFDsPaise, creditCardLiabilitiesPaise, actualDebtsPaise]);
 
   // Ratio calculation
   const totalVolume = totalAssetsPaise + totalLiabilitiesPaise;
@@ -51,7 +55,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
             <h4 className="text-sm font-semibold text-white tracking-tight">Net Worth & Solvency Health</h4>
           </div>
           <p className="text-xs text-neutral-400">
-            Authoritative solvency: Liquid cash + locked savings vs all unsettled obligations
+            Authoritative solvency: Liquid funds + locked term assets vs all unsettled obligations
           </p>
         </div>
 
@@ -117,7 +121,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
           />
         </div>
         <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">
-          <span>Spendable Cash: {formatINR(spendableCashPaise)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
+          <span>Liquid Funds: {formatINR(effectiveLiquidFunds)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
           <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
         </div>
       </div>

@@ -122,7 +122,7 @@ describe('analyzeTransactionReversion — Financial Ledger Impact & Negative Env
     const bankImpact = analysis.impacts.find((i) => i.targetType === 'account');
     expect(bankImpact?.isRefund).toBe(true);
     expect(bankImpact?.action).toBe('credit');
-    expect(bankImpact?.description).toContain('refunded back to spendable cash');
+    expect(bankImpact?.description).toContain('refunded back to HDFC Savings');
 
     // Envelope refund
     const envImpact = analysis.impacts.find((i) => i.targetType === 'envelope');

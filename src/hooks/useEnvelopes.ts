@@ -170,6 +170,7 @@ export function useEnvelopes() {
     icon?: string;
     color?: string;
     rolloverPolicy: EnvelopeRolloverPolicy;
+    isProtected?: boolean;
   }) => {
     if (!user) throw new Error('User is not authenticated.');
     setError(null);
@@ -190,6 +191,7 @@ export function useEnvelopes() {
       icon?: string;
       color?: string;
       rolloverPolicy?: EnvelopeRolloverPolicy;
+      isProtected?: boolean;
     }
   ) => {
     if (!user) throw new Error('User is not authenticated.');

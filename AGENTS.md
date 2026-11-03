@@ -37,18 +37,19 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **Database is Authoritative**: Never compute ad-hoc balances in UI components that contradict or bypass persisted transactions.
 - **No Binary Floating-Point Math**: Store all currency in integer paise (the smallest currency unit in INR: ₹1.00 = 100 paise) or PostgreSQL `NUMERIC(12, 2)`. Never use JavaScript `Number` floats for financial additions/subtractions without a fixed-point precision helper.
 - **Clear Balance Taxonomy**: Never display a single ambiguous number labeled "Total Balance". The UI must distinguish:
-  1. **Spendable Cash** (liquid bank accounts and cash in hand).
+  1. **Liquid Funds** (liquid bank accounts and cash in hand).
   2. **Envelope Allocations** (assigned funds for specific purposes across Spendable, Emergency, Savings, and custom categories).
   3. **FDs & RDs** (locked term deposits, recurring deposits, and growth assets).
   4. **Credit Card Liabilities** (unsettled card debt).
   5. **Actual Debts** (debts owed to friends, family, or lenders).
   6. **Monthly Targets & Standing Costs** (planning goals and recurring cadences).
-- **Core System Envelopes & Protection Invariants**:
-  - Exactly three permanent mandatory compartments: **Spendable** (primary liquid clearinghouse), **Emergency** (protected safety net), and **Savings** (untouched capital reserve earning bank interest and contributing to positive net worth).
-  - Credit Cards and EMIs are direct liabilities/repayments tracked under the Cards & Debts hub, not core envelopes.
-  - Emergency and Savings reserves require explicit user authorization warnings and confirmation checkboxes before funds can be withdrawn or debited for expenses.
+- **Total User Envelope Control & Protected Reserve Feature**:
+  - Total user control: Every envelope can be edited, customized, renamed, and deleted. No envelopes are locked or permanent mandatory compartments.
+  - Default starter envelopes: Spendable, Emergency, and Savings spawn automatically upon workspace initialization alongside lifestyle categories.
+  - Protected Reserve Feature: Any envelope can be toggled on/off as a Protected Reserve, requiring explicit user authorization warnings and confirmation checkboxes before funds can be withdrawn or debited for expenses (Emergency and Savings spawn with this feature on by default).
+  - Credit Cards and EMIs are direct liabilities/repayments tracked under Cards & Debts, never envelopes.
 - **Anti-Negative Envelope Guard**: Envelopes can NEVER be overspent into negative balances. When recording an expense, the transaction engine strictly enforces that debits do not exceed available allocation (`amountPaise <= availablePaise`). Direct bills without envelope deduction must use "None". Income can be credited directly to accounts and optionally assigned to an envelope.
-- **Detailed Reversion Process & 3-Day Rollover Policy**: Transaction reversions require an in-app preview detailing exact double-entry ledger impact across accounts, envelopes, cards, and debts. Allowed for the current month and up to 3 days post month-end. Reversions are guarded against driving envelope balances below zero if allocated funds were already spent.
+- **Detailed Reversion Process & 3-Day Rollover Policy**: Transaction reversions require an in-app preview detailing exact double-entry ledger impact across accounts, envelopes, cards, and debts, referencing the target accounts and envelopes by name rather than generic phrases. Allowed for the current month and up to 3 days post month-end. Reversions are guarded against driving envelope balances below zero if allocated funds were already spent.
 - **Reimagined Recurring Costs Engine**: Supports dual frequency models:
   1. **Interval in Days** (`interval_days`): repeat every X days for rolling supplies and consumables (e.g., water cans every 15 days, protein every 45 days).
   2. **Day of Month** (`monthly_day`): triggers on a specific day of each month for regular bills (rent, utilities, subscriptions).

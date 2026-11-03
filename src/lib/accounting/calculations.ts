@@ -6,7 +6,7 @@
 import type { EnvelopeRolloverPolicy } from '@/types/accounting.types';
 
 /**
- * Calculates net spendable cash across all active liquid accounts (checking, savings, cash).
+ * Calculates net liquid funds across all active bank and cash accounts (checking, savings, cash).
  * Excludes fixed deposits and credit cards.
  */
 export function calculateNetSpendable(

@@ -17,7 +17,6 @@ import {
   Plane,
   Utensils,
   Book,
-  Sparkles,
   PiggyBank,
 } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
@@ -71,13 +70,8 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   onTransfer,
   onEdit,
 }) => {
-  const isEmergency = envelope.slug === 'emergency';
-  const isSavings = envelope.slug === 'savings';
-  const isSpendable = envelope.slug === 'regular' || envelope.slug === 'spendable';
-  const IconComp =
-    isSavings && (!envelope.icon || envelope.icon === 'Folder')
-      ? PiggyBank
-      : getIconComponent(envelope.icon);
+  const isProtected = Boolean(envelope.isProtected ?? envelope.isSystemReserved);
+  const IconComp = getIconComponent(envelope.icon);
 
   // Calculate percentage spent of allocation (if any allocated)
   const percentSpent =
@@ -88,7 +82,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
       : 0;
 
   const isOverspent = envelope.availablePaise < 0n;
-  const categoryColor = envelope.color || (isSavings ? '#10b981' : '#38bdf8');
+  const categoryColor = envelope.color || '#38bdf8';
 
   return (
     <SpotlightCard
@@ -105,33 +99,15 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
             <IconComp className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-sm font-semibold text-white tracking-tight flex items-center space-x-1.5">
+            <div className="text-sm font-semibold text-white tracking-tight flex items-center space-x-1.5 flex-wrap gap-y-1">
               <span>{envelope.name}</span>
-              {isEmergency && (
+              {isProtected && (
                 <span
-                  title="Protected Emergency Reserve"
-                  className="inline-flex items-center space-x-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-mono"
+                  title="Protected Reserve: Requires explicit confirmation before spending or withdrawing"
+                  className="inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono font-medium"
                 >
                   <ShieldCheck className="w-2.5 h-2.5" />
-                  <span>Reserve</span>
-                </span>
-              )}
-              {isSavings && (
-                <span
-                  title="Protected Capital Savings (Untouched Bank Interest Reserve)"
-                  className="inline-flex items-center space-x-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono"
-                >
-                  <ShieldCheck className="w-2.5 h-2.5" />
-                  <span>Reserve</span>
-                </span>
-              )}
-              {isSpendable && (
-                <span
-                  title="Primary Spendable Clearinghouse"
-                  className="inline-flex items-center space-x-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono"
-                >
-                  <Sparkles className="w-2.5 h-2.5" />
-                  <span>Primary</span>
+                  <span>Protected Reserve</span>
                 </span>
               )}
             </div>
@@ -170,7 +146,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
       {/* Available Balance */}
       <div>
         <div className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
-          Available to Spend
+          Available Balance
         </div>
         <div className="flex items-center space-x-2 mt-0.5">
           <div

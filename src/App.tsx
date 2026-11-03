@@ -214,7 +214,7 @@ export const App: React.FC = () => {
   // Live hooks
   const {
     accounts,
-    totalSpendableCashPaise,
+    totalLiquidFundsPaise,
     addAccount,
     editAccount,
     removeAccount,
@@ -324,7 +324,7 @@ export const App: React.FC = () => {
   } = useRecurringRules();
 
   // Authoritative pillars driven dynamically from live Supabase data
-  const effectiveSpendableCashPaise = totalSpendableCashPaise;
+  const effectiveLiquidFundsPaise = totalLiquidFundsPaise;
   const effectiveEnvelopeAllocationsPaise = totalAllocatedPaise;
   const effectiveSavingsAndFDsPaise = totalPrincipalPaise;
   const effectiveCreditCardLiabilitiesPaise = totalCardOutstandingPaise;
@@ -562,7 +562,7 @@ export const App: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums truncate">
-                      {formatINR(effectiveSpendableCashPaise)}
+                      {formatINR(effectiveLiquidFundsPaise)}
                     </div>
                     <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
                       <span>Liquid Bank Accounts & Cash</span>
@@ -747,7 +747,7 @@ export const App: React.FC = () => {
             <AnalyticsDashboard
               transactions={transactions}
               envelopes={envelopes}
-              spendableCashPaise={effectiveSpendableCashPaise}
+              spendableCashPaise={effectiveLiquidFundsPaise}
               savingsAndFDsPaise={effectiveSavingsAndFDsPaise}
               creditCardLiabilitiesPaise={effectiveCreditCardLiabilitiesPaise}
               actualDebtsPaise={effectiveActualDebtsPaise}

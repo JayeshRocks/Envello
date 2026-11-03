@@ -96,7 +96,7 @@ export function useAccounts() {
   };
 
   // Authoritative calculateNetSpendable across active checking, savings, and cash accounts
-  const totalSpendableCashPaise = useMemo(() => {
+  const totalLiquidFundsPaise = useMemo(() => {
     return calculateNetSpendable(
       accounts.map((acc) => ({
         balancePaise: acc.balancePaise,
@@ -110,7 +110,8 @@ export function useAccounts() {
     accounts,
     isLoading,
     error,
-    totalSpendableCashPaise,
+    totalLiquidFundsPaise,
+    totalSpendableCashPaise: totalLiquidFundsPaise,
     addAccount,
     editAccount,
     removeAccount,

@@ -1,27 +1,33 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, FolderPlus, RefreshCw, Layers, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  Layers,
+  Plus,
+  RefreshCw,
+  FolderPlus,
+  RotateCcw,
+} from 'lucide-react';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 import { EnvelopeCard } from './EnvelopeCard';
-import { BudgetPeriodSelector } from './BudgetPeriodSelector';
 import { AllocateModal } from './AllocateModal';
 import { TransferModal } from './TransferModal';
-import { CreateEnvelopeModal } from './CreateEnvelopeModal';
 import { EditEnvelopeModal } from './EditEnvelopeModal';
+import { CreateEnvelopeModal } from './CreateEnvelopeModal';
+import { BudgetPeriodSelector } from './BudgetPeriodSelector';
 import { formatINR } from '@/lib/accounting/currency';
-import { useToast } from '@/context/ToastContext';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import { useToast } from '@/context/ToastContext';
 
 export const EnvelopeGrid: React.FC = () => {
   const { showToast } = useToast();
   const {
     envelopes,
     isLoading,
-    selectedPeriod,
-    prevPeriod,
-    nextPeriod,
     totalAllocatedPaise,
     totalSpentPaise,
     totalAvailablePaise,
+    selectedPeriod,
+    prevPeriod,
+    nextPeriod,
     allocateFunds,
     transferFunds,
     createEnvelope,
@@ -39,39 +45,15 @@ export const EnvelopeGrid: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
 
-  // Segregate mandatory system envelopes (Spendable, Emergency, Savings) from user-created categories
-  const systemEnvelopes = useMemo(() => {
-    const CORE_SLUGS = ['regular', 'spendable', 'emergency', 'savings'];
-    return envelopes
-      .filter(
-        (env) =>
-          CORE_SLUGS.includes(env.slug) ||
-          (env.isSystemReserved &&
-            env.slug !== 'credit-cards' &&
-            env.slug !== 'emis' &&
-            env.slug !== 'monthly-targets')
-      )
-      .sort((a, b) => {
-        const order: Record<string, number> = { regular: 1, spendable: 1, emergency: 2, savings: 3 };
-        const orderA = order[a.slug] ?? 99;
-        const orderB = order[b.slug] ?? 99;
-        return orderA - orderB;
-      });
-  }, [envelopes]);
-
-  const customEnvelopes = useMemo(() => {
-    const CORE_SLUGS = [
-      'regular',
-      'spendable',
-      'emergency',
-      'savings',
-      'credit-cards',
-      'emis',
-      'monthly-targets',
-    ];
-    return envelopes.filter(
-      (env) => !env.isSystemReserved && !CORE_SLUGS.includes(env.slug)
-    );
+  // Unified envelope ordering: Protected reserves first, followed by custom categories
+  const sortedEnvelopes = useMemo(() => {
+    return [...envelopes].sort((a, b) => {
+      const aProtected = Boolean(a.isProtected || a.isSystemReserved);
+      const bProtected = Boolean(b.isProtected || b.isSystemReserved);
+      if (aProtected && !bProtected) return -1;
+      if (!aProtected && bProtected) return 1;
+      return a.name.localeCompare(b.name);
+    });
   }, [envelopes]);
 
   const handleUndoAllocation = useCallback(async () => {
@@ -125,7 +107,7 @@ export const EnvelopeGrid: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Earmark monthly cash into isolated envelopes. Overspending in one never silently drains another.
+            Earmark monthly funds into isolated envelopes. Every envelope can be edited, customized, or deleted.
           </p>
         </div>
 
@@ -185,7 +167,7 @@ export const EnvelopeGrid: React.FC = () => {
 
         <div className="space-y-1 sm:border-l sm:border-white/10 sm:pl-5">
           <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-            Total Available to Spend
+            Total Available Balance
           </div>
           <div
             className={`text-xl font-bold font-mono tracking-tight tabular-nums ${
@@ -199,12 +181,30 @@ export const EnvelopeGrid: React.FC = () => {
               totalAvailablePaise < 0n ? 'text-rose-400/80 font-medium' : 'text-emerald-400/80'
             }`}
           >
-            {totalAvailablePaise < 0n ? 'Deficit (overspent allocations)' : 'Liquid safe spending capacity'}
+            {totalAvailablePaise < 0n ? 'Deficit (overspent allocations)' : 'Remaining spending capacity'}
           </div>
         </div>
       </div>
 
-      {/* Envelope Cards Section (Segregated into Mandatory Core Reserves vs Custom User Categories) */}
+      {/* Category Header Strip & New Envelope Trigger */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+        <div className="flex items-center space-x-2">
+          <span className="text-xs sm:text-sm font-semibold text-white tracking-tight">Envelope Allocations</span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/10 font-medium">
+            {envelopes.length} {envelopes.length === 1 ? 'envelope' : 'envelopes'}
+          </span>
+        </div>
+
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs transition self-start sm:self-auto active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] shadow-md shadow-sky-500/20"
+        >
+          <Plus className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
+          <span>New Envelope</span>
+        </button>
+      </div>
+
+      {/* Envelope Cards Section */}
       {isLoading && envelopes.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -232,118 +232,22 @@ export const EnvelopeGrid: React.FC = () => {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold transition"
+            className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold transition cursor-pointer"
           >
             Create Your First Envelope
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Section 1: Core & Mandatory Envelopes (Primary Flow & Emergency Reserve) */}
-          {systemEnvelopes.length > 0 && (
-            <div id="core-system-envelopes" className="space-y-3 scroll-mt-24">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="p-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-xs sm:text-sm font-semibold text-white tracking-tight">Core System Envelopes</h3>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
-                        Mandatory
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-neutral-400">
-                      Primary liquid spending pool, protected emergency reserve, and capital savings. Permanent system compartments.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {systemEnvelopes.map((env) => (
-                  <EnvelopeCard
-                    key={env.id}
-                    envelope={env}
-                    onAllocate={() => setAllocatingEnvelope(env)}
-                    onTransfer={() => setTransferringEnvelopeId(env.id)}
-                    onEdit={() => setEditingEnvelope(env)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Clean Visual Separator */}
-          <div className="relative py-1">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/5" />
-            </div>
-            <div className="relative flex justify-center text-[10px] uppercase tracking-wider font-mono text-neutral-500 bg-[#08090a] px-3">
-              Custom Lifestyle & Budget Categories
-            </div>
-          </div>
-
-          {/* Section 2: Custom User Categories */}
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center space-x-2">
-                <div className="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-xs sm:text-sm font-semibold text-white tracking-tight">Custom Categories</h3>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/10 font-medium">
-                      {customEnvelopes.length} {customEnvelopes.length === 1 ? 'category' : 'categories'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-neutral-400">
-                    Flexible envelopes tailored for your bills, hobbies, and monthly discretionary targets.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white text-xs font-medium transition self-start sm:self-auto active:scale-95 cursor-pointer min-h-[38px] sm:min-h-[32px]"
-              >
-                <Plus className="w-3.5 h-3.5 text-sky-400" />
-                <span>New Envelope</span>
-              </button>
-            </div>
-
-            {customEnvelopes.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 p-6 sm:p-8 text-center space-y-2.5 bg-white/[0.01]">
-                <div className="w-10 h-10 rounded-xl bg-neutral-900 text-neutral-400 mx-auto flex items-center justify-center">
-                  <FolderPlus className="w-5 h-5" />
-                </div>
-                <div className="text-xs sm:text-sm font-semibold text-white">No Custom Categories Configured</div>
-                <p className="text-xs text-neutral-400 max-w-sm mx-auto">
-                  Compartmentalize your monthly budget by creating custom envelopes for Groceries, Dining, Gym, or Vacation.
-                </p>
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer shadow-sm"
-                >
-                  + Create Your First Envelope
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {customEnvelopes.map((env) => (
-                  <EnvelopeCard
-                    key={env.id}
-                    envelope={env}
-                    onAllocate={() => setAllocatingEnvelope(env)}
-                    onTransfer={() => setTransferringEnvelopeId(env.id)}
-                    onEdit={() => setEditingEnvelope(env)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        <div id="core-system-envelopes" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-24">
+          {sortedEnvelopes.map((env) => (
+            <EnvelopeCard
+              key={env.id}
+              envelope={env}
+              onAllocate={() => setAllocatingEnvelope(env)}
+              onTransfer={() => setTransferringEnvelopeId(env.id)}
+              onEdit={() => setEditingEnvelope(env)}
+            />
+          ))}
         </div>
       )}
 
@@ -358,62 +262,38 @@ export const EnvelopeGrid: React.FC = () => {
           await allocateFunds(envelopeId, amount);
 
           if (prevAlloc !== amount) {
-            showToast(
-              `Allocated ${formatINR(amount)} to ${envName}`,
-              'success',
-              7000,
-              {
-                label: 'Undo',
-                onClick: async () => {
-                  try {
-                    const undone = await undoLastAllocation();
-                    if (undone) {
-                      showToast(
-                        `Reverted ${undone.envelopeName} budget to ${formatINR(undone.previousAllocatedPaise)}`,
-                        'info'
-                      );
-                    }
-                  } catch {
-                    showToast('Failed to undo allocation', 'error');
-                  }
-                },
-              }
-            );
-          } else {
-            showToast('Monthly envelope budget unchanged', 'info');
+            showToast(`Allocated ${formatINR(amount)} to ${envName}`, 'success');
           }
         }}
       />
 
       <TransferModal
         isOpen={Boolean(transferringEnvelopeId)}
+        sourceEnvelopeId={transferringEnvelopeId ?? undefined}
         envelopes={envelopes}
-        initialFromEnvelopeId={transferringEnvelopeId ?? undefined}
         onClose={() => setTransferringEnvelopeId(null)}
         onTransfer={async (fromId, toId, amount) => {
+          const fromEnv = envelopes.find((e) => e.id === fromId);
+          const toEnv = envelopes.find((e) => e.id === toId);
           await transferFunds(fromId, toId, amount);
-          const fromEnv = envelopes.find((e) => e.id === fromId)?.name ?? 'Envelope';
-          const toEnv = envelopes.find((e) => e.id === toId)?.name ?? 'Envelope';
-
           showToast(
-            `Moved ${formatINR(amount)} from ${fromEnv} to ${toEnv}`,
-            'success',
-            7000,
-            {
-              label: 'Undo',
-              onClick: async () => {
-                try {
-                  await transferFunds(toId, fromId, amount);
-                  showToast(
-                    `Reverted transfer: ${formatINR(amount)} moved back to ${fromEnv}`,
-                    'info'
-                  );
-                } catch {
-                  showToast('Failed to revert envelope transfer', 'error');
-                }
-              },
-            }
+            `Transferred ${formatINR(amount)} from ${fromEnv?.name || 'source'} to ${toEnv?.name || 'destination'}`,
+            'success'
           );
+        }}
+      />
+
+      <EditEnvelopeModal
+        envelope={editingEnvelope}
+        isOpen={Boolean(editingEnvelope)}
+        onClose={() => setEditingEnvelope(null)}
+        onUpdate={async (id, data) => {
+          await editEnvelope(id, data);
+          showToast('Updated envelope details', 'success');
+        }}
+        onDelete={async (id) => {
+          await removeEnvelope(id);
+          showToast('Envelope deleted successfully', 'info');
         }}
       />
 
@@ -422,21 +302,7 @@ export const EnvelopeGrid: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={async (data) => {
           await createEnvelope(data);
-          showToast('New envelope category created', 'success');
-        }}
-      />
-
-      <EditEnvelopeModal
-        isOpen={Boolean(editingEnvelope)}
-        envelope={editingEnvelope}
-        onClose={() => setEditingEnvelope(null)}
-        onUpdate={async (envId, data) => {
-          await editEnvelope(envId, data);
-          showToast('Envelope details updated', 'success');
-        }}
-        onDelete={async (envId) => {
-          await removeEnvelope(envId);
-          showToast('Envelope category deleted', 'info');
+          showToast(`Created envelope "${data.name}"`, 'success');
         }}
       />
     </section>
