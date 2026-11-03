@@ -8,13 +8,13 @@ These rules apply to any AI agent working on the Envello codebase.
 
 ## 2. Explicit Balance Taxonomy
 - **Rule**: Never display a single ambiguous number labeled "Total Balance". Always explicitly separate:
-  1. Spendable Cash (Liquid bank accounts & cash)
-  2. Envelope Allocations (Allocated spending money)
-  3. Savings & Fixed Deposits (Locked assets)
-  4. Credit Card Liabilities (Unsettled debt)
-  5. Actual Debts (Owed to other individuals/lenders)
-  6. Monthly Targets (Planning goals)
-- **Context**: Conflating locked savings or card limits with spendable cash leads to overdrafts and financial mistakes.
+  1. Spendable Cash (Liquid bank accounts & cash in hand)
+  2. Envelope Allocations (Assigned funds for Spendable, Emergency, Savings, and lifestyle categories)
+  3. FDs & RDs (Locked term deposits, recurring deposits, and growth assets)
+  4. Credit Card Liabilities (Unsettled debt on active credit cards)
+  5. Actual Debts (Debts owed to friends, family, or personal lenders)
+  6. Monthly Targets & Standing Costs (Planning targets and recurring budget commitments)
+- **Context**: Conflating locked savings, fixed deposits, or credit card limits with spendable cash leads to overdrafts, missed payments, and financial distortion. Shorten "Fixed Deposits & Recurring Deposits" to **"FDs & RDs"** on space-constrained UI elements (pills, tabs, summary cards).
 
 ## 3. Row Level Security & Zero Trust Client IDs
 - **Rule**: Enable RLS on every table without exception. Never accept a `user_id` from the client request body or query params to establish data ownership. All RLS policies must strictly enforce `auth.uid() = user_id`. All PostgreSQL functions must follow least-privilege grants (`REVOKE EXECUTE FROM PUBLIC, anon`) and assert caller identity in `SECURITY DEFINER` functions.
@@ -32,13 +32,13 @@ These rules apply to any AI agent working on the Envello codebase.
 - **Rule**: Stack is React 19, TypeScript (Strict), Vite, Tailwind CSS, Supabase Free tier, and Vercel Hobby. Target ₹0/mo operating cost. Never add paid APIs, third-party subscriptions, or proprietary libraries. AI is explicitly deferred to Version 2.
 - **Context**: The project operates on a personal ₹0 budget using open-source, AGPL/MIT-compatible packages.
 
-## 7. Atomic Financial Operations
-- **Rule**: Multi-table updates (e.g., account transfers, debt repayments, envelope reallocations) must be executed in database transactions or secure PostgreSQL RPC functions.
-- **Context**: Prevents partial failure scenarios where funds are debited from one account but never credited to another.
+## 7. Atomic Financial Operations & Core Envelopes Architecture
+- **Rule**: Multi-table updates (account transfers, debt repayments, envelope reallocations) must execute inside database transactions or secure PostgreSQL RPC functions. Exactly three permanent core envelopes are enforced: **Spendable** (primary liquid clearinghouse), **Emergency** (protected reserve), and **Savings** (untouched capital reserve earning bank interest and building net worth). Credit cards and EMIs are direct liabilities/repayments tracked under Cards & Debts, never envelopes. Envelopes can NEVER be overspent into negative balances (`amountPaise <= availablePaise`). Direct bills without envelope deduction use "None". Income can allocate directly to envelopes. Emergency and Savings reserves require explicit authorization confirmations before withdrawals or debits.
+- **Context**: Prevents partial failure scenarios and ensures financial invariants remain unbreakable across the entire ledger.
 
-## 8. Mobile & Tablet Form Ergonomics
-- **Rule**: All form inputs, selects, and textareas must use `text-base sm:text-sm` (16px on mobile, 14px on tablet/desktop). Never use `sm:text-xs` (12px). All primary touch actions, dropdown items, quick actions, tab pills, and modal close triggers must meet the 44px minimum touch target (`min-h-[44px] min-w-[44px]`) with `active:scale-95` tactile feedback. All modals and pop-out forms must be rendered via `ModalPortal` (`createPortal(..., document.body)`) to escape parent cards with `overflow-hidden` or `backdrop-filter`, and must automatically center to the viewport on all device sizes (`flex items-center justify-center p-3 sm:p-4 md:p-6`, `rounded-2xl sm:rounded-3xl`, `max-h-[90vh] sm:max-h-[88vh] overflow-y-auto`) with high-contrast borders and smooth backdrop blur. Never hide buttons or tabs behind horizontal scrolling (`overflow-x-auto`, `scrollbar-none`); arrange tab strips, quick action pills, and filter buttons in responsive wrapping layouts (`flex-wrap`, responsive grids) so 100% of controls are visible at a glance on PC, tablet, and phone. `html`, `body`, and `#root` must enforce strict horizontal containment (`width: 100%; max-width: 100%; overflow-x: hidden; position: relative;`) and `-webkit-text-size-adjust: 100%`. Sections with background blurs/glows must be wrapped in `overflow-hidden` to prevent layout blowout and zoom-out margin gutter bugs.
-- **Context**: Mobile inputs below 16px trigger iOS Safari auto-zoom. Rendering fixed-position modals inside containers with `backdrop-filter` or `overflow-hidden` traps and clips the modal within that container, breaking viewport centering. Using `ModalPortal` teleports modals to `document.body` for true edge-to-edge backdrop coverage and centering.
+## 8. Mobile & Tablet Form Ergonomics, Centered Modals & In-App Prompts
+- **Rule**: All form inputs, selects, and textareas must use `text-base sm:text-sm` (16px on mobile, 14px on tablet/desktop). Never use `sm:text-xs` (12px). All primary touch actions, dropdown items, quick actions, tab pills, and modal close triggers must meet the 44px minimum touch target (`min-h-[44px] min-w-[44px]`) with `active:scale-95` tactile feedback. All modals and pop-out forms must be rendered via `ModalPortal` (`createPortal(..., document.body)`) to escape parent cards with `overflow-hidden` or `backdrop-filter`, and must automatically center to the viewport on all device sizes (`flex items-center justify-center p-3 sm:p-4 md:p-6`, `rounded-2xl sm:rounded-3xl`, `max-h-[90vh] sm:max-h-[88vh] overflow-y-auto`) with high-contrast borders and smooth backdrop blur. Never hide buttons or tabs behind horizontal scrolling (`overflow-x-auto`, `scrollbar-none`); arrange tab strips, quick action pills, and filter buttons in responsive wrapping layouts (`flex-wrap`, responsive grids) so 100% of controls are visible at a glance on PC, tablet, and phone. The application header is pinned fixed to the top of the viewport (`fixed top-0 left-0 right-0 z-40`) with an explicit spacer (`h-16`) and CSS `scroll-padding-top`. Native browser `window.confirm` and `window.alert` dialogs are strictly prohibited; use the in-app `ConfirmModal` (`useConfirm()`). `html`, `body`, and `#root` must enforce strict horizontal containment (`width: 100%; max-width: 100%; overflow-x: hidden; position: relative;`) and `-webkit-text-size-adjust: 100%`. Sections with background blurs/glows must be wrapped in `overflow-hidden` to prevent layout blowout and zoom-out margin gutter bugs.
+- **Context**: Mobile inputs below 16px trigger iOS Safari auto-zoom. Rendering fixed-position modals inside containers with `backdrop-filter` or `overflow-hidden` traps and clips the modal within that container, breaking viewport centering. Using `ModalPortal` teleports modals to `document.body` for true edge-to-edge backdrop coverage and centering. Custom modals and pinned headers provide a polished, consistent user experience.
 
 
 ## 9. Transactional Emails & Resend Custom SMTP
@@ -53,7 +53,18 @@ These rules apply to any AI agent working on the Envello codebase.
 - **Rule**: Account closure strictly adheres to the 30-day grace period stated in the Terms of Service and Privacy Policy. When requested, an account transitions to `pending_deletion` with `scheduled_deletion_at = now() + 30 days`. Signing in during this window displays a persistent warning banner with 1-click restoration (`cancel_account_deletion`). Past 30 days, an automated sweep permanently cascades and purges all financial records. Users also retain the right to bypass the 30 days and execute an immediate wipe via explicit typed email confirmation.
 - **Context**: Prevents catastrophic accidental data loss while honoring GDPR/CCPA data erasure and regulatory compliance commitments.
 
-## 12. Definition of Done
+## 12. Transaction Reversion & 3-Day Rollover Policy
+- **Rule**: Transaction reversions require a detailed in-app modal preview explaining the exact double-entry ledger impact across accounts, envelopes, cards, and debts before confirmation. Reversions are permitted only for transactions from the current calendar month, plus a 3-day grace period for transactions dated in the final 3 days of the preceding month. The reversion engine must reject any reversion that would cause an envelope's available balance to drop below zero (e.g., if income assigned to an envelope was already spent).
+- **Context**: Protects historical monthly budget snapshots while accommodating human corrections right after month rollover without corrupting ledger integrity.
+
+## 13. Dual-Mode Recurring Costs Engine
+- **Rule**: Recurring commitments support two deterministic scheduling cadences:
+  1. **Interval in Days** (`interval_days`): repeat every $X$ days for rolling consumable needs (e.g., water cans every 15 days, protein every 45 days).
+  2. **Day of Month** (`monthly_day`): trigger on a fixed day of each month for regular monthly bills (rent, utilities, subscriptions).
+  Due dates are evaluated dynamically in real time (`Due Today`, `Overdue by X days`, `Due in X days`). The UI provides 1-click batch logging and calculates normalized 30-day monthly commitments ($\text{amount} \times 30 / \text{interval\_days}$) alongside monthly day sums.
+- **Context**: Accurately models real-life household cash flow where not all recurring costs fall cleanly on calendar month dates.
+
+## 14. Definition of Done
 - **Rule**: A feature or fix is done ONLY after:
   `Plan -> Implement -> Lint (npm run lint) -> Build (npm run build) -> Verify`
   Never leave placeholder buttons, pretend actions, or unhandled errors.

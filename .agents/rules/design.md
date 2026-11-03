@@ -25,11 +25,11 @@ Guide the visual design system, financial data legibility, responsive layouts, a
   The user interface must NEVER present a single ambiguous number labeled "Total Balance".
   It must always display the six distinct financial pillars:
   1. **Spendable Cash**: Liquid bank accounts and cash in hand.
-  2. **Envelope Allocations**: Funds assigned to specific monthly spending envelopes.
-  3. **Savings & Fixed Deposits**: Non-spendable locked assets.
-  4. **Credit Card Liabilities**: Outstanding card debt and billing status.
+  2. **Envelope Allocations**: Funds assigned to specific monthly spending envelopes (Spendable, Emergency, Savings, and lifestyle categories).
+  3. **FDs & RDs**: Locked term deposits, recurring deposits, and long-term growth assets. Shorten to **"FDs & RDs"** on space-constrained UI elements (cards, navigation pills, tab headers).
+  4. **Credit Card Liabilities**: Outstanding card debt and billing status (managed under Cards & Debts, NOT envelopes).
   5. **Actual Debts**: External debt obligations owed to lenders/individuals.
-  6. **Monthly Targets**: Forward planning targets (distinguished from cash).
+  6. **Monthly Targets & Standing Costs**: Forward planning targets and recurring schedule commitments (distinguished from spendable cash).
 
 ---
 
@@ -49,12 +49,15 @@ Guide the visual design system, financial data legibility, responsive layouts, a
 
 ---
 
-## 5. Mobile & Tablet Touch Standards & Layouts
+## 5. Mobile & Tablet Touch Standards, Centered Modals & Wrapping Layouts
 
 - **Comfortable Touch Targets**: Every button, pill toggle, quick-action trigger, and modal close button must provide at least 44px of touch height on mobile devices (`min-h-[44px] min-w-[44px]`).
 - **Visual Feedback on Tap**: All interactive elements must feature subtle active scale feedback (`active:scale-[0.98]` or `active:scale-95`) to give tactile touch confirmation.
-- **Form Readability**: Form inputs must never be smaller than 14px on tablets/desktops and must always be 16px on mobile viewports to ensure legible financial data entry without viewport zoom.
-- **Bottom Sheets on Mobile**: All modals should appear anchored to the bottom on mobile screens (`flex items-end sm:items-center`, `rounded-t-3xl sm:rounded-2xl`) with internal scroll containment (`max-h-[92vh] sm:max-h-[90vh] overflow-y-auto`).
-- **Touch-Friendly Horizontal Overflow**: Tabs, filter chips, and period selectors must scroll horizontally without ugly scrollbars (`overflow-x-auto scrollbar-none flex-nowrap`).
-- **Dropdown Safe Area**: Never let dropdowns overflow viewport edges. Ensure responsive padding and soft shadow containment.
+- **Form Readability & iOS Zoom Prevention**: Form inputs, selects, and textareas must always use `text-base sm:text-sm` (16px on mobile viewports to prevent iOS Safari auto-zoom, 14px on tablet and desktop). Never use cramped `sm:text-xs` (12px).
+- **Centered Modal Experience & Portal Isolation**: All pop-out forms and modals must be rendered via `ModalPortal` (`createPortal(..., document.body)`) to escape parent containers with `overflow-hidden` or `backdrop-filter`. Modals automatically center to the viewport across all screen sizes (`flex items-center justify-center p-3 sm:p-4 md:p-6`, `rounded-2xl sm:rounded-3xl`, `max-h-[90vh] sm:max-h-[88vh] overflow-y-auto`) with high-contrast borders and frosted backdrop blur. Body and documentElement scroll locking (`html.modal-open, body.modal-open`) and overscroll containment (`overscroll-behavior: contain`) isolate background touch and scroll events.
+- **Zero Horizontal Scrolling & Visible Button Layouts**: Never hide buttons, tabs, quick amount chips, or category filters behind horizontal scrolling (`overflow-x-auto`, `scrollbar-none`, `flex-nowrap`). All buttons, tabs, and action pills must be arranged in responsive wrapping layouts (`flex flex-wrap gap-2`, `grid grid-cols-2 xs:grid-cols-3 md:flex`) so 100% of controls are visible at a glance on PC, tablet, and phone without horizontal scrolling.
+- **Pinned Header Navigation**: The application header is pinned fixed to the top of the viewport (`fixed top-0 left-0 right-0 z-40`) with an explicit spacer (`h-16`) and CSS `scroll-padding-top` to follow the user during scrolling without obscuring content or anchor targets.
+- **In-App Custom Confirmation Prompts**: Native browser `window.confirm` and `window.alert` dialogs are strictly prohibited. All destructive or consequential user actions (deleting accounts, cards, recurring rules, or reverting transactions) must use the accessible in-app `ConfirmModal` (`useConfirm()`).
+- **Dropdown Safe Area**: Never let dropdowns overflow viewport edges. Ensure responsive width capping (`w-[min(calc(100vw-24px),22rem)]`) and soft shadow containment.
+- **Viewport Containment**: `html`, `body`, and `#root` must enforce strict horizontal containment (`width: 100%; max-width: 100%; overflow-x: hidden; position: relative;`) and `-webkit-text-size-adjust: 100%`. Decorative glow and blur sections must be wrapped in `overflow-hidden` to prevent layout blowout and zoom-out margin gutter bugs.
 

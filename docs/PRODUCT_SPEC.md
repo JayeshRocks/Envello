@@ -15,17 +15,18 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
    - Sum of all liquid checking/savings bank accounts and physical cash on hand.
    - Represents money that is actually available to be spent or allocated.
 2. **Envelope Allocations (Assigned Money)**:
-   - Funds from spendable cash that have been budgeted into active spending categories for the current month.
-3. **Fixed Deposits & RDs (Term Assets)**:
+   - Funds from spendable cash that have been budgeted into active spending categories (across Spendable, Emergency, Savings, and lifestyle envelopes).
+3. **FDs & RDs (Term Assets)**:
    - Long-term reserves, bank fixed deposits (FDs), and recurring deposits (RDs) with monthly contributions.
-   - Explicitly excluded from spendable cash to prevent accidental spending. Bank savings accounts are tracked under Pillar 1 (Liquid Accounts), with interest earned recorded as Income or via Reconciliation.
+   - Shortened to **"FDs & RDs"** on space-constrained UI elements (metric cards, navigation pills, tab headers).
+   - Explicitly excluded from spendable cash to prevent accidental spending.
 4. **Credit Card Liabilities (Unsettled Debt)**:
    - Total outstanding balances across all active credit cards.
-   - Tracked alongside available credit limits and statement due dates.
+   - Managed directly under the Cards & Debts hub, not as an envelope.
 5. **Debts & Loans (External & Personal Obligations)**:
    - Amounts borrowed from individuals (friends, family) or financial institutions with on-demand manual repayment from liquid bank accounts (mirrors credit card bill payments).
    - Fixed recurring monthly instalments (e.g. car, gadget, personal loans) are organized under the unified **EMIs** hub alongside Self EMIs.
-6. **Monthly Targets (Forward Planning)**:
+6. **Monthly Targets & Standing Costs (Forward Planning)**:
    - Forward-looking financial goals and recurring purchase intentions.
    - Setting a target does NOT deduct cash until actual contributions are recorded.
 
@@ -38,18 +39,26 @@ Envello utilizes zero-based envelope budgeting principles: every rupee of spenda
 To prevent cognitive overload and maintain absolute structural clarity, the UI visually segregates envelopes into two distinct tiers:
 
 1. **Mandatory Core System Envelopes**:
-   - **Spendable (`spendable` / `regular`)**: The foundational clearinghouse envelope. Discretionary expenses and general transactions draw from here when unassigned. Cannot be deleted.
-   - **Emergency Reserve (`emergency`)**: Protected capital reserve reserved solely for unforeseen crises (medical, urgent repairs). Protected against automatic sweeps or balance deficit coverage.
+   - **Spendable (`spendable` / `regular`)**: The foundational liquid clearinghouse envelope. General expenses draw from here when unassigned. Cannot be deleted.
+   - **Emergency Reserve (`emergency`)**: Protected capital reserve reserved solely for unforeseen crises (medical, urgent repairs). Protected against automatic sweeps or balance deficit coverage. Requires explicit warning confirmation before funds can be withdrawn or debited.
+   - **Savings Reserve (`savings`)**: Untouched liquid capital reserve set aside to earn normal bank interest and build positive net worth without locking funds into term deposits. Protected with explicit confirmation prompts before withdrawals or debits.
    - **Visual Presentation**: Grouped at the top with a dedicated header, `ShieldCheck` icon, `Mandatory` badges, and distinct visual treatment.
+   - Credit Cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT core envelopes.
 
 2. **Custom User Categories**:
-   - User-defined lifestyle envelopes (`Essentials`, `Gym`, `Dining`, `Birthdays`, `Utilities`, etc.).
+   - User-defined lifestyle envelopes (`Groceries`, `Dining Out`, `Utilities`, `Entertainment`, `Travel`, etc.).
    - Arranged in an adaptive multi-column grid with an inline `+ New Category` action button and individual category counters.
    - Fully customizable, deletable, and reallocatable.
 
+#### Anti-Negative Envelope Invariant:
+- **Strict Guard**: Envelopes can NEVER be overspent into negative balances.
+- **Validation**: When recording an expense, debits cannot exceed available allocation (`amountPaise <= availablePaise`).
+- **Direct Bills**: Expenses that do not deduct from an envelope use "None".
+- **Direct Income Assignment**: Income recording can optionally allocate directly into an envelope, increasing that envelope's allocation and available balance in lockstep.
+
 #### Rollover & Month Transition Rules:
-- Envelopes support configurable rollover behavior (roll surplus into next month vs sweep back to Regular/Savings).
-- Negative envelope balances (overspending) are carried forward or prompt the user to reallocate from Regular.
+- Envelopes support configurable rollover behavior (roll surplus into next month vs sweep back to Spendable).
+- Overspent envelopes are strictly prevented at transaction entry time; available balances are guaranteed to remain non-negative.
 - Monthly transitions must never silently discard or reset unused balances.
 
 ---
@@ -116,14 +125,35 @@ Every financial movement is classified deterministically:
 
 ---
 
-### 2.6 Monthly Targets & Recurring Goals
-- Planning envelope for recurring purchase goals (e.g. annual insurance premiums, festival shopping, tech upgrades).
-- Tracks planned monthly contributions vs actual contributions made.
-- **Rule**: Creating or editing a monthly target does not deduct funds until an explicit contribution transaction is recorded.
+### 2.6 Standing Costs & Recurring Needs Engine
+A deterministic engine for recurring household and personal obligations:
+- **Dual Frequency Scheduling**:
+  1. **Interval in Days** (`interval_days`): Repeats every $X$ days for rolling supplies and consumables (e.g. water cans every 15 days, whey protein every 45 days).
+  2. **Day of Month** (`monthly_day`): Triggers on a fixed calendar day of each month for regular bills (rent, utilities, WiFi, streaming subscriptions).
+- **Real-Time Due Status**: Dynamically calculates status relative to current date (`Due Today`, `Overdue by X days`, `Due in X days`).
+- **1-Click Batch Logging**: Users can log due items individually or batch-log all due items with verified source accounts and optional envelope deductions.
+- **Normalized 30-Day Monthly Commitment**: Calculates normalized monthly commitment ($\text{amount} \times 30 / \text{interval\_days}$) alongside monthly day sums to give an accurate monthly projection.
+- **Rule**: Creating or editing a standing cost does NOT deduct funds until an explicit transaction is logged.
 
 ---
 
-### 2.7 Reports, Forecasting & Exports
+### 2.7 Transaction Reversion & 3-Day Rollover Policy
+- **Detailed In-App Preview**: When clicking Revert on a transaction, an in-app confirmation modal (`RevertTransactionModal`) displays the exact ledger impact: which accounts will be credited/debited, which envelopes will be refunded/deducted, and card/debt liability updates.
+- **Strict Anti-Negative Envelope Guard**: Reversions are guarded; if an income transaction assigned money to an envelope and that money was subsequently spent, the reversion is rejected to prevent the envelope from dropping below zero.
+- **3-Day Month-End Grace Period**: Reversions are permitted for transactions from the current calendar month, plus transactions dated in the final 3 days of the preceding month to accommodate month-end reconciliation. Older transactions are permanently locked to preserve historical accounting integrity.
+
+---
+
+### 2.8 UI/UX Standards, Modals & Mobile Ergonomics
+- **Centered Modal Experience**: All dialogs and pop-outs render via `ModalPortal` (`createPortal(..., document.body)`) to escape card clipping or backdrop-filter traps, centering automatically across all device viewports with frosted backdrop blur and scroll locking.
+- **Zero Horizontal Scrolling**: Controls, filter chips, tabs, and action pills are arranged in responsive wrapping layouts (`flex-wrap`, responsive grids) so 100% of controls are visible at a glance without horizontal scrolling.
+- **Touch Target Ergonomics**: All interactive buttons, chips, and close triggers maintain at least a 44px minimum touch target (`min-h-[44px] min-w-[44px]`) with `active:scale-95` tactile feedback. Form controls strictly use `text-base sm:text-sm` (16px on mobile to prevent iOS Safari auto-zoom).
+- **Pinned Header Navigation**: The application header is pinned fixed to the top of the viewport (`fixed top-0 left-0 right-0 z-40`) with an explicit spacer (`h-16`) and CSS `scroll-padding-top`.
+- **In-App Branded Confirmations**: Native browser `window.confirm` and `window.alert` dialogs are strictly prohibited; all confirmations use the accessible in-app `ConfirmModal` (`useConfirm()`).
+
+---
+
+### 2.9 Reports, Forecasting & Exports
 - Monthly cashflow analysis (Total Income vs Total Consumption).
 - Envelope spending breakdown and budget variance.
 - Credit card utilization and statement payment history.
@@ -132,6 +162,6 @@ Every financial movement is classified deterministically:
 
 ---
 
-### 2.8 Future Scope (Version 2)
+### 2.10 Future Scope (Version 2)
 - Explicitly deferred AI-assisted features: Natural language transaction entry, SMS/receipt parsing, predictive spending alerts, and financial conversational queries.
 - Version 1 is 100% complete and fully usable without any AI dependencies.

@@ -34,28 +34,34 @@ Never classify balance movements as expenses unless wealth is actually consumed:
 
 ## 3. Envelope Budgeting Invariants
 
-- **Envelope Types**:
-  1. `Regular` (default spendable pool)
-  2. `Emergency` (guarded reserve; NEVER auto-deduct to cover regular overspends)
-  3. `Gym`
-  4. `Essentials` (tracked independently from Gym)
-  5. `Outing`
-  6. `Birthdays`
-  7. `Savings` (Super.Money FDs; non-spendable assets)
-  8. `Credit Cards` (liability settlement tracker)
-  9. `EMI(s)` (external debt payments)
-  10. `Monthly Targets` (forward planning pool)
+- **Core System Envelopes & User Categories**:
+  - Exactly three permanent, mandatory system compartments:
+    1. `Spendable` (`regular`): Primary liquid clearinghouse and general spendable pool.
+    2. `Emergency` (`emergency`): Guarded safety reserve. Never auto-deducts to cover general expenses.
+    3. `Savings` (`savings`): Untouched capital reserve set aside to earn normal bank interest and build positive net worth without locking into term deposits.
+  - User-defined lifestyle envelopes (e.g. `Groceries`, `Dining Out`, `Utilities`, `Entertainment`, `Travel`).
+  - Credit Cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT core envelopes.
+- **Anti-Negative Envelope Invariant**:
+  - Envelopes can NEVER be overspent into negative balances.
+  - When recording an expense against an envelope, the transaction engine strictly enforces that debits do not exceed available allocation (`amountPaise <= availablePaise`).
+  - Direct bills or card repayments that bypass envelope allocations must select "None".
+  - Income can be credited directly to a liquid account and optionally assigned to an envelope, increasing that envelope's monthly allocation and available balance in lockstep.
+- **Protected Reserve Authorization**:
+  - `Emergency` and `Savings` compartments are guarded reserves. Any withdrawal or direct expense debit requires an explicit confirmation banner and authorization checkbox to prevent accidental depletion.
 - **Rollover Mechanics**:
-  - Unspent allocations must follow explicit, user-configured rollover rules (rollover to next month vs reallocate to Regular/Savings). Never silently zero out balances at month-end.
-- **Emergency Envelope Protection**:
-  - Funds in Emergency are locked. Any debit from Emergency requires explicit user intent and confirmation.
-- **Planning vs Actuals (Monthly Targets)**:
-  - Creating a Monthly Target is a planning intention. It must NEVER deduct real money from bank accounts or Regular until an actual transfer or contribution transaction is logged.
+  - Unspent allocations follow explicit rollover policies (`carry_over` vs zero-reset). Funds carried over from the prior month form the opening available balance (`available = allocated + carriedOver - spent`).
+- **Planning vs Actuals (Monthly Targets & Recurring Costs)**:
+  - Monthly targets and recurring costs represent planning commitments. They NEVER deduct real money from bank accounts or envelopes until an actual transaction is logged.
+  - Recurring costs support dual scheduling: `interval_days` (repeating every $X$ days; normalized 30-day commitment $= \text{amount} \times 30 / \text{interval\_days}$) and `monthly_day` (repeating on a specific day of each month).
 
 ---
 
-## 4. Ledger Invariants & Atomic Operations
+## 4. Ledger Invariants, Reversion & Atomic Operations
 
 - **Double-Sided Consistency**: Every transfer, card repayment, or allocation change touches two sides. Both sides must be updated in a single database transaction.
+- **Detailed Reversion Process & 3-Day Rollover Policy**:
+  - Reversion requests require an in-app ledger preview showing the exact account balance changes and envelope refunds/deductions prior to confirmation.
+  - Reversions are restricted to the current calendar month, plus a 3-day post-month-end grace period for transactions dated in the final 3 days of the preceding month.
+  - Reversion anti-negative check: Reverting an income transaction or envelope transfer cannot proceed if the envelope has already spent those funds (`availablePaise < amountPaise`), preventing negative envelope balances.
 - **No Silent Adjustments**: If a balance discrepancy occurs during reconciliation against a bank statement, record a formal `Balance Adjustment` transaction with a documented reason and audit log. Never alter past transactions silently.
 - **Audit Trail**: Key financial operations must log an entry in the `audit_logs` table recording the actor, timestamp, previous balance, and new balance.

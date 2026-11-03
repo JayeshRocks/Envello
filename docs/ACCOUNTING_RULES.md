@@ -36,11 +36,13 @@ The UI must NEVER summarize wealth into an ambiguous "Total Balance". It must al
 | Pillar | Classification | Source | Liquid / Spendable? |
 | :--- | :--- | :--- | :--- |
 | **Spendable Cash** | Asset | Checking, Savings, Physical Cash | **Yes** |
-| **Envelope Allocations** | Budget | Designated portion of Spendable Cash | **Yes (earmarked)** |
-| **Savings & Fixed Deposits** | Asset | Bank FDs, Post Office, Term Deposits | **No (locked)** |
-| **Credit Card Liabilities** | Liability | Outstanding credit card debt | **Obligation** |
+| **Envelope Allocations** | Budget | Spendable, Emergency, Savings, and lifestyle envelopes | **Yes (earmarked)** |
+| **FDs & RDs** | Asset | Bank FDs, RDs, Post Office, Term Deposits | **No (locked)** |
+| **Credit Card Liabilities** | Liability | Outstanding credit card debt (Cards & Debts hub) | **Obligation** |
 | **Actual Debts** | Liability | Personal loans, debts to individuals | **Obligation** |
-| **Monthly Targets** | Planning | Planned savings/purchase intentions | **N/A (goal)** |
+| **Monthly Targets & Standing Costs** | Planning | Planned savings intentions and dual-mode recurring needs | **N/A (goal)** |
+
+*Note on terminology*: In space-constrained UI elements (pills, tabs, summary chips), "Fixed Deposits & Recurring Deposits" is shortened to **"FDs & RDs"**.
 
 ---
 
@@ -52,12 +54,12 @@ Never classify a transaction as an expense unless purchasing power is actually c
 1. **Account-to-Account Transfer**:
    - `Account A (Debit -₹5,000)` and `Account B (Credit +₹5,000)`.
    - Net cashflow impact: **₹0**. Consumption impact: **₹0**.
-2. **Fixed Deposit Placement**:
-   - `Bank Account (Debit -₹50,000)` and `FD Asset (Credit +₹50,000)`.
+2. **Fixed Deposit & Recurring Deposit Placement**:
+   - `Bank Account (Debit -₹50,000)` and `FD/RD Asset (Credit +₹50,000)`.
    - Converts liquid cash into locked savings. Net worth impact: **₹0**. Consumption: **₹0**.
 3. **Credit Card Bill Repayment**:
    - `Bank Account (Debit -₹12,000)` and `Credit Card Liability (Credit +₹12,000)`.
-   - Settles an existing debt. Consumption was already recorded when goods were purchased. Counting this as an expense would double-count spending.
+   - Settles an existing card liability in the Cards & Debts hub. Consumption was already recorded when goods were purchased. Repaying must NEVER be counted as an expense a second time.
 4. **Self EMI Reimbursement**:
    - Moves money from monthly discretionary cash back into savings to replenish funds used for a past upfront purchase.
 
@@ -67,15 +69,15 @@ Never classify a transaction as an expense unless purchasing power is actually c
 
 | Type | Liquid Cash Impact | Envelope Impact | Liability / Asset Impact |
 | :--- | :--- | :--- | :--- |
-| **Income** | `+Amount` | Increases Unallocated pool | None |
-| **Expense** | `-Amount` | `-Amount` from Envelope | None |
+| **Income** | `+Amount` | Direct to account; optionally assigns to Envelope | None |
+| **Expense** | `-Amount` | `-Amount` from Envelope (must not exceed available; or "None" for direct bill) | None |
 | **Transfer** | Source `-Amount`, Dest `+Amount` | None | None |
-| **Envelope Allocation** | None | Regular `-Amount`, Target Envelope `+Amount` | None |
-| **Credit Card Purchase** | None | `-Amount` from Envelope | CC Outstanding `+Amount` |
+| **Envelope Allocation** | None | Source Envelope `-Amount`, Target Envelope `+Amount` | None |
+| **Credit Card Purchase** | None | `-Amount` from Envelope (or "None") | CC Outstanding `+Amount` |
 | **Credit Card Payment** | `-Amount` from Bank | None | CC Outstanding `-Amount` |
-| **FD Placement** | `-Amount` from Bank | None | FD Asset `+Amount` |
-| **FD Liquidation** | `+Principal + Interest` | Unallocated `+Interest` | FD Asset `-Principal` |
-| **Self EMI Repayment** | None | Regular `-Amount` | Savings Asset `+Amount`, Self EMI Balance `-Amount` |
+| **FD/RD Placement** | `-Amount` from Bank | None | FD/RD Asset `+Amount` |
+| **FD/RD Liquidation** | `+Principal + Interest` | Unallocated/Spendable `+Interest` | FD/RD Asset `-Principal` |
+| **Self EMI Repayment** | None | Spendable `-Amount` | Savings Asset `+Amount`, Self EMI Balance `-Amount` |
 | **Actual Debt Payment** | `-Amount` from Bank | None | Debt Outstanding `-Amount` |
 | **Refund** | `+Amount` to Bank/Card | `+Amount` to Envelope | Linked to original transaction |
 | **Balance Adjustment** | `+/-Difference` to Account | None | Formal audit entry recorded |
@@ -84,31 +86,33 @@ Never classify a transaction as an expense unless purchasing power is actually c
 
 ## 5. Envelope Budgeting Rules
 
-### 5.1 Envelopes Definition
-1. **Regular / Balance**: Default spendable envelope for general purchases. Persistent account balances remain separate from monthly allocations.
-2. **Emergency**: Locked reserve for genuine emergencies.
-   - **Protection Rule**: Never automatically debit Emergency to cover negative balances in Regular or other envelopes.
-   - Any transfer from Emergency requires an explicit confirmation prompt.
-3. **Gym**: Fitness and health expenses.
-4. **Essentials**: Core living necessities (rent, utilities, groceries). Maintained strictly independent of Gym.
-5. **Outing**: Social spending, dining, entertainment.
-6. **Birthdays**: Gifts, celebrations.
-7. **Savings & Fixed Deposits**: Tracked separately as non-spendable asset balances.
-8. **Credit Cards**: Pool holding cash reserved to pay card bills.
-9. **EMI(s)**: Allocations reserved for debt repayments.
-10. **Monthly Targets**: Planning goals for upcoming recurring purchases.
+### 5.1 Envelopes Architecture
+1. **Core System Envelopes (Mandatory & Permanent)**:
+   - **Spendable** (`regular`): Primary liquid clearinghouse and general spending pool.
+   - **Emergency** (`emergency`): Guarded safety reserve. Never auto-deducts to cover general expenses. Any withdrawal or direct expense requires explicit confirmation and authorization.
+   - **Savings** (`savings`): Untouched capital reserve set aside to earn normal bank interest and build positive net worth without locking funds in fixed term deposits. Requires explicit confirmation warnings to withdraw or debit.
+2. **User-Defined Lifestyle Envelopes**: Custom envelopes (e.g. `Dining Out`, `Groceries`, `Utilities`, `Travel`, `Entertainment`).
+3. **Cards & Debts Separation**: Credit cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT core envelopes.
 
-### 5.2 Rollover Mechanics
+### 5.2 Anti-Negative Envelope Balance Guard
+- **Strict Invariant**: Envelopes can NEVER be overspent into negative balances.
+- **Validation**: When recording an expense against an envelope, the transaction engine strictly enforces `amountPaise <= availablePaise`. If the expense exceeds available funds, the transaction is rejected.
+- **Direct Bills**: Expenses that do not deduct from an envelope use the envelope option "None".
+- **Income Direct Assignment**: When recording income, users can optionally assign the income directly to an envelope, increasing that envelope's monthly allocation and available balance in lockstep.
+
+### 5.3 Rollover Mechanics
 - At the start of a new budget period (`YYYY-MM`):
-  - Envelopes with `carry_forward` keep their unspent balance.
-  - Envelopes with `sweep_to_regular` return unused funds to Regular.
-  - Overspent envelopes carry forward negative balances or require explicit reallocation.
-  - Unused allocations are never silently discarded.
+  - Envelopes with `carry_forward` keep their unspent balance: $\text{Available} = \text{Allocated} + \text{Carried Over} - \text{Spent}$.
+  - Envelopes with `sweep_to_spendable` return unused funds to Spendable.
+  - Overspent envelopes are strictly prevented by the transaction engine; zero or positive available balances are guaranteed.
 
-### 5.3 Planning vs Actuals (Monthly Targets)
-- Creating or editing a Monthly Target is a planning intention.
-- **Rule**: Target creation must NEVER automatically deduct funds from bank accounts or Regular.
-- Only an actual contribution transaction alters account balances.
+### 5.4 Planning vs Actuals (Monthly Targets & Recurring Costs)
+- Creating or editing a Monthly Target or Recurring Cost is a planning intention.
+- **Rule**: Target creation must NEVER automatically deduct funds from bank accounts or envelopes until an actual transaction is logged.
+- **Dual-Mode Recurring Costs**:
+  - `interval_days`: Repeats every $X$ days for rolling supplies and consumables. Normalized 30-day monthly commitment: $\text{amount} \times 30 / \text{interval\_days}$.
+  - `monthly_day`: Triggers on a fixed calendar day of each month for regular monthly bills (rent, utilities, subscriptions).
+  - Real-time due indicators (`Due Today`, `Overdue by X days`, `Due in X days`) with 1-click batch logging.
 
 ---
 
@@ -131,7 +135,15 @@ Never classify a transaction as an expense unless purchasing power is actually c
 
 ---
 
-## 7. Reconciliation & Balance Adjustments
+## 7. Transaction Reversion & Grace Period
+
+- **Detailed In-App Preview**: Reversions present a comprehensive breakdown of the exact changes that will be applied to account balances, envelope allocations, and card/debt liabilities before execution.
+- **3-Day Rollover Policy**: Reversions are restricted to the current calendar month, plus a 3-day grace period for transactions dated in the final 3 days of the preceding month.
+- **Anti-Negative Guard**: Reverting an income transaction or allocation transfer is rejected if the envelope has already spent those funds, ensuring envelope balances never drop below zero.
+
+---
+
+## 8. Reconciliation & Balance Adjustments
 
 - Monthly bank statement reconciliation allows comparing the calculated ledger balance against actual bank statements.
 - If a discrepancy exists:

@@ -38,11 +38,21 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **No Binary Floating-Point Math**: Store all currency in integer paise (the smallest currency unit in INR: ₹1.00 = 100 paise) or PostgreSQL `NUMERIC(12, 2)`. Never use JavaScript `Number` floats for financial additions/subtractions without a fixed-point precision helper.
 - **Clear Balance Taxonomy**: Never display a single ambiguous number labeled "Total Balance". The UI must distinguish:
   1. **Spendable Cash** (liquid bank accounts and cash in hand).
-  2. **Envelope Allocations** (assigned funds for specific purposes).
-  3. **Savings & Fixed Deposits** (locked or long-term assets).
+  2. **Envelope Allocations** (assigned funds for specific purposes across Spendable, Emergency, Savings, and custom categories).
+  3. **FDs & RDs** (locked term deposits, recurring deposits, and growth assets).
   4. **Credit Card Liabilities** (unsettled card debt).
   5. **Actual Debts** (debts owed to friends, family, or lenders).
-  6. **Monthly Targets** (planning goals, not liquid balances).
+  6. **Monthly Targets & Standing Costs** (planning goals and recurring cadences).
+- **Core System Envelopes & Protection Invariants**:
+  - Exactly three permanent mandatory compartments: **Spendable** (primary liquid clearinghouse), **Emergency** (protected safety net), and **Savings** (untouched capital reserve earning bank interest and contributing to positive net worth).
+  - Credit Cards and EMIs are direct liabilities/repayments tracked under the Cards & Debts hub, not core envelopes.
+  - Emergency and Savings reserves require explicit user authorization warnings and confirmation checkboxes before funds can be withdrawn or debited for expenses.
+- **Anti-Negative Envelope Guard**: Envelopes can NEVER be overspent into negative balances. When recording an expense, the transaction engine strictly enforces that debits do not exceed available allocation (`amountPaise <= availablePaise`). Direct bills without envelope deduction must use "None". Income can be credited directly to accounts and optionally assigned to an envelope.
+- **Detailed Reversion Process & 3-Day Rollover Policy**: Transaction reversions require an in-app preview detailing exact double-entry ledger impact across accounts, envelopes, cards, and debts. Allowed for the current month and up to 3 days post month-end. Reversions are guarded against driving envelope balances below zero if allocated funds were already spent.
+- **Reimagined Recurring Costs Engine**: Supports dual frequency models:
+  1. **Interval in Days** (`interval_days`): repeat every X days for rolling supplies and consumables (e.g., water cans every 15 days, protein every 45 days).
+  2. **Day of Month** (`monthly_day`): triggers on a specific day of each month for regular bills (rent, utilities, subscriptions).
+  Real-time due triggers alert when items are due to be logged with 1-click batch entry and normalized 30-day monthly commitment projections.
 - **Atomic Operations**: Transfers, allocations, and multi-table financial movements must be executed inside database transactions or secure PostgreSQL RPC functions. No partial state updates.
 
 ### 3.2 Security, Auth & Profile Lifecycle
@@ -62,6 +72,9 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **Centered Modal Experience & Portal Isolation**: All pop-out forms and modals must be rendered via `ModalPortal` (`createPortal(..., document.body)`) to escape parent containers with `overflow-hidden` or `backdrop-filter`. Modals automatically center to the viewport on all device sizes (`flex items-center justify-center p-3 sm:p-4 md:p-6`, `rounded-2xl sm:rounded-3xl`, `max-h-[90vh] sm:max-h-[88vh] overflow-y-auto`) with high-contrast borders and smooth backdrop blur. Body and documentElement scroll locking (`html.modal-open, body.modal-open`) and overscroll containment (`overscroll-behavior: contain`) must isolate background touch events.
 - **Zero Horizontal Scrolling & Visible Button Layouts**: Never hide buttons, tabs, quick amount chips, or category filters behind horizontal scrolling (`overflow-x-auto`, `scrollbar-none`, `flex-nowrap`). All buttons, tabs, and action pills must be arranged in responsive wrapping layouts (`flex flex-wrap gap-2`, `grid grid-cols-2 xs:grid-cols-3 md:flex`) so 100% of controls are visible at a glance on PC, tablet, and phone without horizontal scrolling.
 - **Responsive Overlays**: Overlays and dropdown menus must never use fixed pixel widths that overflow small devices; always cap with `w-[min(calc(100vw-24px),22rem)]`.
+- **Pinned Header Navigation**: The application header is pinned fixed to the top of the viewport (`fixed top-0 left-0 right-0 z-40`) with an explicit spacer (`h-16`) and CSS `scroll-padding-top` to follow the user during scrolling without layout obscuration.
+- **Custom In-App Branded Confirmation Prompts**: Native browser `window.confirm` and `window.alert` dialogs are strictly prohibited. All destructive or consequential user actions (deleting accounts, cards, recurring rules, or reverting transactions) must use the accessible in-app `ConfirmModal` (`useConfirm()`).
+- **Concise Terminology (FDs & RDs)**: Shorten "Fixed Deposits & Recurring Deposits" to **"FDs & RDs"** in all space-constrained UI elements (metric cards, navigation pills, tab headers).
 - **Viewport & Horizontal Overflow Containment**: `html`, `body`, and `#root` must enforce `width: 100%; max-width: 100%; overflow-x: hidden; position: relative;` and `-webkit-text-size-adjust: 100%`. Sections with decorative blur or glow backdrops must be contained with `overflow-hidden` to prevent layout blowout, mobile zoom anomalies, and blank margin gutters on zoom out. Avoid negative horizontal margins (`-mx-*`) on full-width unclipped containers.
 
 
