@@ -13,6 +13,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#38bdf8', // sky-400
     is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
+    sort_order: 0,
   },
   {
     name: 'Emergency',
@@ -21,6 +22,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#f87171', // red-400
     is_system_reserved: true, // Default protected reserve
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
+    sort_order: 1,
   },
   {
     name: 'Savings',
@@ -29,6 +31,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#10b981', // emerald-500
     is_system_reserved: true, // Default protected reserve
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
+    sort_order: 2,
   },
   {
     name: 'Essentials',
@@ -37,6 +40,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#fbbf24', // amber-400
     is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
+    sort_order: 3,
   },
   {
     name: 'Gym',
@@ -45,6 +49,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#34d399', // emerald-400
     is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
+    sort_order: 4,
   },
   {
     name: 'Outing',
@@ -53,6 +58,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#c084fc', // purple-400
     is_system_reserved: false,
     rollover_policy: 'sweep_to_regular' as EnvelopeRolloverPolicy,
+    sort_order: 5,
   },
   {
     name: 'Birthdays',
@@ -61,6 +67,7 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     color: '#f472b6', // pink-400
     is_system_reserved: false,
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
+    sort_order: 6,
   },
 ];
 
@@ -149,7 +156,7 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
     return;
   }
 
-  const rowsToInsert = DEFAULT_ENVELOPES_CONFIG.map((env) => ({
+  const rowsToInsert = DEFAULT_ENVELOPES_CONFIG.map((env, index) => ({
     user_id: userId,
     name: env.name,
     slug: env.slug,
@@ -157,6 +164,7 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
     color: env.color,
     is_system_reserved: env.is_system_reserved,
     rollover_policy: env.rollover_policy,
+    sort_order: env.sort_order ?? index,
   }));
 
   const { error: insertError } = await supabase.from('envelopes').insert(rowsToInsert);
@@ -180,20 +188,58 @@ export async function fetchEnvelopesWithAllocations(
   const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
 
   // 3. Fetch all user envelopes (excluding deprecated credit-cards and emis)
-  const { data: envelopesData, error: envError } = await supabase
+  // Attempt to query ordered by sort_order, with graceful fallback to created_at
+  let envelopesData: Database['public']['Tables']['envelopes']['Row'][] | null = null;
+  const { data: orderedData, error: sortError } = await supabase
     .from('envelopes')
     .select('*')
     .eq('user_id', userId)
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
 
-  if (envError) {
-    console.error('[Envello API] Error fetching envelopes:', envError.message);
-    throw envError;
+  if (sortError) {
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('envelopes')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+
+    if (fallbackError) {
+      console.error('[Envello API] Error fetching envelopes:', fallbackError.message);
+      throw fallbackError;
+    }
+    envelopesData = fallbackData;
+  } else {
+    envelopesData = orderedData;
   }
 
   const validEnvelopes = (envelopesData || []).filter(
     (env) => env.slug !== 'credit-cards' && env.slug !== 'emis' && env.slug !== 'monthly-targets'
   );
+
+  // Apply localStorage custom ordering overlay if present
+  let localOrder: string[] = [];
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(`envello_envelope_order_${userId}`);
+      if (raw) {
+        localOrder = JSON.parse(raw);
+      }
+    }
+  } catch {
+    // Ignore JSON parse errors
+  }
+
+  if (localOrder.length > 0) {
+    validEnvelopes.sort((a, b) => {
+      const idxA = localOrder.indexOf(a.id);
+      const idxB = localOrder.indexOf(b.id);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    });
+  }
 
   // 4. Fetch allocations for the specified period
   const { data: allocationsData, error: allocError } = await supabase
@@ -213,7 +259,7 @@ export async function fetchEnvelopesWithAllocations(
   }
 
   // 5. Combine into EnvelopeWithAllocation domain objects
-  return validEnvelopes.map((env) => {
+  return validEnvelopes.map((env, index) => {
     const alloc = allocMap.get(env.id);
     const allocatedPaise = BigInt(alloc?.allocated_paise ?? 0);
     const carriedOverPaise = BigInt(alloc?.carried_over_paise ?? 0);
@@ -229,6 +275,7 @@ export async function fetchEnvelopesWithAllocations(
       isSystemReserved: env.is_system_reserved,
       isProtected: env.is_system_reserved,
       rolloverPolicy: env.rollover_policy as EnvelopeRolloverPolicy,
+      sortOrder: (env as unknown as { sort_order?: number }).sort_order ?? index,
       allocationId: alloc?.id,
       allocatedPaise,
       carriedOverPaise,
@@ -498,19 +545,90 @@ export async function createCustomEnvelope(
     ? `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`
     : baseSlug;
 
-  const { error } = await supabase.from('envelopes').insert({
-    user_id: userId,
-    name: data.name.trim(),
-    slug: finalSlug,
-    icon: data.icon || 'Folder',
-    color: data.color || '#38bdf8',
-    is_system_reserved: Boolean(data.isProtected),
-    rollover_policy: data.rolloverPolicy,
-  });
+  // Calculate next sort_order
+  let nextSortOrder = 0;
+  try {
+    const { data: maxEnv } = await supabase
+      .from('envelopes')
+      .select('sort_order')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (maxEnv && typeof maxEnv.sort_order === 'number') {
+      nextSortOrder = maxEnv.sort_order + 1;
+    }
+  } catch {
+    // Ignore if column doesn't exist yet
+  }
+
+  const { data: inserted, error } = await supabase
+    .from('envelopes')
+    .insert({
+      user_id: userId,
+      name: data.name.trim(),
+      slug: finalSlug,
+      icon: data.icon || 'Folder',
+      color: data.color || '#38bdf8',
+      is_system_reserved: Boolean(data.isProtected),
+      rollover_policy: data.rolloverPolicy,
+      sort_order: nextSortOrder,
+    })
+    .select('id')
+    .single();
 
   if (error) {
     console.error('[Envello API] Error creating custom envelope:', error.message);
     throw error;
+  }
+
+  // Also append to local order cache if present
+  try {
+    if (typeof window !== 'undefined' && window.localStorage && inserted?.id) {
+      const raw = localStorage.getItem(`envello_envelope_order_${userId}`);
+      if (raw) {
+        const order: string[] = JSON.parse(raw);
+        if (!order.includes(inserted.id)) {
+          order.push(inserted.id);
+          localStorage.setItem(`envello_envelope_order_${userId}`, JSON.stringify(order));
+        }
+      }
+    }
+  } catch {
+    // Ignore JSON errors
+  }
+}
+
+/**
+ * Updates the user-defined display order for envelopes.
+ * Syncs instantly to localStorage for 0ms latency and persists to Supabase.
+ */
+export async function updateEnvelopeSortOrders(
+  userId: string,
+  orderedIds: string[]
+): Promise<void> {
+  // 1. Instantly save to localStorage for cache and offline resilience
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(`envello_envelope_order_${userId}`, JSON.stringify(orderedIds));
+    }
+  } catch (e) {
+    console.warn('[Envello API] Failed to cache envelope order locally:', e);
+  }
+
+  // 2. Persist sort_order to Supabase
+  try {
+    const updates = orderedIds.map((id, index) =>
+      supabase
+        .from('envelopes')
+        .update({ sort_order: index, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', userId)
+    );
+    await Promise.all(updates);
+  } catch (err) {
+    console.warn('[Envello API] Failed to persist sort_order to Supabase:', err);
   }
 }
 

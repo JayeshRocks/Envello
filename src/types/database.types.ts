@@ -117,6 +117,7 @@ export interface Database {
           color: string | null;
           is_system_reserved: boolean;
           rollover_policy: 'carry_forward' | 'sweep_to_regular' | 'reset';
+          sort_order: number;
           created_at: string;
           updated_at: string;
         };
@@ -129,6 +130,7 @@ export interface Database {
           color?: string | null;
           is_system_reserved?: boolean;
           rollover_policy?: 'carry_forward' | 'sweep_to_regular' | 'reset';
+          sort_order?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -141,6 +143,7 @@ export interface Database {
           color?: string | null;
           is_system_reserved?: boolean;
           rollover_policy?: 'carry_forward' | 'sweep_to_regular' | 'reset';
+          sort_order?: number;
           created_at?: string;
           updated_at?: string;
         };

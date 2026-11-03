@@ -138,10 +138,12 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
             </div>
 
             {/* Protected Reserve Feature Toggle */}
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-neutral-950/70 border border-white/10">
+            <div className={`flex items-center justify-between p-3.5 rounded-xl transition-colors duration-200 ${
+              isProtected ? 'bg-emerald-950/20 border border-emerald-500/30' : 'bg-neutral-950/70 border border-white/10'
+            }`}>
               <div className="space-y-0.5 pr-3">
                 <div className="flex items-center space-x-1.5">
-                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <span className="text-xs font-semibold text-white">Protected Reserve</span>
                 </div>
                 <p className="text-[11px] text-neutral-400 leading-relaxed">
@@ -154,7 +156,7 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
                 aria-checked={isProtected}
                 onClick={() => setIsProtected(!isProtected)}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  isProtected ? 'bg-amber-500' : 'bg-neutral-700'
+                  isProtected ? 'bg-emerald-500' : 'bg-neutral-700'
                 }`}
               >
                 <span

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Mail,
   ShieldAlert,
@@ -18,6 +18,10 @@ import {
   Utensils,
   Book,
   PiggyBank,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical,
 } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { formatINR } from '@/lib/accounting/currency';
@@ -25,9 +29,17 @@ import { SpotlightCard } from '@/components/common/SpotlightCard';
 
 interface EnvelopeCardProps {
   envelope: EnvelopeWithAllocation;
+  index?: number;
+  totalCount?: number;
+  isReorderMode?: boolean;
   onAllocate: () => void;
   onTransfer: () => void;
   onEdit: () => void;
+  onMoveLeft?: () => void;
+  onMoveRight?: () => void;
+  onDragStart?: (e: React.DragEvent<HTMLElement>) => void;
+  onDragOver?: (e: React.DragEvent<HTMLElement>) => void;
+  onDrop?: (e: React.DragEvent<HTMLElement>) => void;
 }
 
 function getIconComponent(iconName?: string) {
@@ -66,10 +78,19 @@ function getIconComponent(iconName?: string) {
 
 export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   envelope,
+  index,
+  totalCount,
+  isReorderMode = false,
   onAllocate,
   onTransfer,
   onEdit,
+  onMoveLeft,
+  onMoveRight,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }) => {
+  const [isProtectedExpanded, setIsProtectedExpanded] = useState(false);
   const isProtected = Boolean(envelope.isProtected ?? envelope.isSystemReserved);
   const IconComp = getIconComponent(envelope.icon);
 
@@ -87,7 +108,15 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   return (
     <SpotlightCard
       spotlightColor={`${categoryColor}24`}
-      className="space-y-4 relative overflow-hidden group p-5 border border-white/10 hover:border-white/20 transition-all duration-300"
+      draggable={isReorderMode}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`space-y-4 relative overflow-hidden group p-5 border transition-all duration-300 ${
+        isReorderMode
+          ? 'border-sky-500/40 ring-1 ring-sky-500/20 bg-[#121417] cursor-grab active:cursor-grabbing'
+          : 'border-white/10 hover:border-white/20'
+      }`}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -102,13 +131,23 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
             <div className="text-sm font-semibold text-white tracking-tight flex items-center space-x-1.5 flex-wrap gap-y-1">
               <span>{envelope.name}</span>
               {isProtected && (
-                <span
-                  title="Protected Reserve: Requires explicit confirmation before spending or withdrawing"
-                  className="inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono font-medium"
+                <button
+                  type="button"
+                  onClick={() => setIsProtectedExpanded((prev) => !prev)}
+                  title={
+                    isProtectedExpanded
+                      ? 'Collapse Protected Reserve info'
+                      : 'Protected Reserve — Click to view details'
+                  }
+                  aria-label="Protected Reserve details"
+                  className={`inline-flex items-center justify-center p-1 rounded-full transition-all duration-200 cursor-pointer active:scale-95 ${
+                    isProtectedExpanded
+                      ? 'bg-emerald-500/20 text-emerald-300 ring-2 ring-emerald-500/40 shadow-sm shadow-emerald-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+                  }`}
                 >
-                  <ShieldCheck className="w-2.5 h-2.5" />
-                  <span>Protected Reserve</span>
-                </span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                </button>
               )}
             </div>
             <div className="text-[11px] text-neutral-400 capitalize">
@@ -117,31 +156,87 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
           </div>
         </div>
 
-        {/* Quick action buttons */}
-        <div className="flex items-center space-x-1 opacity-100 sm:opacity-85 sm:group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={onEdit}
-            title="Edit Envelope Details"
-            className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={onTransfer}
-            title="Transfer / Reallocate Funds"
-            className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
-          >
-            <ArrowRightLeft className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={onAllocate}
-            title="Set Monthly Budget"
-            className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        {/* Quick action buttons or Reorder controls */}
+        {isReorderMode ? (
+          <div className="flex items-center space-x-1 bg-neutral-900/90 p-1 rounded-xl border border-white/10 shadow-sm">
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/5 text-neutral-300 font-semibold select-none">
+              #{(index ?? 0) + 1}
+            </span>
+            <button
+              type="button"
+              onClick={onMoveLeft}
+              disabled={index === 0}
+              title="Move left / earlier"
+              className="p-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none transition min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-90 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onMoveRight}
+              disabled={index === (totalCount ?? 1) - 1}
+              title="Move right / later"
+              className="p-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none transition min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-90 cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <div
+              title="Drag card to reorder"
+              className="p-1.5 text-neutral-400 hover:text-neutral-200 cursor-grab active:cursor-grabbing flex items-center justify-center"
+            >
+              <GripVertical className="w-4 h-4" />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-1 opacity-100 sm:opacity-85 sm:group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={onEdit}
+              title="Edit Envelope Details"
+              className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onTransfer}
+              title="Transfer / Reallocate Funds"
+              className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onAllocate}
+              title="Set Monthly Budget"
+              className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Protected Reserve Details Banner (Expandable) */}
+      {isProtected && isProtectedExpanded && (
+        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs space-y-1.5 animate-fade-in relative shadow-inner">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1.5 font-semibold text-emerald-300">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span>Protected Reserve</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsProtectedExpanded(false)}
+              className="text-neutral-400 hover:text-white p-1 rounded-md transition cursor-pointer"
+              title="Close info"
+              aria-label="Close info"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <p className="text-[11px] text-emerald-200/90 leading-relaxed font-sans">
+            This envelope is configured as a Protected Reserve. It requires explicit user authorization confirmation before funds can be withdrawn, reallocated, or spent, safeguarding your reserves from accidental depletion.
+          </p>
+        </div>
+      )}
 
       {/* Available Balance */}
       <div>

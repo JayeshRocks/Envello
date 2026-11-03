@@ -1,10 +1,12 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Layers,
   Plus,
   RefreshCw,
   FolderPlus,
   RotateCcw,
+  ArrowUpDown,
+  Check,
 } from 'lucide-react';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 import { EnvelopeCard } from './EnvelopeCard';
@@ -33,6 +35,7 @@ export const EnvelopeGrid: React.FC = () => {
     createEnvelope,
     editEnvelope,
     removeEnvelope,
+    reorderEnvelopes,
     refresh,
     undoLastAllocation,
     canUndoAllocation,
@@ -44,17 +47,8 @@ export const EnvelopeGrid: React.FC = () => {
   const [editingEnvelope, setEditingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
-
-  // Unified envelope ordering: Protected reserves first, followed by custom categories
-  const sortedEnvelopes = useMemo(() => {
-    return [...envelopes].sort((a, b) => {
-      const aProtected = Boolean(a.isProtected || a.isSystemReserved);
-      const bProtected = Boolean(b.isProtected || b.isSystemReserved);
-      if (aProtected && !bProtected) return -1;
-      if (!aProtected && bProtected) return 1;
-      return a.name.localeCompare(b.name);
-    });
-  }, [envelopes]);
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const handleUndoAllocation = useCallback(async () => {
     if (!canUndoAllocation || isUndoing) return;
@@ -92,6 +86,48 @@ export const EnvelopeGrid: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canUndoAllocation, isUndoing, handleUndoAllocation]);
 
+  // Tactile arrow reordering (Move left/earlier or right/later)
+  const handleMove = useCallback(
+    (currentIndex: number, direction: 'left' | 'right') => {
+      const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex < 0 || targetIndex >= envelopes.length) return;
+      const newOrder = [...envelopes];
+      const [moved] = newOrder.splice(currentIndex, 1);
+      newOrder.splice(targetIndex, 0, moved);
+      reorderEnvelopes(newOrder.map((e) => e.id));
+    },
+    [envelopes, reorderEnvelopes]
+  );
+
+  // HTML5 Drag and drop reordering
+  const handleDragStart = useCallback(
+    (e: React.DragEvent<HTMLElement>, index: number) => {
+      setDraggedIndex(index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+    },
+    []
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLElement>, targetIndex: number) => {
+      e.preventDefault();
+      if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+      const newOrder = [...envelopes];
+      const [moved] = newOrder.splice(draggedIndex, 1);
+      newOrder.splice(targetIndex, 0, moved);
+      reorderEnvelopes(newOrder.map((e) => e.id));
+      setDraggedIndex(null);
+    },
+    [draggedIndex, envelopes, reorderEnvelopes]
+  );
+
   return (
     <section id="envelope-budgeting" className="space-y-5 max-w-full overflow-hidden scroll-mt-20">
       {/* Top Controls Bar */}
@@ -107,7 +143,7 @@ export const EnvelopeGrid: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Earmark monthly funds into isolated envelopes. Every envelope can be edited, customized, or deleted.
+            Earmark monthly funds into isolated envelopes. Every envelope can be edited, rearranged, or deleted.
           </p>
         </div>
 
@@ -136,14 +172,14 @@ export const EnvelopeGrid: React.FC = () => {
           <button
             onClick={() => refresh()}
             title="Refresh Envelopes"
-            className="p-2 sm:p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white transition shadow-sm min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center active:scale-95"
+            className="p-2 sm:p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white transition shadow-sm min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center active:scale-95 cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-sky-400' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* Monthly Summary Statistics Strip (Watermelon UI Metric Block) */}
+      {/* Monthly Summary Statistics Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 sm:p-5 rounded-2xl bg-[#0f1011] border border-white/10 shadow-lg">
         <div className="space-y-1">
           <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
@@ -186,7 +222,7 @@ export const EnvelopeGrid: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Header Strip & New Envelope Trigger */}
+      {/* Category Header Strip, Rearrange Mode & New Envelope Trigger */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
         <div className="flex items-center space-x-2">
           <span className="text-xs sm:text-sm font-semibold text-white tracking-tight">Envelope Allocations</span>
@@ -195,14 +231,58 @@ export const EnvelopeGrid: React.FC = () => {
           </span>
         </div>
 
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs transition self-start sm:self-auto active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] shadow-md shadow-sky-500/20"
-        >
-          <Plus className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
-          <span>New Envelope</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {envelopes.length > 1 && (
+            <button
+              onClick={() => setIsReorderMode((prev) => !prev)}
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] ${
+                isReorderMode
+                  ? 'bg-sky-500 text-neutral-950 shadow-md shadow-sky-500/25 ring-2 ring-sky-400/40'
+                  : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-white/10 hover:text-white'
+              }`}
+              title="Rearrange envelope display order"
+            >
+              {isReorderMode ? (
+                <>
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Done Reordering</span>
+                </>
+              ) : (
+                <>
+                  <ArrowUpDown className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Rearrange</span>
+                </>
+              )}
+            </button>
+          )}
+
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] shadow-md shadow-sky-500/20"
+          >
+            <Plus className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
+            <span>New Envelope</span>
+          </button>
+        </div>
       </div>
+
+      {/* Rearrange Mode Instructions Banner */}
+      {isReorderMode && envelopes.length > 1 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 sm:p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-sky-200 text-xs animate-fade-in shadow-inner">
+          <div className="flex items-center space-x-2">
+            <ArrowUpDown className="w-4 h-4 text-sky-400 flex-shrink-0" />
+            <span>
+              <strong>Rearrange Mode Active:</strong> Click the arrows or drag cards to change their order. Your custom sequence is saved automatically.
+            </span>
+          </div>
+          <button
+            onClick={() => setIsReorderMode(false)}
+            className="self-end sm:self-auto px-3 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-semibold border border-sky-500/30 transition cursor-pointer active:scale-95 min-h-[32px] flex items-center justify-center"
+          >
+            Done
+          </button>
+        </div>
+      )}
 
       {/* Envelope Cards Section */}
       {isLoading && envelopes.length === 0 ? (
@@ -239,13 +319,21 @@ export const EnvelopeGrid: React.FC = () => {
         </div>
       ) : (
         <div id="core-system-envelopes" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-24">
-          {sortedEnvelopes.map((env) => (
+          {envelopes.map((env, index) => (
             <EnvelopeCard
               key={env.id}
               envelope={env}
+              index={index}
+              totalCount={envelopes.length}
+              isReorderMode={isReorderMode}
               onAllocate={() => setAllocatingEnvelope(env)}
               onTransfer={() => setTransferringEnvelopeId(env.id)}
               onEdit={() => setEditingEnvelope(env)}
+              onMoveLeft={() => handleMove(index, 'left')}
+              onMoveRight={() => handleMove(index, 'right')}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, index)}
             />
           ))}
         </div>

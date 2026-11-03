@@ -8,6 +8,7 @@ import {
   createCustomEnvelope,
   updateEnvelope,
   deleteEnvelope,
+  updateEnvelopeSortOrders,
 } from '@/lib/api/envelopes';
 
 export interface AllocationHistoryEntry {
@@ -219,6 +220,36 @@ export function useEnvelopes() {
     }
   };
 
+  const reorderEnvelopes = useCallback(
+    async (orderedIds: string[]) => {
+      if (!user) return;
+
+      // Optimistically update local envelopes state for instant 0ms UI feedback
+      setEnvelopes((prev) => {
+        const idMap = new Map(prev.map((e) => [e.id, e]));
+        const reordered: EnvelopeWithAllocation[] = [];
+        for (const id of orderedIds) {
+          const item = idMap.get(id);
+          if (item) {
+            reordered.push({ ...item, sortOrder: reordered.length });
+            idMap.delete(id);
+          }
+        }
+        for (const remaining of idMap.values()) {
+          reordered.push({ ...remaining, sortOrder: reordered.length });
+        }
+        return reordered;
+      });
+
+      try {
+        await updateEnvelopeSortOrders(user.id, orderedIds);
+      } catch (err: unknown) {
+        console.error('[useEnvelopes] Failed to persist reordering:', err);
+      }
+    },
+    [user]
+  );
+
   // Aggregated totals across all envelopes in the period
   const totalAllocatedPaise = useMemo(
     () => envelopes.reduce((sum, env) => sum + env.allocatedPaise, 0n),
@@ -251,6 +282,7 @@ export function useEnvelopes() {
     createEnvelope,
     editEnvelope,
     removeEnvelope,
+    reorderEnvelopes,
     refresh: loadEnvelopes,
     undoLastAllocation,
     canUndoAllocation: undoStack.length > 0,

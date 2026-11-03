@@ -43,10 +43,11 @@ This document is the authoritative, permanent instructions guide for any AI agen
   4. **Credit Card Liabilities** (unsettled card debt).
   5. **Actual Debts** (debts owed to friends, family, or lenders).
   6. **Monthly Targets & Standing Costs** (planning goals and recurring cadences).
-- **Total User Envelope Control & Protected Reserve Feature**:
-  - Total user control: Every envelope can be edited, customized, renamed, and deleted. No envelopes are locked or permanent mandatory compartments.
+- **Total User Envelope Control, Envelope Rearranging & Protected Reserve Feature**:
+  - Total user control: Every envelope can be edited, customized, renamed, rearranged, and deleted. No envelopes are locked or permanent mandatory compartments.
+  - Envelope Rearranging: Users can reorder envelopes via tactile move arrow buttons and drag-and-drop, persisted with `sort_order` in the database and local cache.
   - Default starter envelopes: Spendable, Emergency, and Savings spawn automatically upon workspace initialization alongside lifestyle categories.
-  - Protected Reserve Feature: Any envelope can be toggled on/off as a Protected Reserve, requiring explicit user authorization warnings and confirmation checkboxes before funds can be withdrawn or debited for expenses (Emergency and Savings spawn with this feature on by default).
+  - Protected Reserve Feature: Any envelope can be toggled on/off as a Protected Reserve in emerald green. On envelope cards, a compact green shield symbol is displayed; clicking/expanding it reveals the full "Protected Reserve" description and rules. Requires explicit user authorization warnings and confirmation checkboxes before funds can be withdrawn or debited for expenses (Emergency and Savings spawn with this feature on by default).
   - Credit Cards and EMIs are direct liabilities/repayments tracked under Cards & Debts, never envelopes.
 - **Anti-Negative Envelope Guard**: Envelopes can NEVER be overspent into negative balances. When recording an expense, the transaction engine strictly enforces that debits do not exceed available allocation (`amountPaise <= availablePaise`). Direct bills without envelope deduction must use "None". Income can be credited directly to accounts and optionally assigned to an envelope.
 - **Detailed Reversion Process & 3-Day Rollover Policy**: Transaction reversions require an in-app preview detailing exact double-entry ledger impact across accounts, envelopes, cards, and debts, referencing the target accounts and envelopes by name rather than generic phrases. Allowed for the current month and up to 3 days post month-end. Reversions are guarded against driving envelope balances below zero if allocated funds were already spent.

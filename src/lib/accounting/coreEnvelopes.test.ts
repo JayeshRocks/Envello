@@ -49,23 +49,22 @@ describe('Envelope Specifications & Protected Reserve Feature', () => {
     expect(filtered.map((e) => e.slug)).toEqual(['regular', 'emergency', 'savings', 'gym']);
   });
 
-  it('orders envelopes with protected reserves first, followed by alphabetical order', () => {
+  it('supports custom sort order and rearranging envelopes', () => {
     const envelopes: Partial<EnvelopeWithAllocation>[] = [
-      { id: '1', name: 'Gym', slug: 'gym', isSystemReserved: false },
-      { id: '2', name: 'Savings', slug: 'savings', isSystemReserved: true },
-      { id: '3', name: 'Spendable', slug: 'regular', isSystemReserved: false },
-      { id: '4', name: 'Emergency', slug: 'emergency', isSystemReserved: true },
-      { id: '5', name: 'Birthdays', slug: 'birthdays', isSystemReserved: false },
+      { id: '1', name: 'Spendable', sortOrder: 0 },
+      { id: '2', name: 'Emergency', sortOrder: 1 },
+      { id: '3', name: 'Savings', sortOrder: 2 },
+      { id: '4', name: 'Essentials', sortOrder: 3 },
     ];
 
-    const sorted = [...envelopes].sort((a, b) => {
-      const aProtected = Boolean(a.isSystemReserved);
-      const bProtected = Boolean(b.isSystemReserved);
-      if (aProtected && !bProtected) return -1;
-      if (!aProtected && bProtected) return 1;
-      return (a.name || '').localeCompare(b.name || '');
+    // Rearrange: move Essentials to index 0
+    const desiredOrder = ['4', '1', '2', '3'];
+    const reordered = [...envelopes].sort((a, b) => {
+      const idxA = desiredOrder.indexOf(a.id!);
+      const idxB = desiredOrder.indexOf(b.id!);
+      return idxA - idxB;
     });
 
-    expect(sorted.map((e) => e.name)).toEqual(['Emergency', 'Savings', 'Birthdays', 'Gym', 'Spendable']);
+    expect(reordered.map((e) => e.name)).toEqual(['Essentials', 'Spendable', 'Emergency', 'Savings']);
   });
 });
