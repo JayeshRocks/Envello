@@ -23,6 +23,14 @@ export const DEFAULT_ENVELOPES_CONFIG = [
     rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
   },
   {
+    name: 'Savings',
+    slug: 'savings',
+    icon: 'PiggyBank',
+    color: '#10b981', // emerald-500
+    is_system_reserved: true,
+    rollover_policy: 'carry_forward' as EnvelopeRolloverPolicy,
+  },
+  {
     name: 'Essentials',
     slug: 'essentials',
     icon: 'Home',
@@ -109,22 +117,70 @@ export async function getOrCreateBudgetPeriod(userId: string, periodKey: string)
 export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
   const { data: existing, error: checkError } = await supabase
     .from('envelopes')
-    .select('id')
-    .eq('user_id', userId)
-    .limit(1);
+    .select('id, slug, name')
+    .eq('user_id', userId);
 
   if (checkError) {
     console.error('[Envello API] Error checking existing envelopes:', checkError.message);
     throw checkError;
   }
 
-  // If user already has envelopes, ensure legacy "Regular / Balance" is renamed to "Spendable"
+  // If user already has envelopes, ensure legacy names and reserves are standardized
   if (existing && existing.length > 0) {
+    // 1. Ensure legacy "Regular / Balance" is renamed to "Spendable"
     await supabase
       .from('envelopes')
       .update({ name: 'Spendable' })
       .eq('user_id', userId)
       .in('name', ['Regular / Balance', 'Regular/Balance']);
+
+    // 2. Ensure "Savings" envelope exists, is named "Savings", and is marked as system-reserved
+    const savingsEnv = existing.find((env) => env.slug === 'savings');
+    if (savingsEnv) {
+      if (savingsEnv.name !== 'Savings') {
+        await supabase
+          .from('envelopes')
+          .update({
+            name: 'Savings',
+            icon: 'PiggyBank',
+            color: '#10b981',
+            is_system_reserved: true,
+          })
+          .eq('id', savingsEnv.id);
+      }
+    } else {
+      // Seed missing Savings core envelope
+      await supabase.from('envelopes').insert({
+        user_id: userId,
+        name: 'Savings',
+        slug: 'savings',
+        icon: 'PiggyBank',
+        color: '#10b981',
+        is_system_reserved: true,
+        rollover_policy: 'carry_forward',
+      });
+    }
+
+    // 3. Clean up unreferenced deprecated envelopes (credit-cards, emis, monthly-targets)
+    const deprecatedEnvs = existing.filter((env) =>
+      ['credit-cards', 'emis', 'monthly-targets'].includes(env.slug)
+    );
+    for (const dep of deprecatedEnvs) {
+      try {
+        const { data: entries } = await supabase
+          .from('transaction_entries')
+          .select('id')
+          .eq('envelope_id', dep.id)
+          .limit(1);
+
+        if (!entries || entries.length === 0) {
+          await supabase.from('envelope_allocations').delete().eq('envelope_id', dep.id);
+          await supabase.from('envelopes').delete().eq('id', dep.id);
+        }
+      } catch (err) {
+        console.warn(`[Envello API] Could not auto-delete deprecated envelope ${dep.slug}:`, err);
+      }
+    }
     return;
   }
 
@@ -158,7 +214,7 @@ export async function fetchEnvelopesWithAllocations(
   // 2. Resolve budget_period ID
   const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
 
-  // 3. Fetch all user envelopes
+  // 3. Fetch all user envelopes (excluding deprecated credit-cards and emis)
   const { data: envelopesData, error: envError } = await supabase
     .from('envelopes')
     .select('*')
@@ -169,6 +225,10 @@ export async function fetchEnvelopesWithAllocations(
     console.error('[Envello API] Error fetching envelopes:', envError.message);
     throw envError;
   }
+
+  const validEnvelopes = (envelopesData || []).filter(
+    (env) => env.slug !== 'credit-cards' && env.slug !== 'emis' && env.slug !== 'monthly-targets'
+  );
 
   // 4. Fetch allocations for the specified period
   const { data: allocationsData, error: allocError } = await supabase
@@ -188,7 +248,7 @@ export async function fetchEnvelopesWithAllocations(
   }
 
   // 5. Combine into EnvelopeWithAllocation domain objects
-  return (envelopesData || []).map((env) => {
+  return validEnvelopes.map((env) => {
     const alloc = allocMap.get(env.id);
     const allocatedPaise = BigInt(alloc?.allocated_paise ?? 0);
     const carriedOverPaise = BigInt(alloc?.carried_over_paise ?? 0);

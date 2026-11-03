@@ -39,16 +39,38 @@ export const EnvelopeGrid: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
 
-  // Segregate mandatory system envelopes (Spendable & Emergency) from user-created categories
+  // Segregate mandatory system envelopes (Spendable, Emergency, Savings) from user-created categories
   const systemEnvelopes = useMemo(() => {
-    return envelopes.filter(
-      (env) => env.isSystemReserved || env.slug === 'regular' || env.slug === 'emergency' || env.slug === 'spendable'
-    );
+    const CORE_SLUGS = ['regular', 'spendable', 'emergency', 'savings'];
+    return envelopes
+      .filter(
+        (env) =>
+          CORE_SLUGS.includes(env.slug) ||
+          (env.isSystemReserved &&
+            env.slug !== 'credit-cards' &&
+            env.slug !== 'emis' &&
+            env.slug !== 'monthly-targets')
+      )
+      .sort((a, b) => {
+        const order: Record<string, number> = { regular: 1, spendable: 1, emergency: 2, savings: 3 };
+        const orderA = order[a.slug] ?? 99;
+        const orderB = order[b.slug] ?? 99;
+        return orderA - orderB;
+      });
   }, [envelopes]);
 
   const customEnvelopes = useMemo(() => {
+    const CORE_SLUGS = [
+      'regular',
+      'spendable',
+      'emergency',
+      'savings',
+      'credit-cards',
+      'emis',
+      'monthly-targets',
+    ];
     return envelopes.filter(
-      (env) => !env.isSystemReserved && env.slug !== 'regular' && env.slug !== 'emergency' && env.slug !== 'spendable'
+      (env) => !env.isSystemReserved && !CORE_SLUGS.includes(env.slug)
     );
   }, [envelopes]);
 
@@ -233,13 +255,13 @@ export const EnvelopeGrid: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-[11px] text-neutral-400">
-                      Primary liquid spending pool and protected emergency reserve. Permanent system compartments.
+                      Primary liquid spending pool, protected emergency reserve, and capital savings. Permanent system compartments.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {systemEnvelopes.map((env) => (
                   <EnvelopeCard
                     key={env.id}

@@ -18,6 +18,7 @@ import {
   Utensils,
   Book,
   Sparkles,
+  PiggyBank,
 } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { formatINR } from '@/lib/accounting/currency';
@@ -56,6 +57,9 @@ function getIconComponent(iconName?: string) {
       return Utensils;
     case 'Book':
       return Book;
+    case 'PiggyBank':
+    case 'piggy-bank':
+      return PiggyBank;
     default:
       return Folder;
   }
@@ -67,9 +71,13 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   onTransfer,
   onEdit,
 }) => {
-  const IconComp = getIconComponent(envelope.icon);
   const isEmergency = envelope.slug === 'emergency';
+  const isSavings = envelope.slug === 'savings';
   const isSpendable = envelope.slug === 'regular' || envelope.slug === 'spendable';
+  const IconComp =
+    isSavings && (!envelope.icon || envelope.icon === 'Folder')
+      ? PiggyBank
+      : getIconComponent(envelope.icon);
 
   // Calculate percentage spent of allocation (if any allocated)
   const percentSpent =
@@ -80,7 +88,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
       : 0;
 
   const isOverspent = envelope.availablePaise < 0n;
-  const categoryColor = envelope.color || '#38bdf8';
+  const categoryColor = envelope.color || (isSavings ? '#10b981' : '#38bdf8');
 
   return (
     <SpotlightCard
@@ -103,6 +111,15 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                 <span
                   title="Protected Emergency Reserve"
                   className="inline-flex items-center space-x-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-mono"
+                >
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  <span>Reserve</span>
+                </span>
+              )}
+              {isSavings && (
+                <span
+                  title="Protected Capital Savings (Untouched Bank Interest Reserve)"
+                  className="inline-flex items-center space-x-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono"
                 >
                   <ShieldCheck className="w-2.5 h-2.5" />
                   <span>Reserve</span>

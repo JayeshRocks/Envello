@@ -10,6 +10,8 @@ import {
   CreditCard,
   Wallet,
   Layers,
+  ShieldAlert,
+  PiggyBank,
 } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { CreditCardRow } from '@/lib/api/creditCards';
@@ -72,6 +74,8 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
   const [toAccountId, setToAccountId] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
+  const [emergencyConfirmed, setEmergencyConfirmed] = useState(false);
+  const [savingsConfirmed, setSavingsConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,19 +109,28 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
     }
   }, [accounts, creditCards, selectedAccountId, selectedPaymentSource, isOpen]);
 
-  // Reset envelope selection to 'none' when modal closes
+  // Reset envelope selection and confirmation when modal closes or selection changes
   useEffect(() => {
     if (!isOpen) {
       setSelectedEnvelopeId('none');
+      setEmergencyConfirmed(false);
+      setSavingsConfirmed(false);
       setError(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    setEmergencyConfirmed(false);
+    setSavingsConfirmed(false);
+  }, [selectedEnvelopeId]);
 
   if (!isRendered) return null;
 
   const currentEnteredPaise = toPaise(amountRupees || '0');
   const selectedEnvelope = envelopes.find((e) => e.id === selectedEnvelopeId);
   const isEnvelopeSelected = Boolean(selectedEnvelopeId && selectedEnvelopeId !== 'none' && selectedEnvelope);
+  const isSpendingFromEmergency = mode === 'expense' && selectedEnvelope?.slug === 'emergency';
+  const isSpendingFromSavings = mode === 'expense' && selectedEnvelope?.slug === 'savings';
   const isExpenseExceedingEnvelope =
     mode === 'expense' && isEnvelopeSelected && selectedEnvelope
       ? currentEnteredPaise > selectedEnvelope.availablePaise
@@ -155,6 +168,16 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             setError(
               `Expense amount (${formatINR(currentEnteredPaise)}) exceeds available balance in "${selectedEnvelope.name}" (${formatINR(selectedEnvelope.availablePaise)}). Cannot overspend an envelope into negative. Please select "None" for a direct bill or allocate budget first.`
             );
+            return;
+          }
+
+          if (isSpendingFromEmergency && !emergencyConfirmed) {
+            setError('Please confirm that you authorize spending from your Emergency reserve.');
+            return;
+          }
+
+          if (isSpendingFromSavings && !savingsConfirmed) {
+            setError('Please confirm that you authorize spending from your Savings reserve.');
             return;
           }
         }
@@ -460,6 +483,54 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                 )
               )}
 
+              {/* Emergency Reserve Protection Banner */}
+              {isSpendingFromEmergency && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-200 space-y-2">
+                  <div className="flex items-center space-x-2 font-semibold text-red-300">
+                    <ShieldAlert className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <span>Protected Emergency Reserve Alert</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-red-200/90">
+                    Emergency funds are strictly reserved for critical unforeseen circumstances. Debiting directly from Emergency depletes your safety net.
+                  </p>
+                  <label className="flex items-start space-x-2.5 pt-1 cursor-pointer select-none min-h-[36px]">
+                    <input
+                      type="checkbox"
+                      checked={emergencyConfirmed}
+                      onChange={(e) => setEmergencyConfirmed(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-white/20 text-red-500 focus:ring-red-500 bg-black/40"
+                    />
+                    <span className="text-[11px] text-red-200 font-medium">
+                      I explicitly confirm spending from my Emergency reserve.
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* Savings Capital Reserve Protection Banner */}
+              {isSpendingFromSavings && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-200 space-y-2">
+                  <div className="flex items-center space-x-2 font-semibold text-emerald-300">
+                    <PiggyBank className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>Protected Capital Savings Alert</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-emerald-200/90">
+                    Savings funds are set aside to remain untouched and earn compound bank interest. Debiting an expense directly from Savings reduces your long-term capital reserve.
+                  </p>
+                  <label className="flex items-start space-x-2.5 pt-1 cursor-pointer select-none min-h-[36px]">
+                    <input
+                      type="checkbox"
+                      checked={savingsConfirmed}
+                      onChange={(e) => setSavingsConfirmed(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-black/40"
+                    />
+                    <span className="text-[11px] text-emerald-200 font-medium">
+                      I explicitly confirm spending from my Savings reserve.
+                    </span>
+                  </label>
+                </div>
+              )}
+
               {/* Dynamic Payment Impact Pill */}
               {selectedPaymentSource.startsWith('card:') ? (
                 <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs flex items-center space-x-2">
@@ -603,7 +674,12 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={
+                isSubmitting ||
+                isExpenseExceedingEnvelope ||
+                (isSpendingFromEmergency && !emergencyConfirmed) ||
+                (isSpendingFromSavings && !savingsConfirmed)
+              }
               className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-white text-sm font-semibold transition shadow-lg active:scale-[0.98] min-h-[44px] disabled:opacity-50 ${
                 mode === 'income'
                   ? 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/25'

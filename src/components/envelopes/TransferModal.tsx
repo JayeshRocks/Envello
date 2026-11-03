@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowRightLeft, ShieldAlert, AlertCircle, ArrowRight } from 'lucide-react';
+import { X, ArrowRightLeft, ShieldAlert, AlertCircle, ArrowRight, PiggyBank } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { toPaise, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
@@ -24,6 +24,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [toId, setToId] = useState<string>('');
   const [amountRupees, setAmountRupees] = useState<string>('');
   const [emergencyConfirmed, setEmergencyConfirmed] = useState<boolean>(false);
+  const [savingsConfirmed, setSavingsConfirmed] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +38,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       setToId(defaultTo);
       setAmountRupees('');
       setEmergencyConfirmed(false);
+      setSavingsConfirmed(false);
       setError(null);
     }
   }, [envelopes, initialFromEnvelopeId, isOpen]);
@@ -46,6 +48,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const fromEnvelope = envelopes.find((e) => e.id === fromId);
   const toEnvelope = envelopes.find((e) => e.id === toId);
   const isFromEmergency = fromEnvelope?.slug === 'emergency';
+  const isFromSavings = fromEnvelope?.slug === 'savings';
   const transferPaise = toPaise(amountRupees || '0');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +72,11 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
     if (isFromEmergency && !emergencyConfirmed) {
       setError('Please confirm that you explicitly authorize drawing funds from your Emergency reserve.');
+      return;
+    }
+
+    if (isFromSavings && !savingsConfirmed) {
+      setError('Please confirm that you explicitly authorize drawing funds from your Savings reserve.');
       return;
     }
 
@@ -202,10 +210,34 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             </div>
           )}
 
+          {/* Savings Protection Warning Banner (Capital Reserve Invariant) */}
+          {isFromSavings && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-200 space-y-2">
+              <div className="flex items-center space-x-2 font-semibold text-emerald-300">
+                <PiggyBank className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>Protected Capital Savings Alert</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-emerald-200/90">
+                Savings funds are earmarked to remain untouched and earn compound bank interest. Withdrawing will reduce your long-term capital reserve.
+              </p>
+              <label className="flex items-start space-x-2.5 pt-1 cursor-pointer select-none min-h-[36px]">
+                <input
+                  type="checkbox"
+                  checked={savingsConfirmed}
+                  onChange={(e) => setSavingsConfirmed(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-white/20 text-emerald-500 focus:ring-emerald-500 bg-black/40"
+                />
+                <span className="text-[11px] text-emerald-200 font-medium">
+                  I explicitly confirm withdrawing from my Savings reserve.
+                </span>
+              </label>
+            </div>
+          )}
+
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isSubmitting || (isFromEmergency && !emergencyConfirmed)}
+              disabled={isSubmitting || (isFromEmergency && !emergencyConfirmed) || (isFromSavings && !savingsConfirmed)}
               className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white text-sm font-semibold transition shadow-lg shadow-indigo-500/25 active:scale-[0.98] min-h-[44px]"
             >
               <span>{isSubmitting ? 'Transferring...' : `Move ${toEnvelope?.name ? `to ${toEnvelope.name}` : 'Funds'}`}</span>

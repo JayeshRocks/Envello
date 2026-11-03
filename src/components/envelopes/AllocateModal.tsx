@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, AlertCircle, ArrowRight, RotateCcw } from 'lucide-react';
+import { X, Sparkles, AlertCircle, ArrowRight, RotateCcw, PiggyBank, ShieldAlert } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { toPaise, toRupees, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
@@ -210,6 +210,32 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
                 </button>
               )}
             </div>
+
+            {/* Savings Protection Warning Banner */}
+            {envelope.slug === 'savings' && deltaPaise < 0n && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 text-xs space-y-1">
+                <div className="flex items-center space-x-1.5 font-semibold text-emerald-300">
+                  <PiggyBank className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span>Reducing Capital Savings</span>
+                </div>
+                <p className="text-[11px] text-emerald-200/90 leading-relaxed">
+                  You are reducing your planned Savings reserve by {formatINR(-deltaPaise)}. This reduces funds set aside to remain untouched for bank interest.
+                </p>
+              </div>
+            )}
+
+            {/* Emergency Reserve Warning Banner */}
+            {envelope.slug === 'emergency' && deltaPaise < 0n && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-200 text-xs space-y-1">
+                <div className="flex items-center space-x-1.5 font-semibold text-red-300">
+                  <ShieldAlert className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <span>Reducing Emergency Reserve</span>
+                </div>
+                <p className="text-[11px] text-red-200/90 leading-relaxed">
+                  You are reducing your emergency safety buffer by {formatINR(-deltaPaise)}.
+                </p>
+              </div>
+            )}
 
             <div className="pt-2">
               <button

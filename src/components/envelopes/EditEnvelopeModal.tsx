@@ -18,6 +18,7 @@ import {
   Plane,
   Utensils,
   Book,
+  PiggyBank,
 } from 'lucide-react';
 import type { EnvelopeWithAllocation, EnvelopeRolloverPolicy } from '@/types/accounting.types';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
@@ -65,6 +66,7 @@ const ICON_OPTIONS = [
   { name: 'Plane', icon: Plane },
   { name: 'Utensils', icon: Utensils },
   { name: 'Book', icon: Book },
+  { name: 'PiggyBank', icon: PiggyBank },
 ];
 
 export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({

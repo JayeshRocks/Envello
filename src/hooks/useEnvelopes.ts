@@ -63,14 +63,20 @@ export function useEnvelopes() {
     setError(null);
     try {
       const data = await fetchEnvelopesWithAllocations(user.id, selectedPeriod);
-      // Auto-generalize any legacy envelope names (e.g. 'Savings (Super.Money)')
-      const sanitized = data.map((env) => {
-        if (env.name.toLowerCase().includes('super.money')) {
-          updateEnvelope(env.id, user.id, { name: 'Savings & Fixed Deposits' }).catch(() => {});
-          return { ...env, name: 'Savings & Fixed Deposits' };
-        }
-        return env;
-      });
+      // Auto-generalize any legacy envelope names to 'Savings' and filter out deprecated card/emi envelopes
+      const sanitized = data
+        .filter((env) => env.slug !== 'credit-cards' && env.slug !== 'emis' && env.slug !== 'monthly-targets')
+        .map((env) => {
+          if (
+            (env.slug === 'savings' && env.name !== 'Savings') ||
+            env.name.toLowerCase().includes('super.money') ||
+            env.name.toLowerCase().includes('fixed deposit')
+          ) {
+            updateEnvelope(env.id, user.id, { name: 'Savings' }).catch(() => {});
+            return { ...env, name: 'Savings' };
+          }
+          return env;
+        });
       setEnvelopes(sanitized);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load envelopes.';

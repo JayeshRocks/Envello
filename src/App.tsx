@@ -578,7 +578,7 @@ export const App: React.FC = () => {
                   }}
                   spotlightColor="rgba(251, 191, 36, 0.18)"
                   className="space-y-3 relative overflow-hidden group cursor-pointer"
-                  title="Scroll to Fixed Deposits & Savings"
+                  title="Scroll to FDs & RDs"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider group-hover:text-amber-300 transition-colors">
