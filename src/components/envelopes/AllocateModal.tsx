@@ -90,13 +90,9 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
       }));
     }
 
-    // Default to 1 row with highest free balance account
-    const sorted = [...activeAccounts].sort((a, b) => {
-      const freeA = a.unallocatedPaise ?? a.balancePaise;
-      const freeB = b.unallocatedPaise ?? b.balancePaise;
-      return freeB > freeA ? 1 : -1;
-    });
-    const defaultAccId = sorted[0]?.id || activeAccounts[0]?.id || '';
+    // Default to primary liquid account (stable by created_at, NOT by balance)
+    const primaryAcc = activeAccounts[0];
+    const defaultAccId = primaryAcc?.id || '';
 
     return [
       {

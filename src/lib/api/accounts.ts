@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/types/database.types';
 import type { AccountType } from '@/types/accounting.types';
+import { getLocalAllocationSources, saveLocalAllocationSources } from './envelopes';
 
 export type AccountRow = Database['public']['Tables']['accounts']['Row'];
 
@@ -137,17 +138,15 @@ export async function fetchAccounts(
         .eq('period_id', periodData.id)
         .eq('user_id', userId);
 
-      const allocIds = (allocs || []).map((a) => a.id);
-      const totalAllocatedAcrossEnvelopes = (allocs || []).reduce(
-        (sum, a) => sum + BigInt(a.allocated_paise ?? 0),
-        0n
-      );
+      const allocList = allocs || [];
+      const allocIds = allocList.map((a) => a.id);
+      const coveredAllocIds = new Set<string>();
 
-      let holdsSumFromSources = 0n;
+      // 1. Fetch persisted sources from Supabase envelope_allocation_sources
       if (allocIds.length > 0) {
         const { data: sources, error: srcError } = await supabase
           .from('envelope_allocation_sources')
-          .select('account_id, amount_paise')
+          .select('allocation_id, account_id, amount_paise')
           .eq('user_id', userId)
           .in('allocation_id', allocIds);
 
@@ -156,37 +155,70 @@ export async function fetchAccounts(
             const amt = BigInt(src.amount_paise);
             const current = holdsMap.get(src.account_id) ?? 0n;
             holdsMap.set(src.account_id, current + amt);
-            holdsSumFromSources += amt;
+            coveredAllocIds.add(src.allocation_id);
           }
         }
       }
 
-      // Authoritative Invariant: If total envelope allocations exceed holds tracked in sources
-      // (e.g. legacy allocations, initial seeds, or remote sources synchronization gap),
-      // greedily assign the remaining unassigned hold across active accounts (largest balance first)
-      if (totalAllocatedAcrossEnvelopes > holdsSumFromSources && data && data.length > 0) {
-        let unassignedPaise = totalAllocatedAcrossEnvelopes - holdsSumFromSources;
-        const sortedAccs = [...data].sort((a, b) => {
-          const balA = BigInt(a.balance_paise) - (holdsMap.get(a.id) ?? 0n);
-          const balB = BigInt(b.balance_paise) - (holdsMap.get(b.id) ?? 0n);
-          return balB > balA ? 1 : -1;
-        });
+      // 2. Fetch from local cache for any allocations not in DB sources
+      const localCache = getLocalAllocationSources(userId, activePeriod);
+      for (const alloc of allocList) {
+        if (!coveredAllocIds.has(alloc.id)) {
+          const cached = localCache[alloc.id];
+          if (cached && cached.length > 0) {
+            for (const c of cached) {
+              const amt = BigInt(c.amountPaise);
+              const current = holdsMap.get(c.accountId) ?? 0n;
+              holdsMap.set(c.accountId, current + amt);
+            }
+            coveredAllocIds.add(alloc.id);
 
-        for (const acc of sortedAccs) {
-          if (unassignedPaise <= 0n) break;
-          const currentHold = holdsMap.get(acc.id) ?? 0n;
-          const availableBal = BigInt(acc.balance_paise) - currentHold;
-          if (availableBal > 0n) {
-            const assign = unassignedPaise > availableBal ? availableBal : unassignedPaise;
-            holdsMap.set(acc.id, currentHold + assign);
-            unassignedPaise -= assign;
+            // Attempt background sync to Supabase
+            try {
+              supabase.from('envelope_allocation_sources').insert(
+                cached.map((c) => ({
+                  user_id: userId,
+                  allocation_id: alloc.id,
+                  account_id: c.accountId,
+                  amount_paise: Number(c.amountPaise),
+                }))
+              ).then(() => {});
+            } catch {
+              // Ignore
+            }
           }
         }
+      }
 
-        // If allocations exceed total liquid balance, assign remainder to primary account
-        if (unassignedPaise > 0n && sortedAccs[0]) {
-          const cur = holdsMap.get(sortedAccs[0].id) ?? 0n;
-          holdsMap.set(sortedAccs[0].id, cur + unassignedPaise);
+      // 3. Stable Invariant: For any remaining unassigned legacy allocations:
+      // Pin them to the stable primary account (oldest active account by created_at ASC).
+      // NEVER sort dynamically by current balance (which would cause holds to jump when balances change).
+      const stablePrimaryAcc = (data || []).find((a) => a.is_active !== false) || data?.[0];
+      if (stablePrimaryAcc) {
+        for (const alloc of allocList) {
+          if (!coveredAllocIds.has(alloc.id)) {
+            const allocPaise = BigInt(alloc.allocated_paise ?? 0);
+            if (allocPaise > 0n) {
+              const current = holdsMap.get(stablePrimaryAcc.id) ?? 0n;
+              holdsMap.set(stablePrimaryAcc.id, current + allocPaise);
+              coveredAllocIds.add(alloc.id);
+
+              saveLocalAllocationSources(userId, activePeriod, alloc.id, [
+                { accountId: stablePrimaryAcc.id, amountPaise: allocPaise },
+              ]);
+
+              try {
+                supabase.from('envelope_allocation_sources').insert({
+                  user_id: userId,
+                  allocation_id: alloc.id,
+                  account_id: stablePrimaryAcc.id,
+                  amount_paise: Number(allocPaise),
+                }).then(() => {});
+              } catch {
+                // Ignore
+              }
+            }
+          }
         }
       }
     }
@@ -311,8 +343,8 @@ export async function updateAccount(
     balancePaise?: bigint;
   }
 ): Promise<AccountItem> {
+  const currentHold = await getAccountHoldPaise(accountId, userId);
   if (data.balancePaise !== undefined) {
-    const currentHold = await getAccountHoldPaise(accountId, userId);
     if (data.balancePaise < currentHold) {
       throw new Error(
         `Cannot decrease account balance below ₹${(Number(currentHold) / 100).toFixed(2)} because ₹${(Number(currentHold) / 100).toFixed(2)} is currently reserved in envelope holds.`
@@ -343,14 +375,16 @@ export async function updateAccount(
   }
 
   const balancePaise = BigInt(updated.balance_paise);
+  const allocatedPaise = currentHold;
+  const unallocatedPaise = balancePaise >= allocatedPaise ? balancePaise - allocatedPaise : 0n;
   return {
     id: updated.id,
     name: updated.name,
     institution: updated.institution,
     accountType: updated.account_type as AccountType,
     balancePaise,
-    allocatedPaise: 0n,
-    unallocatedPaise: balancePaise,
+    allocatedPaise,
+    unallocatedPaise,
     isActive: updated.is_active,
     createdAt: updated.created_at,
   };

@@ -1,10 +1,82 @@
 
+import { supabase } from '@/lib/supabase/client';
+import type { Database } from '@/types/database.types';
+import type { EnvelopeWithAllocation, EnvelopeRolloverPolicy, AllocationSourceRecord } from '@/types/accounting.types';
+import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
+
+export type EnvelopeWithDetails = EnvelopeWithAllocation;
+
+const ALLOC_SOURCES_CACHE_KEY_PREFIX = 'envello_allocation_sources_';
+
+/**
+ * Reads local cached funding sources for allocations in a period.
+ */
+export function getLocalAllocationSources(
+  userId: string,
+  periodKey: string
+): Record<string, Array<{ accountId: string; amountPaise: string }>> {
+  if (typeof window === 'undefined' || !window.localStorage) return {};
+  try {
+    const raw = localStorage.getItem(`${ALLOC_SOURCES_CACHE_KEY_PREFIX}${userId}_${periodKey}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Persists funding sources for an allocation into local cache for 0ms offline/sync resilience.
+ */
+export function saveLocalAllocationSources(
+  userId: string,
+  periodKey: string,
+  allocationId: string,
+  sources: Array<{ accountId: string; amountPaise: bigint }>
+): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const current = getLocalAllocationSources(userId, periodKey);
+    current[allocationId] = sources.map((s) => ({
+      accountId: s.accountId,
+      amountPaise: s.amountPaise.toString(),
+    }));
+    localStorage.setItem(
+      `${ALLOC_SOURCES_CACHE_KEY_PREFIX}${userId}_${periodKey}`,
+      JSON.stringify(current)
+    );
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+/**
+ * Removes allocation sources from local cache when an allocation is cleared.
+ */
+export function deleteLocalAllocationSources(
+  userId: string,
+  periodKey: string,
+  allocationId: string
+): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const current = getLocalAllocationSources(userId, periodKey);
+    delete current[allocationId];
+    localStorage.setItem(
+      `${ALLOC_SOURCES_CACHE_KEY_PREFIX}${userId}_${periodKey}`,
+      JSON.stringify(current)
+    );
+  } catch {
+    // Ignore
+  }
+}
+
 /**
  * Fetches all backing liquid account sources and hold amounts for a given allocation ID.
  */
 export async function fetchEnvelopeAllocationSources(
   userId: string,
-  allocationId: string
+  allocationId: string,
+  periodKey?: string
 ): Promise<AllocationSourceRecord[]> {
   try {
     const { data: sources, error } = await supabase
@@ -13,8 +85,6 @@ export async function fetchEnvelopeAllocationSources(
       .eq('allocation_id', allocationId)
       .eq('user_id', userId);
 
-    if (error || !sources || sources.length === 0) return [];
-
     const { data: accounts } = await supabase
       .from('accounts')
       .select('id, name')
@@ -22,25 +92,36 @@ export async function fetchEnvelopeAllocationSources(
 
     const nameMap = new Map((accounts || []).map((a) => [a.id, a.name]));
 
-    return sources.map((s) => ({
-      id: s.id,
-      allocationId: s.allocation_id,
-      accountId: s.account_id,
-      accountName: nameMap.get(s.account_id) || 'Liquid Account',
-      amountPaise: BigInt(s.amount_paise),
-    }));
+    if (!error && sources && sources.length > 0) {
+      return sources.map((s) => ({
+        id: s.id,
+        allocationId: s.allocation_id,
+        accountId: s.account_id,
+        accountName: nameMap.get(s.account_id) || 'Liquid Account',
+        amountPaise: BigInt(s.amount_paise),
+      }));
+    }
+
+    // Fallback: Check local cache if DB returned no rows
+    if (periodKey) {
+      const cached = getLocalAllocationSources(userId, periodKey)[allocationId];
+      if (cached && cached.length > 0) {
+        return cached.map((c, idx) => ({
+          id: `cached-${allocationId}-${idx}`,
+          allocationId,
+          accountId: c.accountId,
+          accountName: nameMap.get(c.accountId) || 'Liquid Account',
+          amountPaise: BigInt(c.amountPaise),
+        }));
+      }
+    }
+
+    return [];
   } catch (err) {
     console.warn('[Envello API] Error fetching allocation sources:', err);
     return [];
   }
 }
-
-import { supabase } from '@/lib/supabase/client';
-import type { Database } from '@/types/database.types';
-import type { EnvelopeWithAllocation, EnvelopeRolloverPolicy, AllocationSourceRecord } from '@/types/accounting.types';
-import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
-
-export type EnvelopeWithDetails = EnvelopeWithAllocation;
 
 export const DEFAULT_ENVELOPES_CONFIG = [
   {
@@ -417,6 +498,26 @@ export async function fetchEnvelopesWithAllocations(
     } catch (err) {
       console.warn('[Envello API] Error loading allocation sources for period:', err);
     }
+
+    // Check local cache for allocations not covered by DB sources
+    const localCache = getLocalAllocationSources(userId, yearMonth);
+    for (const allocId of allocIds) {
+      if (!sourcesMap.has(allocId) || (sourcesMap.get(allocId)?.length === 0)) {
+        const cached = localCache[allocId];
+        if (cached && cached.length > 0) {
+          sourcesMap.set(
+            allocId,
+            cached.map((c, idx) => ({
+              id: `cached-${allocId}-${idx}`,
+              allocationId: allocId,
+              accountId: c.accountId,
+              accountName: accMap.get(c.accountId) || 'Liquid Account',
+              amountPaise: BigInt(c.amountPaise),
+            }))
+          );
+        }
+      }
+    }
   }
 
   if (allocError) {
@@ -439,7 +540,7 @@ export async function fetchEnvelopesWithAllocations(
 
     let sources = alloc?.id ? sourcesMap.get(alloc.id) || [] : [];
     // If allocatedPaise > 0 but sources list is empty (e.g. legacy allocation or remote sync gap),
-    // supply a backing source hold from the primary liquid account
+    // supply a backing source hold from the primary liquid account and permanently pin it
     if (sources.length === 0 && allocatedPaise > 0n && alloc?.id) {
       const primaryAcc = (accountsData || []).find((a) => a.is_active !== false) || accountsData?.[0];
       if (primaryAcc) {
@@ -452,6 +553,21 @@ export async function fetchEnvelopesWithAllocations(
             amountPaise: allocatedPaise,
           },
         ];
+
+        saveLocalAllocationSources(userId, yearMonth, alloc.id, [
+          { accountId: primaryAcc.id, amountPaise: allocatedPaise },
+        ]);
+
+        try {
+          supabase.from('envelope_allocation_sources').insert({
+            user_id: userId,
+            allocation_id: alloc.id,
+            account_id: primaryAcc.id,
+            amount_paise: Number(allocatedPaise),
+          }).then(() => {});
+        } catch {
+          // Ignore
+        }
       }
     } else if (allocatedPaise === 0n) {
       sources = [];
@@ -508,6 +624,11 @@ export async function upsertEnvelopeAllocation(
     );
 
     if (!rpcError && rpcAllocId) {
+      if (fundingSources && fundingSources.length > 0) {
+        saveLocalAllocationSources(userId, yearMonth, rpcAllocId, fundingSources);
+      } else if (allocatedPaise === 0n) {
+        deleteLocalAllocationSources(userId, yearMonth, rpcAllocId);
+      }
       return;
     }
     if (rpcError && rpcError.message && rpcError.message.includes('Cannot set allocation lower')) {
@@ -577,8 +698,14 @@ export async function upsertEnvelopeAllocation(
     allocationId = inserted.id;
   }
 
-  // Synchronize backing sources in envelope_allocation_sources
+  // Synchronize backing sources in envelope_allocation_sources and local cache
   if (allocationId) {
+    if (fundingSources && fundingSources.length > 0) {
+      saveLocalAllocationSources(userId, yearMonth, allocationId, fundingSources);
+    } else if (allocatedPaise === 0n) {
+      deleteLocalAllocationSources(userId, yearMonth, allocationId);
+    }
+
     try {
       if (fundingSources && fundingSources.length > 0) {
         // Delete previous sources for this allocation
@@ -625,6 +752,9 @@ export async function upsertEnvelopeAllocation(
             .maybeSingle();
 
           if (firstAcc?.id) {
+            saveLocalAllocationSources(userId, yearMonth, allocationId, [
+              { accountId: firstAcc.id, amountPaise: allocatedPaise },
+            ]);
             const { error: insSingleErr } = await supabase.from('envelope_allocation_sources').insert({
               user_id: userId,
               allocation_id: allocationId,
@@ -701,13 +831,15 @@ export async function transferBetweenEnvelopes(
     .eq('period_id', periodId)
     .maybeSingle();
 
-  const { data: toAlloc } = await supabase
+  const { data: initialToAlloc } = await supabase
     .from('envelope_allocations')
     .select('*')
     .eq('user_id', userId)
     .eq('envelope_id', toEnvelopeId)
     .eq('period_id', periodId)
     .maybeSingle();
+
+  let targetAllocId = initialToAlloc?.id;
 
   const currentFromAllocated = BigInt(fromAlloc?.allocated_paise ?? 0);
   const currentFromCarried = BigInt(fromAlloc?.carried_over_paise ?? 0);
@@ -738,7 +870,7 @@ export async function transferBetweenEnvelopes(
   }
 
   // 3. Compute new balances for toEnvelope
-  const currentToAllocated = BigInt(toAlloc?.allocated_paise ?? 0);
+  const currentToAllocated = BigInt(initialToAlloc?.allocated_paise ?? 0);
   const newToAllocated = currentToAllocated + amountPaise;
 
   // 4. Update fromEnvelope
@@ -763,23 +895,31 @@ export async function transferBetweenEnvelopes(
   }
 
   // 5. Update toEnvelope
-  if (toAlloc?.id) {
+  if (targetAllocId) {
     await supabase
       .from('envelope_allocations')
       .update({
         allocated_paise: Number(newToAllocated),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', toAlloc.id);
+      .eq('id', targetAllocId);
   } else {
-    await supabase.from('envelope_allocations').insert({
-      envelope_id: toEnvelopeId,
-      period_id: periodId,
-      user_id: userId,
-      allocated_paise: Number(newToAllocated),
-      carried_over_paise: 0,
-      spent_paise: 0,
-    });
+    const { data: insertedTo } = await supabase
+      .from('envelope_allocations')
+      .insert({
+        envelope_id: toEnvelopeId,
+        period_id: periodId,
+        user_id: userId,
+        allocated_paise: Number(newToAllocated),
+        carried_over_paise: 0,
+        spent_paise: 0,
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (insertedTo?.id) {
+      targetAllocId = insertedTo.id;
+    }
   }
 
   // 6. Log audit transaction into double-entry ledger
@@ -826,7 +966,7 @@ export async function transferBetweenEnvelopes(
   }
 
   // 7. Transfer backing sources between envelopes to preserve account hold mapping
-  if (fromAlloc?.id && toAlloc?.id && amountPaise > 0n) {
+  if (fromAlloc?.id && targetAllocId && amountPaise > 0n) {
     try {
       const fromSources = await fetchEnvelopeAllocationSources(userId, fromAlloc.id);
       if (fromSources.length > 0) {
@@ -860,7 +1000,7 @@ export async function transferBetweenEnvelopes(
           const { data: existingToSrc } = await supabase
             .from('envelope_allocation_sources')
             .select('id, amount_paise')
-            .eq('allocation_id', toAlloc.id)
+            .eq('allocation_id', targetAllocId)
             .eq('account_id', src.accountId)
             .maybeSingle();
 
@@ -875,7 +1015,7 @@ export async function transferBetweenEnvelopes(
           } else {
             await supabase.from('envelope_allocation_sources').insert({
               user_id: userId,
-              allocation_id: toAlloc.id,
+              allocation_id: targetAllocId,
               account_id: src.accountId,
               amount_paise: Number(shift),
             });
