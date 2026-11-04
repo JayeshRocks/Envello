@@ -11,7 +11,9 @@ Allow: /privacy
 Allow: /terms
 Allow: /*.png
 Allow: /*.svg
+Allow: /favicon.ico
 Allow: /manifest.json
+Allow: /browserconfig.xml
 
 # Sitemaps
 Sitemap: https://envello.app/sitemap.xml
