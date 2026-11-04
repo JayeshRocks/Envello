@@ -424,11 +424,6 @@ export const App: React.FC = () => {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
         onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
-        onOpenReconcileModal={() => {
-          setReconcileAccountId(undefined);
-          setIsReconcileModalOpen(true);
-        }}
-        accountsCount={accounts.length}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenSetNameModal={() => {
           setIsFirstTimeNameModal(false);

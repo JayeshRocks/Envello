@@ -3,18 +3,16 @@ import {
   Mail,
   PlusCircle,
   LogIn,
+  Landmark,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDevice } from '@/hooks/useDevice';
 import { UserAccountDropdown } from '@/components/common/UserAccountDropdown';
-import { AccountsDropdown } from '@/components/common/AccountsDropdown';
 
 interface HeaderProps {
   onOpenAuthModal: () => void;
   onRecordTransactionClick: () => void;
   onOpenAccountsModal?: () => void;
-  onOpenReconcileModal?: () => void;
-  accountsCount?: number;
   onOpenSetNameModal?: () => void;
   onOpenChangeEmailModal?: () => void;
   onOpenSetPasswordModal?: () => void;
@@ -28,8 +26,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuthModal,
   onRecordTransactionClick,
   onOpenAccountsModal,
-  onOpenReconcileModal,
-  accountsCount = 0,
   onOpenSetNameModal = () => {},
   onOpenChangeEmailModal = () => {},
   onOpenSetPasswordModal = () => {},
@@ -62,13 +58,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center space-x-1.5 sm:space-x-3">
-            {/* Accounts Dropdown Pill (Authenticated: Mobile, Tablet & Desktop) */}
+            {/* Accounts Button Pill (Authenticated: Mobile, Tablet & Desktop) */}
             {user && onOpenAccountsModal && (
-              <AccountsDropdown
-                accountsCount={accountsCount}
-                onOpenAccountsModal={onOpenAccountsModal}
-                onOpenReconcileModal={onOpenReconcileModal ?? onOpenAccountsModal}
-              />
+              <button
+                type="button"
+                id="header-accounts-btn"
+                onClick={onOpenAccountsModal}
+                className="flex items-center space-x-1.5 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 hover:text-white text-xs sm:text-sm font-medium border border-white/10 hover:border-white/20 active:scale-95 transition-all duration-200 min-h-[44px] sm:min-h-[38px] cursor-pointer shadow-sm"
+                title="Manage Liquid Accounts & Wallets"
+              >
+                <Landmark className="w-3.5 h-3.5 text-sky-400" />
+                <span>Accounts</span>
+              </button>
             )}
 
             {/* User Account Dropdown (Authenticated) or Sign In button */}

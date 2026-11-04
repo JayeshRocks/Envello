@@ -55,7 +55,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
     },
     {
       id: 'accounts',
-      targetId: 'header-accounts-dropdown',
+      targetId: 'header-accounts-btn',
       fallbackTargetId: 'financial-pillars',
       title: 'Accounts & Bank Reconciliation',
       badge: 'Liquid Assets',
