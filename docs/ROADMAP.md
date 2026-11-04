@@ -112,6 +112,11 @@ flowchart LR
 ### Phase 7: Hardening, Verification & Private Beta Release
 - Full accessibility audit (WCAG 2.1 AA, keyboard focus, screen reader announcements).
 - Dark mode and light mode contrast verification.
+- Cross-device onboarding tutorial persistence (`profiles.tutorial_completed`) with locked-scroll spotlighting and pulsating ring.
+- Comprehensive shimmering skeleton placeholder system (`Skeleton.tsx`, `.skeleton-shimmer`) across all data-fetching surfaces.
+- Performance & bundle optimization: route/modal code-splitting with `React.lazy`, vendor chunking, and atomic PostgreSQL RPCs (`upsert_envelope_allocation_atomic`, `revert_transaction_atomic`).
+- Previous-month view-only envelope locking and 3-day transaction reversion cascading into rollover policies.
+- Multi-density brand icons and full OpenGraph / Twitter social card sharing metadata.
 - Deploy frontend to Vercel Hobby tier.
 - Execute live smoke test in single-owner private beta.
 

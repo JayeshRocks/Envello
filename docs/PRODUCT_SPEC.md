@@ -35,20 +35,20 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
 ### 2.2 Envelope Budgeting System
 Envello utilizes zero-based envelope budgeting principles: every rupee of spendable cash has a designated role.
 
-#### Visual & Functional Envelope Architecture:
-To prevent cognitive overload and maintain absolute structural clarity, the UI visually segregates envelopes into two distinct tiers:
+#### Total User Control & Dynamic Layout:
+- **Total User Envelope Control**: Every envelope can be edited, renamed, customized, rearranged, and deleted. No envelopes are locked or permanent mandatory compartments.
+- **Envelope Rearranging**: Users can reorder envelopes via tactile move arrow buttons and drag-and-drop, persisted with `sort_order` in the database and local state.
+- **Starter Envelopes**: Workspace initialization automatically generates default starter envelopes (`Spendable`, `Emergency`, `Savings`) alongside common lifestyle categories (`Groceries`, `Dining Out`, `Utilities`, `Entertainment`, `Travel`).
+- **Protected Reserve Feature**: Any envelope can be designated as a "Protected Reserve" styled in emerald green with a compact shield symbol. Expanding reveals full protection rules. Direct expenses and transfers out require an explicit warning confirmation and user authorization checkbox (`Emergency` and `Savings` spawn with this feature on by default).
+- Credit Cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT envelopes.
 
-1. **Mandatory Core System Envelopes**:
-   - **Spendable (`spendable` / `regular`)**: The foundational liquid clearinghouse envelope. General expenses draw from here when unassigned. Cannot be deleted.
-   - **Emergency Reserve (`emergency`)**: Protected capital reserve reserved solely for unforeseen crises (medical, urgent repairs). Protected against automatic sweeps or balance deficit coverage. Requires explicit warning confirmation before funds can be withdrawn or debited.
-   - **Savings Reserve (`savings`)**: Untouched liquid capital reserve set aside to earn normal bank interest and build positive net worth without locking funds into term deposits. Protected with explicit confirmation prompts before withdrawals or debits.
-   - **Visual Presentation**: Grouped at the top with a dedicated header, `ShieldCheck` icon, `Mandatory` badges, and distinct visual treatment.
-   - Credit Cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT core envelopes.
-
-2. **Custom User Categories**:
-   - User-defined lifestyle envelopes (`Groceries`, `Dining Out`, `Utilities`, `Entertainment`, `Travel`, etc.).
-   - Arranged in an adaptive multi-column grid with an inline `+ New Category` action button and individual category counters.
-   - Fully customizable, deletable, and reallocatable.
+#### Account Holds, Ghost Banks & Greedy Deduction:
+- **Explicit Account Holds**: Allocating budget to an envelope places an explicit hold on backing liquid accounts (`envelope_allocation_sources`).
+- **Multi-Account Funding & Headroom Invariant**: An envelope can be funded across multiple liquid bank accounts with strict headroom validation ($\text{unallocatedPaise} + \text{existingHoldOnEnvelope} \le \text{balancePaise}$), preventing over-allocation.
+- **Inline Liquid Account Headroom Display**: Liquid accounts display physical bank balance, reserved envelope holds, and free unallocated balance inline in a single cohesive row for immediate headroom clarity.
+- **Account Holds Protection**: An account's balance cannot be decreased below active holds (`newBalancePaise >= allocatedPaise`), nor can an account be deleted while holds remain (`allocatedPaise > 0n`).
+- **Ghost Banks & Greedy Deduction**: When recording an expense, selecting an envelope runs a greedy largest-first deduction across backing accounts and provides an in-app settlement receipt breakdown with dual actions ("Mark as completed" and 1-click "Revert this Transaction").
+- **Direct Account Spending Guard**: Direct bills or card repayments cannot exceed an account's free unallocated balance (`amountPaise <= unallocatedPaise`).
 
 #### Anti-Negative Envelope Invariant:
 - **Strict Guard**: Envelopes can NEVER be overspent into negative balances.
@@ -56,8 +56,11 @@ To prevent cognitive overload and maintain absolute structural clarity, the UI v
 - **Direct Bills**: Expenses that do not deduct from an envelope use "None".
 - **Direct Income Assignment**: Income recording can optionally allocate directly into an envelope, increasing that envelope's allocation and available balance in lockstep.
 
-#### Rollover & Month Transition Rules:
-- Envelopes support configurable rollover behavior (roll surplus into next month vs sweep back to Spendable).
+#### Rollover & Previous Month Locking:
+- **Deterministic Rollover Policies**:
+  1. `carry_forward`: Keeps unspent funds and account holds reserved in this envelope into next month.
+  2. `reset`: Releases unused funds and holds back to backing accounts' free unallocated balance.
+- **Previous Month View-Only Lock**: Historical months accessed via the month selector are locked against edits, reallocations, or budget modifications. A persistent guidance banner informs users that previous months represent frozen snapshots prior to month-end rollover and directs them to the current month to make changes.
 - Overspent envelopes are strictly prevented at transaction entry time; available balances are guaranteed to remain non-negative.
 - Monthly transitions must never silently discard or reset unused balances.
 
@@ -138,13 +141,19 @@ A deterministic engine for recurring household and personal obligations:
 ---
 
 ### 2.7 Transaction Reversion & 3-Day Rollover Policy
-- **Detailed In-App Preview**: When clicking Revert on a transaction, an in-app confirmation modal (`RevertTransactionModal`) displays the exact ledger impact: which accounts will be credited/debited, which envelopes will be refunded/deducted, and card/debt liability updates.
+- **Detailed In-App Preview**: When clicking Revert on a transaction, an in-app confirmation modal (`RevertTransactionModal`) displays the exact ledger impact: which accounts will be credited/debited, which envelopes will be refunded/deducted, and card/debt liability updates, naming specific accounts and envelopes.
 - **Strict Anti-Negative Envelope Guard**: Reversions are guarded; if an income transaction assigned money to an envelope and that money was subsequently spent, the reversion is rejected to prevent the envelope from dropping below zero.
-- **3-Day Month-End Grace Period**: Reversions are permitted for transactions from the current calendar month, plus transactions dated in the final 3 days of the preceding month to accommodate month-end reconciliation. Older transactions are permanently locked to preserve historical accounting integrity.
+- **3-Day Month-End Grace Period & Rollover Cascade**: Reversions are permitted for transactions from the current calendar month, plus transactions dated in the final 3 days of the preceding month to accommodate month-end reconciliation. Reverting a previous month transaction updates that month's envelope available balance, and any resulting surplus balance automatically cascades into that envelope's designated rollover policy.
+- **Atomic Database Execution**: Reversions execute via `revert_transaction_atomic` in PostgreSQL, preventing partial state mutations.
 
 ---
 
 ### 2.8 UI/UX Standards, Modals & Mobile Ergonomics
+- **Shimmering Skeleton Placeholder Standard**: Empty jumpy text or raw zeroes during data fetching are forbidden. All data surfaces render GPU-composited left-to-right shimmering placeholders (`.skeleton-shimmer`, `Skeleton.tsx`) matching loaded content dimensions.
+- **Cross-Device Onboarding Tutorial**: Onboarding completion is stored in the database (`tutorial_completed` on `profiles`) and Supabase Auth metadata. Completing or skipping the tour on one device suppresses it permanently across all user devices.
+- **Spotlight Tour UX**: Anchors to dynamic element coordinates, locks page scrolling (`modal-open`), projects an accent pulsating halo (`tour-pulsate-halo`), and features a dedicated 3-button control strip (Skip tutorial, Previous, Next / Finish Tour) without a top-right close 'X'.
+- **Chart Tooltip Ergonomics**: Monthly Cashflow and Savings Rate chart tooltips are anchored strictly within the chart boundaries (`<ResponsiveContainer>`), activated only upon direct hover or touch without drifting away.
+- **Multi-Density Social Sharing & App Assets**: Full OpenGraph and Twitter card metadata in `index.html` with high-resolution assets (`apple-touch-icon.png`, `favicon-32x32.png`, `favicon-16x16.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`, `og-image.png`).
 - **Centered Modal Experience**: All dialogs and pop-outs render via `ModalPortal` (`createPortal(..., document.body)`) to escape card clipping or backdrop-filter traps, centering automatically across all device viewports with frosted backdrop blur and scroll locking.
 - **Zero Horizontal Scrolling**: Controls, filter chips, tabs, and action pills are arranged in responsive wrapping layouts (`flex-wrap`, responsive grids) so 100% of controls are visible at a glance without horizontal scrolling.
 - **Touch Target Ergonomics**: All interactive buttons, chips, and close triggers maintain at least a 44px minimum touch target (`min-h-[44px] min-w-[44px]`) with `active:scale-95` tactile feedback. Form controls strictly use `text-base sm:text-sm` (16px on mobile to prevent iOS Safari auto-zoom).
@@ -162,6 +171,13 @@ A deterministic engine for recurring household and personal obligations:
 
 ---
 
-### 2.10 Future Scope (Version 2)
+### 2.10 Performance & Bundle Architecture
+- **Route & Modal Code-Splitting**: Non-critical modals and marketing routes (`CoverPage`, `RecordTransactionModal`, `AccountListModal`, `EnvelopePaymentReceiptModal`, `ReconcileModal`, `RecurringRulesModal`, `ExportDataModal`, `LegalModal`, `SetNameModal`, `ChangeEmailModal`, `SetPasswordModal`, `AccountDeletionModal`, `SpotlightTour`) are code-split via `React.lazy()` and `<React.Suspense fallback={null}>`.
+- **Vendor Chunking**: Granular chunking in `vite.config.ts` (`vendor-zod`, `vendor-react`, `vendor-supabase`, `vendor-icons`) limits entry JS size to < 680 kB (159 kB gzipped).
+- **Atomic RPCs**: Multi-table operations execute server-side in a single atomic database trip, eliminating client waterfall latency.
+
+---
+
+### 2.11 Future Scope (Version 2)
 - Explicitly deferred AI-assisted features: Natural language transaction entry, SMS/receipt parsing, predictive spending alerts, and financial conversational queries.
 - Version 1 is 100% complete and fully usable without any AI dependencies.

@@ -64,12 +64,14 @@ This document is the authoritative, permanent instructions guide for any AI agen
   - Two deterministic rollover mechanics:
     1. **Carry Forward** (`carry_forward`): Keep unused funds and backing account holds reserved in this envelope into next month.
     2. **Release to Respective Liquid Accounts** (`reset`): Release unused budget and holds back to the backing bank accounts' free unallocated balance.
-  - Detailed Reversion Process & 3-Day Rollover Policy: Transaction reversions require an in-app preview detailing exact double-entry ledger impact across accounts, envelopes, cards, and debts, referencing target accounts and envelopes by name rather than generic phrases. Allowed for the current month and up to 3 days post month-end. Reversions are guarded against driving envelope balances below zero if allocated funds were already spent.
+  - Previous Month View-Only Lock: When viewing past months via the month selector, all envelope editing, budget adjustments, and reallocations are locked and disabled. The UI displays a guidance banner informing users that previous months are read-only historical records showing pre-rollover states, directing them to the current month for modifications.
+  - Detailed Reversion Process & 3-Day Rollover Policy: Transaction reversions require an in-app preview detailing exact double-entry ledger impact across accounts, envelopes, cards, and debts, referencing target accounts and envelopes by name rather than generic phrases. Allowed for the current month and up to 3 days post month-end. Reverting a previous month transaction updates that month's envelope available balance, and any resulting surplus balance automatically cascades into that envelope's designated rollover policy. Reversions are guarded against driving envelope balances below zero if allocated funds were already spent.
 - **Reimagined Recurring Costs Engine**: Supports dual frequency models:
   1. **Interval in Days** (`interval_days`): repeat every X days for rolling supplies and consumables (e.g., water cans every 15 days, protein every 45 days).
   2. **Day of Month** (`monthly_day`): triggers on a specific day of each month for regular bills (rent, utilities, subscriptions).
   Real-time due triggers alert when items are due to be logged with 1-click batch entry and normalized 30-day monthly commitment projections.
-- **Atomic Operations**: Transfers, allocations, and multi-table financial movements must be executed inside database transactions or secure PostgreSQL RPC functions. No partial state updates.
+- **Atomic Operations & High-Performance RPCs**: Transfers, allocations, reversals, and multi-table financial movements must be executed inside database transactions or secure PostgreSQL RPC functions (`upsert_envelope_allocation_atomic`, `revert_transaction_atomic`, `execute_account_transfer`). No partial state updates and zero multi-step frontend waterfall delays.
+- **Inline Liquid Account Headroom Display**: Liquid accounts display bank balance, envelope holds, and free unallocated headroom inline in a single cohesive visual row for immediate operational clarity.
 
 ### 3.2 Security, Auth & Profile Lifecycle
 - **RLS on Every Table**: Every table, view, and bucket must have Row Level Security enabled with explicit least-privilege policies.
@@ -78,6 +80,7 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **No Secrets in Frontend**: Never commit `.env` or expose Supabase `service_role` keys in browser code or `VITE_*` environment variables.
 - **Least-Privilege Database Functions & Security Headers**: In PostgreSQL, newly declared functions grant `EXECUTE` to `PUBLIC` by default; explicitly revoke public execution on sensitive or `SECURITY DEFINER` functions and enforce caller identity assertions (`auth.uid() = target_id`). Enforce HSTS, CSP, COOP, and CORP headers in production. Production builds must strip console and debugger statements and conceal internal system errors.
 - **Account Lifecycle & Security**: User profile updates (display name, email change, password setup/change, and account deletion requests) must follow strict verification and confirmation dialogs. Account deletions enforce the legal 30-day grace period with one-click restoration on sign-in, an auto-sweep purge when the window elapses, and an optional immediate purge path upon explicit typed email confirmation.
+- **Cross-Device Onboarding Tutorial Persistence**: Onboarding tour completion is synchronized in the database via the `tutorial_completed` boolean column on `profiles` and cached in Supabase Auth user metadata (`raw_user_meta_data`). Completing or skipping the onboarding tutorial on any client device immediately updates the user record, permanently suppressing the tour across all other devices, sessions, and mobile browsers for that account.
 - **Branded Transactional Emails**: All auth templates (confirm signup, magic link, password reset, email change, verification code, and security notifications) must be production-ready HTML, free of temporary beta markers, and use the official hosted logo (`public/logo.png`).
 - **Regulatory Compliance & Legal Routing**: Publicly expose comprehensive Privacy Policy and Terms of Service interfaces accessible via clean paths (`/privacy`, `/terms`) and hashes (`/#privacy`, `/#terms`). Ensure full compliance with Google OAuth consent requirements, non-financial-advisor disclaimers, cloud sub-processor disclosures (Supabase, Resend, Vercel), data portability (export), and account deletion rights.
 
@@ -89,14 +92,29 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **Zero Horizontal Scrolling & Visible Button Layouts**: Never hide buttons, tabs, quick amount chips, or category filters behind horizontal scrolling (`overflow-x-auto`, `scrollbar-none`, `flex-nowrap`). All buttons, tabs, and action pills must be arranged in responsive wrapping layouts (`flex flex-wrap gap-2`, `grid grid-cols-2 xs:grid-cols-3 md:flex`) so 100% of controls are visible at a glance on PC, tablet, and phone without horizontal scrolling.
 - **Responsive Overlays**: Overlays and dropdown menus must never use fixed pixel widths that overflow small devices; always cap with `w-[min(calc(100vw-24px),22rem)]`.
 - **Pinned Header Navigation**: The application header is pinned fixed to the top of the viewport (`fixed top-0 left-0 right-0 z-40`) with an explicit spacer (`h-16`) and CSS `scroll-padding-top` to follow the user during scrolling without layout obscuration.
+- **Spotlight Onboarding Tour Standards**:
+  - Target elements are tracked by dynamic viewport coordinates (`getBoundingClientRect()`) with smooth transitional updates.
+  - Page and documentElement scrolling is locked (`modal-open`) while the tour is active, keeping the user anchored to the spotlighted UI feature without jitter or layout displacement.
+  - Spotlight overlay features a prominent pulsating halo ring (`tour-pulsate-halo`) around the target boundary.
+  - Tour controls provide a dedicated 3-button navigation strip: "Skip tutorial", "Previous", and "Next" / "Finish Tour". The top-right modal 'X' button is omitted to prevent accidental abandonment.
+- **Chart Tooltip & Interaction Ergonomics**:
+  - Monthly Cashflows and Savings Rate tooltips are anchored strictly within the chart boundaries (`<ResponsiveContainer>`), only active upon direct cursor hover or touch, and display solely the targeted month without drifting or floating away.
+- **Multi-Platform Social Metadata & Multi-Density Brand Assets**:
+  - Full OpenGraph and Twitter card metadata in `index.html` configured with canonical URLs, clear product positioning, and high-resolution assets (`apple-touch-icon.png`, `favicon-32x32.png`, `favicon-16x16.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`, `og-image.png`) ensuring razor-sharp rendering on all mobile, desktop, and Apple Retina devices.
 - **Custom In-App Branded Confirmation Prompts**: Native browser `window.confirm` and `window.alert` dialogs are strictly prohibited. All destructive or consequential user actions (deleting accounts, cards, recurring rules, or reverting transactions) must use the accessible in-app `ConfirmModal` (`useConfirm()`).
 - **Concise Terminology (FDs & RDs)**: Shorten "Fixed Deposits & Recurring Deposits" to **"FDs & RDs"** in all space-constrained UI elements (metric cards, navigation pills, tab headers).
 - **Viewport & Horizontal Overflow Containment**: `html`, `body`, and `#root` must enforce `width: 100%; max-width: 100%; overflow-x: hidden; position: relative;` and `-webkit-text-size-adjust: 100%`. Sections with decorative blur or glow backdrops must be contained with `overflow-hidden` to prevent layout blowout, mobile zoom anomalies, and blank margin gutters on zoom out. Avoid negative horizontal margins (`-mx-*`) on full-width unclipped containers.
 
 
-### 3.4 Code Quality & Architecture
+### 3.4 Code Quality, Performance & Architecture
 - **Strict TypeScript**: No `any`, no unhandled promises, no `@ts-ignore` without documented justification.
 - **Separation of Concerns**: Keep presentation components separate from business logic, domain calculations, and database access layers.
+- **Shimmering Skeleton Placeholder Loading Standard**:
+  - Displaying raw zero numbers, flashing blank boxes, or empty jumpy text while data is fetching or syncing with the database is strictly forbidden.
+  - All data surfaces (6 Financial Pillars, Net Worth Hero, Cashflow/Savings Charts, Envelopes Grid, Cards, Debts, FDs & RDs, Recurring Costs, Monthly Targets, EMIs, Account Drawers, Reconciliation History, and Transaction Ledger) must render left-to-right GPU-composited shimmering skeleton placeholders (`.skeleton-shimmer`, `Skeleton.tsx`) during async queries and state transitions.
+- **Route & Modal Code-Splitting with Vendor Chunking**:
+  - Heavy secondary modals and marketing routes (`CoverPage`, `RecordTransactionModal`, `AccountListModal`, `EnvelopePaymentReceiptModal`, `ReconcileModal`, `RecurringRulesModal`, `ExportDataModal`, `LegalModal`, `SetNameModal`, `ChangeEmailModal`, `SetPasswordModal`, `AccountDeletionModal`, `SpotlightTour`) must be code-split using `React.lazy()` and rendered under `<React.Suspense fallback={null}>` to protect upfront payload and initial render speed.
+  - Enforce explicit vendor chunking in `vite.config.ts` (`vendor-zod`, `vendor-react`, `vendor-supabase`, `vendor-icons`) to optimize cache longevity and keep the initial JavaScript bundle under 700 kB.
 - **No Placeholder Functionality**: Do not leave dead buttons, pretend modal triggers, or mockup forms in completed features.
 - **Verification-Driven**: A feature is not complete until it passes type check (`tsc -b`), linting (`eslint`), and automated/manual verification.
 
