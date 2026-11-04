@@ -28,28 +28,57 @@ import { useMonthlyTargets } from '@/hooks/useMonthlyTargets';
 import { Header } from '@/components/common/Header';
 import { SpotlightCard } from '@/components/common/SpotlightCard';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { CoverPage } from '@/components/landing/CoverPage';
 import { EnvelopeGrid } from '@/components/envelopes/EnvelopeGrid';
-import { RecordTransactionModal } from '@/components/transactions/RecordTransactionModal';
-import { AccountListModal } from '@/components/accounts/AccountListModal';
-import { ReconcileModal } from '@/components/accounts/ReconcileModal';
 import { RecurringAlertBanner } from '@/components/recurring/RecurringAlertBanner';
-import { RecurringRulesModal } from '@/components/recurring/RecurringRulesModal';
 import { useRecurringRules } from '@/hooks/useRecurringRules';
 import { calculateNormalizedMonthlyCostPaise } from '@/lib/accounting/recurringSchedule';
 import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { LiabilitiesAndAssetsContainer, type SubTabType } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { Skeleton } from '@/components/common/Skeleton';
-import { ExportDataModal } from '@/components/export/ExportDataModal';
-import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
-import { SetNameModal } from '@/components/auth/SetNameModal';
-import { ChangeEmailModal } from '@/components/auth/ChangeEmailModal';
-import { AccountDeletionModal } from '@/components/auth/AccountDeletionModal';
-import { LegalModal, LegalTab } from '@/components/legal/LegalModal';
-import { SpotlightTour } from '@/components/tutorial/SpotlightTour';
-import { EnvelopePaymentReceiptModal } from '@/components/transactions/EnvelopePaymentReceiptModal';
+import type { LegalTab } from '@/components/legal/LegalModal';
 import type { GreedyDeductionPlan } from '@/lib/accounting/greedyDeduction';
+
+// Lazy-loaded routes & secondary modals to optimize initial bundle size & parse time
+const CoverPage = React.lazy(() =>
+  import('@/components/landing/CoverPage').then((m) => ({ default: m.CoverPage }))
+);
+const RecordTransactionModal = React.lazy(() =>
+  import('@/components/transactions/RecordTransactionModal').then((m) => ({ default: m.RecordTransactionModal }))
+);
+const AccountListModal = React.lazy(() =>
+  import('@/components/accounts/AccountListModal').then((m) => ({ default: m.AccountListModal }))
+);
+const EnvelopePaymentReceiptModal = React.lazy(() =>
+  import('@/components/transactions/EnvelopePaymentReceiptModal').then((m) => ({ default: m.EnvelopePaymentReceiptModal }))
+);
+const LegalModal = React.lazy(() =>
+  import('@/components/legal/LegalModal').then((m) => ({ default: m.LegalModal }))
+);
+const ExportDataModal = React.lazy(() =>
+  import('@/components/export/ExportDataModal').then((m) => ({ default: m.ExportDataModal }))
+);
+const AccountDeletionModal = React.lazy(() =>
+  import('@/components/auth/AccountDeletionModal').then((m) => ({ default: m.AccountDeletionModal }))
+);
+const ChangeEmailModal = React.lazy(() =>
+  import('@/components/auth/ChangeEmailModal').then((m) => ({ default: m.ChangeEmailModal }))
+);
+const SetPasswordModal = React.lazy(() =>
+  import('@/components/auth/SetPasswordModal').then((m) => ({ default: m.SetPasswordModal }))
+);
+const SetNameModal = React.lazy(() =>
+  import('@/components/auth/SetNameModal').then((m) => ({ default: m.SetNameModal }))
+);
+const SpotlightTour = React.lazy(() =>
+  import('@/components/tutorial/SpotlightTour').then((m) => ({ default: m.SpotlightTour }))
+);
+const ReconcileModal = React.lazy(() =>
+  import('@/components/accounts/ReconcileModal').then((m) => ({ default: m.ReconcileModal }))
+);
+const RecurringRulesModal = React.lazy(() =>
+  import('@/components/recurring/RecurringRulesModal').then((m) => ({ default: m.RecurringRulesModal }))
+);
 import {
   isEmailConfirmationUrl,
   broadcastAuthEvent,
@@ -475,17 +504,19 @@ export const App: React.FC = () => {
           }`}
       >
         {!user ? (
-          <CoverPage
-            onOpenAuthModal={() => setIsAuthModalOpen(true)}
-            onOpenPrivacy={() => {
-              setLegalModalTab('privacy');
-              setIsLegalModalOpen(true);
-            }}
-            onOpenTerms={() => {
-              setLegalModalTab('terms');
-              setIsLegalModalOpen(true);
-            }}
-          />
+          <React.Suspense fallback={null}>
+            <CoverPage
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+              onOpenPrivacy={() => {
+                setLegalModalTab('privacy');
+                setIsLegalModalOpen(true);
+              }}
+              onOpenTerms={() => {
+                setLegalModalTab('terms');
+                setIsLegalModalOpen(true);
+              }}
+            />
+          </React.Suspense>
         ) : (
           <div className="space-y-6 sm:space-y-8">
             {/* Account Pending Deletion Grace Period Banner */}
@@ -1025,206 +1056,229 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Record Transaction Modal */}
-      <RecordTransactionModal
-        isOpen={isRecordTxModalOpen}
-        accounts={accounts}
-        creditCards={cards}
-        envelopes={envelopes}
-        onClose={() => setIsRecordTxModalOpen(false)}
-        onRecordExpense={async (params) => {
-          const result = await addExpense(params);
-          await handleTransactionRecorded();
-          showToast('Expense recorded successfully', 'success');
+      <React.Suspense fallback={null}>
+        {/* Record Transaction Modal */}
+        {isRecordTxModalOpen && (
+          <RecordTransactionModal
+            isOpen={isRecordTxModalOpen}
+            accounts={accounts}
+            creditCards={cards}
+            envelopes={envelopes}
+            onClose={() => setIsRecordTxModalOpen(false)}
+            onRecordExpense={async (params) => {
+              const result = await addExpense(params);
+              await handleTransactionRecorded();
+              showToast('Expense recorded successfully', 'success');
 
-          if (result?.deductionPlan && result.deductionPlan.deductions.length > 0) {
-            const envName = envelopes.find((e) => e.id === params.envelopeId)?.name || 'Envelope';
-            setReceiptModalData({
-              transactionId: result.transactionId,
-              payee: params.payee,
-              totalAmountPaise: params.amountPaise,
-              envelopeName: envName,
-              deductionPlan: result.deductionPlan,
-            });
-          }
-          return result;
-        }}
-        onRecordIncome={async (params) => {
-          await addIncome(params);
-          await handleTransactionRecorded();
-          showToast(
-            params.envelopeId ? 'Income deposited & added to envelope' : 'Income added to account',
-            'success'
-          );
-        }}
-        onRecordTransfer={async (params) => {
-          await addTransfer(params);
-          await handleTransactionRecorded();
-          showToast('Account transfer recorded', 'success');
-        }}
-      />
+              if (result?.deductionPlan && result.deductionPlan.deductions.length > 0) {
+                const envName = envelopes.find((e) => e.id === params.envelopeId)?.name || 'Envelope';
+                setReceiptModalData({
+                  transactionId: result.transactionId,
+                  payee: params.payee,
+                  totalAmountPaise: params.amountPaise,
+                  envelopeName: envName,
+                  deductionPlan: result.deductionPlan,
+                });
+              }
+              return result;
+            }}
+            onRecordIncome={async (params) => {
+              await addIncome(params);
+              await handleTransactionRecorded();
+              showToast(
+                params.envelopeId ? 'Income deposited & added to envelope' : 'Income added to account',
+                'success'
+              );
+            }}
+            onRecordTransfer={async (params) => {
+              await addTransfer(params);
+              await handleTransactionRecorded();
+              showToast('Account transfer recorded', 'success');
+            }}
+          />
+        )}
 
-      {/* Real-Life Settlement Receipt Modal */}
-      {receiptModalData && (
-        <EnvelopePaymentReceiptModal
-          isOpen={Boolean(receiptModalData)}
-          onClose={() => setReceiptModalData(null)}
-          transactionId={receiptModalData.transactionId}
-          payee={receiptModalData.payee}
-          totalAmountPaise={receiptModalData.totalAmountPaise}
-          envelopeName={receiptModalData.envelopeName}
-          deductionPlan={receiptModalData.deductionPlan}
-          onRevert={async (txId) => {
-            await removeTransaction(txId);
-            await handleTransactionRecorded();
-            showToast('Transaction reverted and refunded to accounts', 'info');
+        {/* Real-Life Settlement Receipt Modal */}
+        {receiptModalData && (
+          <EnvelopePaymentReceiptModal
+            isOpen={Boolean(receiptModalData)}
+            onClose={() => setReceiptModalData(null)}
+            transactionId={receiptModalData.transactionId}
+            payee={receiptModalData.payee}
+            totalAmountPaise={receiptModalData.totalAmountPaise}
+            envelopeName={receiptModalData.envelopeName}
+            deductionPlan={receiptModalData.deductionPlan}
+            onRevert={async (txId) => {
+              await removeTransaction(txId);
+              await handleTransactionRecorded();
+              showToast('Transaction reverted and refunded to accounts', 'info');
+            }}
+          />
+        )}
+
+        {/* Accounts Management Modal */}
+        {isAccountsModalOpen && (
+          <AccountListModal
+            isOpen={isAccountsModalOpen}
+            isLoading={isAccountsLoading}
+            accounts={accounts}
+            onRefreshAccounts={refreshAccounts}
+            onClose={() => setIsAccountsModalOpen(false)}
+            onAddAccount={async (params) => {
+              await addAccount(params);
+              showToast('Account created successfully', 'success');
+            }}
+            onEditAccount={async (accountId, params) => {
+              await editAccount(accountId, params);
+              showToast('Account updated successfully', 'success');
+            }}
+            onDeleteAccount={async (accountId) => {
+              await removeAccount(accountId);
+              showToast('Account deleted', 'info');
+            }}
+            onOpenReconcileModal={(accountId) => {
+              setReconcileAccountId(accountId);
+              setIsAccountsModalOpen(false);
+              setIsReconcileModalOpen(true);
+            }}
+          />
+        )}
+        {/* Bank Statement Reconciliation Modal */}
+        {isReconcileModalOpen && (
+          <ReconcileModal
+            isOpen={isReconcileModalOpen}
+            accounts={accounts}
+            initialAccountId={reconcileAccountId}
+            onClose={() => setIsReconcileModalOpen(false)}
+            onReconciliationComplete={async () => {
+              await handleTransactionRecorded();
+              showToast('Account reconciliation logged and verified', 'success');
+            }}
+          />
+        )}
+
+        {/* Standing Recurring Schedules Modal */}
+        {isRecurringModalOpen && (
+          <RecurringRulesModal
+            isOpen={isRecurringModalOpen}
+            onClose={() => setIsRecurringModalOpen(false)}
+            rules={recurringRules}
+            accounts={accounts}
+            creditCards={cards}
+            envelopes={envelopes}
+            currentYearMonth={currentYearMonth}
+            onAddRule={async (params) => {
+              await addRecurringRule(params);
+              showToast('Standing recurring rule added', 'success');
+            }}
+            onToggleActive={async (ruleId) => {
+              await toggleRecurringRuleActive(ruleId);
+              showToast('Rule status updated', 'info');
+            }}
+            onDeleteRule={async (ruleId) => {
+              await removeRecurringRule(ruleId);
+              showToast('Standing rule deleted', 'info');
+            }}
+            onLogSingleRule={async (rule) => {
+              await logSingleRecurringRule(rule, async (params) => {
+                await addExpense(params);
+              });
+              await handleTransactionRecorded();
+              showToast(`Recorded ${rule.title} into ledger`, 'success');
+            }}
+          />
+        )}
+
+        {/* Export Data Modal */}
+        {isExportModalOpen && (
+          <ExportDataModal
+            isOpen={isExportModalOpen}
+            onClose={() => setIsExportModalOpen(false)}
+            accounts={accounts}
+            envelopes={envelopes}
+            transactions={transactions}
+            creditCards={cards}
+            fixedDeposits={fixedDeposits}
+            actualDebts={actualDebts}
+            debtsLoans={debtsLoans}
+            monthlyTargets={targets}
+            recurringRules={recurringRules}
+          />
+        )}
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onOpenPrivacy={() => {
+            setLegalModalTab('privacy');
+            setIsLegalModalOpen(true);
+          }}
+          onOpenTerms={() => {
+            setLegalModalTab('terms');
+            setIsLegalModalOpen(true);
           }}
         />
-      )}
 
-      {/* Accounts Management Modal */}
-      <AccountListModal
-        isOpen={isAccountsModalOpen}
-        isLoading={isAccountsLoading}
-        accounts={accounts}
-        onRefreshAccounts={refreshAccounts}
-        onClose={() => setIsAccountsModalOpen(false)}
-        onAddAccount={async (params) => {
-          await addAccount(params);
-          showToast('Account created successfully', 'success');
-        }}
-        onEditAccount={async (accountId, params) => {
-          await editAccount(accountId, params);
-          showToast('Account updated successfully', 'success');
-        }}
-        onDeleteAccount={async (accountId) => {
-          await removeAccount(accountId);
-          showToast('Account deleted', 'info');
-        }}
-        onOpenReconcileModal={(accountId) => {
-          setReconcileAccountId(accountId);
-          setIsAccountsModalOpen(false);
-          setIsReconcileModalOpen(true);
-        }}
-      />
+        {/* Legal & Privacy Compliance Modal */}
+        {isLegalModalOpen && (
+          <LegalModal
+            isOpen={isLegalModalOpen}
+            initialTab={legalModalTab}
+            onClose={() => {
+              setIsLegalModalOpen(false);
+              if (window.location.hash || window.location.pathname !== '/') {
+                history.replaceState(null, '', '/');
+              }
+            }}
+          />
+        )}
 
-      {/* Bank Statement Reconciliation Modal */}
-      <ReconcileModal
-        isOpen={isReconcileModalOpen}
-        accounts={accounts}
-        initialAccountId={reconcileAccountId}
-        onClose={() => setIsReconcileModalOpen(false)}
-        onReconciliationComplete={async () => {
-          await handleTransactionRecorded();
-          showToast('Account reconciliation logged and verified', 'success');
-        }}
-      />
+        {/* "What should we call you?" / Edit Name Modal */}
+        {isSetNameModalOpen && (
+          <SetNameModal
+            isOpen={isSetNameModalOpen}
+            onClose={() => setIsSetNameModalOpen(false)}
+            isFirstTime={isFirstTimeNameModal}
+          />
+        )}
 
-      {/* Standing Recurring Schedules Modal */}
-      <RecurringRulesModal
-        isOpen={isRecurringModalOpen}
-        onClose={() => setIsRecurringModalOpen(false)}
-        rules={recurringRules}
-        accounts={accounts}
-        creditCards={cards}
-        envelopes={envelopes}
-        currentYearMonth={currentYearMonth}
-        onAddRule={async (params) => {
-          await addRecurringRule(params);
-          showToast('Standing recurring rule added', 'success');
-        }}
-        onToggleActive={async (ruleId) => {
-          await toggleRecurringRuleActive(ruleId);
-          showToast('Rule status updated', 'info');
-        }}
-        onDeleteRule={async (ruleId) => {
-          await removeRecurringRule(ruleId);
-          showToast('Standing rule deleted', 'info');
-        }}
-        onLogSingleRule={async (rule) => {
-          await logSingleRecurringRule(rule, async (params) => {
-            await addExpense(params);
-          });
-          await handleTransactionRecorded();
-          showToast(`Recorded ${rule.title} into ledger`, 'success');
-        }}
-      />
+        {/* Change Account Email Modal */}
+        {isChangeEmailModalOpen && (
+          <ChangeEmailModal
+            isOpen={isChangeEmailModalOpen}
+            onClose={() => setIsChangeEmailModalOpen(false)}
+          />
+        )}
 
-      {/* Export Data Modal */}
-      <ExportDataModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-        accounts={accounts}
-        envelopes={envelopes}
-        transactions={transactions}
-        creditCards={cards}
-        fixedDeposits={fixedDeposits}
-        actualDebts={actualDebts}
-        debtsLoans={debtsLoans}
-        monthlyTargets={targets}
-        recurringRules={recurringRules}
-      />
+        {/* Set or Update Account Password Modal */}
+        {isSetPasswordModalOpen && (
+          <SetPasswordModal
+            isOpen={isSetPasswordModalOpen}
+            onClose={() => setIsSetPasswordModalOpen(false)}
+          />
+        )}
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onOpenPrivacy={() => {
-          setLegalModalTab('privacy');
-          setIsLegalModalOpen(true);
-        }}
-        onOpenTerms={() => {
-          setLegalModalTab('terms');
-          setIsLegalModalOpen(true);
-        }}
-      />
+        {/* Account Deletion & Data Retention Policy Modal */}
+        {isDeletionModalOpen && (
+          <AccountDeletionModal
+            isOpen={isDeletionModalOpen}
+            onClose={() => setIsDeletionModalOpen(false)}
+            onOpenExport={() => setIsExportModalOpen(true)}
+          />
+        )}
 
-      {/* Legal & Privacy Compliance Modal */}
-      <LegalModal
-        isOpen={isLegalModalOpen}
-        initialTab={legalModalTab}
-        onClose={() => {
-          setIsLegalModalOpen(false);
-          if (window.location.hash || window.location.pathname !== '/') {
-            history.replaceState(null, '', '/');
-          }
-        }}
-      />
-
-      {/* "What should we call you?" / Edit Name Modal */}
-      <SetNameModal
-        isOpen={isSetNameModalOpen}
-        onClose={() => setIsSetNameModalOpen(false)}
-        isFirstTime={isFirstTimeNameModal}
-      />
-
-      {/* Change Account Email Modal */}
-      <ChangeEmailModal
-        isOpen={isChangeEmailModalOpen}
-        onClose={() => setIsChangeEmailModalOpen(false)}
-      />
-
-      {/* Set or Update Account Password Modal */}
-      <SetPasswordModal
-        isOpen={isSetPasswordModalOpen}
-        onClose={() => setIsSetPasswordModalOpen(false)}
-      />
-
-      {/* Account Deletion & Data Retention Policy Modal */}
-      <AccountDeletionModal
-        isOpen={isDeletionModalOpen}
-        onClose={() => setIsDeletionModalOpen(false)}
-        onOpenExport={() => setIsExportModalOpen(true)}
-      />
-
-      {/* Interactive Spotlight Onboarding Tour (First-time users only) */}
-      <SpotlightTour
-        isOpen={isTourOpen}
-        onComplete={handleTourComplete}
-        onOpenAccounts={() => setIsAccountsModalOpen(true)}
-        onOpenRecordTransaction={() => setIsRecordTxModalOpen(true)}
-        onSelectLiabilitiesTab={(tab) => setLiabilitiesActiveTab(tab)}
-      />
+        {/* Interactive Spotlight Onboarding Tour (First-time users only) */}
+        {isTourOpen && (
+          <SpotlightTour
+            isOpen={isTourOpen}
+            onComplete={handleTourComplete}
+            onOpenAccounts={() => setIsAccountsModalOpen(true)}
+            onOpenRecordTransaction={() => setIsRecordTxModalOpen(true)}
+            onSelectLiabilitiesTab={(tab) => setLiabilitiesActiveTab(tab)}
+          />
+        )}
+      </React.Suspense>
 
 
       {/* Floating Action Button (FAB) for Mobile & Tablets (Unified Touch Surface for Vertical & Horizontal Orientations) */}

@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
           'vendor-react': ['react', 'react-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-icons': ['lucide-react'],
+          'vendor-zod': ['zod'],
         },
       },
     },
