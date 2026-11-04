@@ -118,10 +118,14 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
               <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                 {sources.map((src) => {
                   const acc = accMap.get(src.accountId);
-                  const sharePercent =
+                  const rawShare =
                     totalAllocated > 0n
-                      ? Number((src.amountPaise * 100n) / totalAllocated)
+                      ? Number((src.amountPaise * 10000n) / totalAllocated) / 100
                       : 100;
+                  const displayShare =
+                    src.amountPaise > 0n && rawShare < 0.1 ? 0.1 : rawShare;
+                  const barShareWidth =
+                    src.amountPaise > 0n ? Math.max(3, Math.min(100, displayShare)) : 0;
 
                   return (
                     <div
@@ -150,7 +154,7 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
                             {formatINR(src.amountPaise)}
                           </div>
                           <div className="text-[10px] text-neutral-400 font-mono">
-                            {sharePercent}% of budget
+                            {displayShare.toFixed(1)}% of budget
                           </div>
                         </div>
                       </div>
@@ -158,8 +162,8 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
                       {/* Progress bar representing share */}
                       <div className="w-full h-1 rounded-full bg-neutral-900 overflow-hidden">
                         <div
-                          className="h-full bg-sky-400 rounded-full"
-                          style={{ width: `${Math.max(4, Math.min(100, sharePercent))}%` }}
+                          className="h-full bg-sky-400 rounded-full transition-all duration-300"
+                          style={{ width: `${barShareWidth}%` }}
                         />
                       </div>
                     </div>

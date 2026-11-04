@@ -3,6 +3,7 @@ import { X, Landmark, Wallet, Plus, AlertCircle, Edit2, Trash2, Check, ArrowRigh
 import type { AccountItem } from '@/lib/api/accounts';
 import type { AccountType } from '@/types/accounting.types';
 import { toPaise, toRupees, formatINR } from '@/lib/accounting/currency';
+import { calculateAccountHoldVisualRatio } from '@/lib/accounting/accountHolds';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
 import { useConfirm } from '@/context/ConfirmContext';
@@ -250,6 +251,74 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
           </div>
         )}
 
+        {/* Aggregate Balance & Holding Ratio Surface */}
+        {accounts.length > 0 && (() => {
+          const totalBalancePaise = accounts.reduce((sum, a) => sum + a.balancePaise, 0n);
+          const totalHeldPaise = accounts.reduce((sum, a) => sum + (a.allocatedPaise ?? 0n), 0n);
+          const totalFreePaise = accounts.reduce((sum, a) => sum + (a.unallocatedPaise ?? a.balancePaise), 0n);
+          const aggRatio = calculateAccountHoldVisualRatio(totalBalancePaise, totalHeldPaise, totalFreePaise);
+
+          return (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-neutral-950/70 border border-white/10 space-y-2.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                  Total Liquid Cash
+                </span>
+                <span className="text-base sm:text-lg font-mono font-bold text-white tabular-nums">
+                  {formatINR(totalBalancePaise)}
+                </span>
+              </div>
+
+              {/* Aggregate Progress Bar */}
+              <div className="w-full bg-neutral-800/80 rounded-full h-2 overflow-hidden flex border border-white/5">
+                {totalBalancePaise > 0n ? (
+                  <>
+                    <div
+                      className="bg-emerald-400 h-full transition-all duration-300"
+                      style={{ width: `${aggRatio.barFreeWidth}%` }}
+                      title={`Free Spendable: ${formatINR(totalFreePaise)} (${aggRatio.freeDisplayPercent.toFixed(1)}%)`}
+                    />
+                    <div
+                      className="bg-amber-400/90 h-full transition-all duration-300"
+                      style={{ width: `${aggRatio.barHeldWidth}%` }}
+                      title={`Reserved in Holds: ${formatINR(totalHeldPaise)} (${aggRatio.heldDisplayPercent.toFixed(1)}%)`}
+                    />
+                  </>
+                ) : (
+                  <div className="bg-neutral-700 w-full h-full" />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono leading-none">
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  <span className="text-neutral-400">Total Free:</span>
+                  <span className={`font-semibold tabular-nums ${totalFreePaise < 0n ? 'text-rose-400' : 'text-emerald-400'}`}>
+                    {formatINR(totalFreePaise)}
+                  </span>
+                  <span className="text-[10px] text-neutral-500 font-medium">
+                    ({aggRatio.freeDisplayPercent.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${totalHeldPaise > 0n ? 'bg-amber-400' : 'bg-neutral-600'}`}
+                  />
+                  <span className="text-neutral-400">Total Held:</span>
+                  <span
+                    className={`font-semibold tabular-nums ${totalHeldPaise > 0n ? 'text-amber-400/90' : 'text-neutral-500'}`}
+                  >
+                    {formatINR(totalHeldPaise)}
+                  </span>
+                  <span className="text-[10px] text-neutral-500 font-medium">
+                    ({aggRatio.heldDisplayPercent.toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Existing Accounts List */}
         <div className="space-y-2.5">
           {isLoading && accounts.length === 0 ? (
@@ -401,15 +470,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
             const freePaise = acc.unallocatedPaise ?? acc.balancePaise;
             const heldPaise = acc.allocatedPaise ?? 0n;
             const totalPaise = acc.balancePaise;
-
-            const freePercent =
-              totalPaise > 0n
-                ? Math.max(0, Math.min(100, Number((freePaise * 10000n) / totalPaise) / 100))
-                : 0;
-            const heldPercent =
-              totalPaise > 0n
-                ? Math.max(0, Math.min(100, Number((heldPaise * 10000n) / totalPaise) / 100))
-                : 0;
+            const ratio = calculateAccountHoldVisualRatio(totalPaise, heldPaise, freePaise);
 
             return (
               <div
@@ -470,22 +531,22 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
 
                 {/* Free and Held visual line & single-row status breakdown */}
                 <div className="pt-2 border-t border-white/5 space-y-1.5">
-                  <div className="w-full bg-neutral-800/80 rounded-full h-1.5 overflow-hidden flex">
+                  <div className="w-full bg-neutral-800/80 rounded-full h-2 overflow-hidden flex border border-white/5">
                     {totalPaise > 0n ? (
                       <>
                         <div
                           className="bg-emerald-400 h-full transition-all duration-300"
                           style={{
-                            width: `${heldPaise > 0n && freePaise > 0n ? Math.max(3, freePercent) : freePercent}%`,
+                            width: `${ratio.barFreeWidth}%`,
                           }}
-                          title={`Free: ${formatINR(freePaise)} (${freePercent.toFixed(1)}%)`}
+                          title={`Free Headroom: ${formatINR(freePaise)} (${ratio.freeDisplayPercent.toFixed(1)}%)`}
                         />
                         <div
                           className="bg-amber-400/90 h-full transition-all duration-300"
                           style={{
-                            width: `${heldPaise > 0n && freePaise > 0n ? Math.max(3, heldPercent) : heldPercent}%`,
+                            width: `${ratio.barHeldWidth}%`,
                           }}
-                          title={`Held: ${formatINR(heldPaise)} (${heldPercent.toFixed(1)}%)`}
+                          title={`Reserved in Holds: ${formatINR(heldPaise)} (${ratio.heldDisplayPercent.toFixed(1)}%)`}
                         />
                       </>
                     ) : (
@@ -500,6 +561,9 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                       <span className={`font-semibold tabular-nums ${freePaise < 0n ? 'text-rose-400' : 'text-emerald-400'}`}>
                         {formatINR(freePaise)}
                       </span>
+                      <span className="text-[10px] text-neutral-500 font-medium">
+                        ({ratio.freeDisplayPercent.toFixed(1)}%)
+                      </span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                       <span
@@ -510,6 +574,9 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                         className={`font-semibold tabular-nums ${heldPaise > 0n ? 'text-amber-400/90' : 'text-neutral-500'}`}
                       >
                         {formatINR(heldPaise)}
+                      </span>
+                      <span className="text-[10px] text-neutral-500 font-medium">
+                        ({ratio.heldDisplayPercent.toFixed(1)}%)
                       </span>
                     </div>
                   </div>

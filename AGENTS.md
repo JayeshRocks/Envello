@@ -71,7 +71,7 @@ This document is the authoritative, permanent instructions guide for any AI agen
   2. **Day of Month** (`monthly_day`): triggers on a specific day of each month for regular bills (rent, utilities, subscriptions).
   Real-time due triggers alert when items are due to be logged with 1-click batch entry and normalized 30-day monthly commitment projections.
 - **Atomic Operations & High-Performance RPCs**: Transfers, allocations, reversals, and multi-table financial movements must be executed inside database transactions or secure PostgreSQL RPC functions (`upsert_envelope_allocation_atomic`, `revert_transaction_atomic`, `execute_account_transfer`). No partial state updates and zero multi-step frontend waterfall delays.
-- **Inline Liquid Account Headroom Display**: Liquid accounts display bank balance, envelope holds, and free unallocated headroom inline in a single cohesive visual row for immediate operational clarity.
+- **Inline Liquid Account Headroom Display & Non-Neglect Visual Standard**: Liquid accounts display bank balance, envelope holds, and free unallocated headroom inline in a single cohesive visual row for immediate operational clarity. Progress bars and ratio graphs for account holds vs free funds strictly enforce the non-neglect standard (guaranteed minimum 0.1% display and visible tactile minimum width of 3.0% when values > 0n, summing strictly to 100%), ensuring small holds are never neglected against large balances and vice versa.
 
 ### 3.2 Security, Auth & Profile Lifecycle
 - **RLS on Every Table**: Every table, view, and bucket must have Row Level Security enabled with explicit least-privilege policies.

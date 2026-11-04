@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { calculateAccountHoldVisualRatio } from './accountHolds';
 
 /**
  * Calculates available headroom for a liquid account when funding an envelope.
@@ -189,5 +190,88 @@ describe('Account Holds Stability & Non-Migration Invariants', () => {
     const accB = state.find((a) => a.id === 'acc-2')!;
     expect(accB.allocatedPaise).toBe(0n);
     expect(accB.unallocatedPaise).toBe(100000000n);
+  });
+});
+
+describe('Account Holds Visual Ratio & Non-Neglect Invariants', () => {
+  it('guarantees tiny held values are never rounded to 0.0% and receive minimum visible bar width against large free balances', () => {
+    // Total ₹1,00,000, Held ₹50 (0.05%), Free ₹99,950 (99.95%)
+    const totalPaise = 10000000n;
+    const heldPaise = 5000n;
+    const freePaise = 9995000n;
+
+    const ratio = calculateAccountHoldVisualRatio(totalPaise, heldPaise, freePaise);
+
+    // Guaranteed minimum 0.1% display (never rounded down to 0.0%)
+    expect(ratio.heldDisplayPercent).toBe(0.1);
+    expect(ratio.freeDisplayPercent).toBe(99.9);
+
+    // Visual bar width guaranteed at least 3.0% for tactile visibility
+    expect(ratio.barHeldWidth).toBe(3.0);
+    expect(ratio.barFreeWidth).toBe(97.0);
+
+    // Strict 100% sum invariant
+    expect(ratio.barHeldWidth + ratio.barFreeWidth).toBe(100.0);
+  });
+
+  it('guarantees tiny free values are never rounded to 0.0% and receive minimum visible bar width against large held balances (vice versa)', () => {
+    // Total ₹1,00,000, Held ₹99,950 (99.95%), Free ₹50 (0.05%)
+    const totalPaise = 10000000n;
+    const heldPaise = 9995000n;
+    const freePaise = 5000n;
+
+    const ratio = calculateAccountHoldVisualRatio(totalPaise, heldPaise, freePaise);
+
+    // Guaranteed minimum 0.1% display for small free headroom
+    expect(ratio.freeDisplayPercent).toBe(0.1);
+    expect(ratio.heldDisplayPercent).toBe(99.9);
+
+    // Visual bar width guaranteed at least 3.0% for small free headroom
+    expect(ratio.barFreeWidth).toBe(3.0);
+    expect(ratio.barHeldWidth).toBe(97.0);
+
+    // Strict 100% sum invariant
+    expect(ratio.barHeldWidth + ratio.barFreeWidth).toBe(100.0);
+  });
+
+  it('correctly maps 100% free with 0 holds', () => {
+    const totalPaise = 5000000n;
+    const heldPaise = 0n;
+    const freePaise = 5000000n;
+
+    const ratio = calculateAccountHoldVisualRatio(totalPaise, heldPaise, freePaise);
+
+    expect(ratio.freeDisplayPercent).toBe(100);
+    expect(ratio.heldDisplayPercent).toBe(0);
+    expect(ratio.barFreeWidth).toBe(100);
+    expect(ratio.barHeldWidth).toBe(0);
+  });
+
+  it('correctly maps 100% held with 0 free', () => {
+    const totalPaise = 5000000n;
+    const heldPaise = 5000000n;
+    const freePaise = 0n;
+
+    const ratio = calculateAccountHoldVisualRatio(totalPaise, heldPaise, freePaise);
+
+    expect(ratio.heldDisplayPercent).toBe(100);
+    expect(ratio.freeDisplayPercent).toBe(0);
+    expect(ratio.barHeldWidth).toBe(100);
+    expect(ratio.barFreeWidth).toBe(0);
+  });
+
+  it('proportional mapping when both values are well above the minimum threshold', () => {
+    // 30% held (₹15,000), 70% free (₹35,000)
+    const totalPaise = 5000000n;
+    const heldPaise = 1500000n;
+    const freePaise = 3500000n;
+
+    const ratio = calculateAccountHoldVisualRatio(totalPaise, heldPaise, freePaise);
+
+    expect(ratio.heldDisplayPercent).toBe(30.0);
+    expect(ratio.freeDisplayPercent).toBe(70.0);
+    expect(ratio.barHeldWidth).toBe(30.0);
+    expect(ratio.barFreeWidth).toBe(70.0);
+    expect(ratio.barHeldWidth + ratio.barFreeWidth).toBe(100.0);
   });
 });

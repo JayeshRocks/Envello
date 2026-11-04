@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import { getCreditCardUtilizationStatus } from '@/lib/accounting/calculations';
+import { calculateAccountHoldVisualRatio } from '@/lib/accounting/accountHolds';
 import { useAuth } from '@/hooks/useAuth';
 import { useDevice } from '@/hooks/useDevice';
 import { useToast } from '@/context/ToastContext';
@@ -425,6 +426,18 @@ export const App: React.FC = () => {
   const effectiveCreditCardLiabilitiesPaise = totalCardOutstandingPaise;
   const effectiveActualDebtsPaise = totalRemainingDebtPaise + totalDebtLoanRemainingPaise;
 
+  const liquidHoldPaise =
+    effectiveLiquidFundsPaise >= totalUnallocatedPaise
+      ? effectiveLiquidFundsPaise - totalUnallocatedPaise
+      : 0n;
+  const liquidRatio = React.useMemo(() => {
+    return calculateAccountHoldVisualRatio(
+      effectiveLiquidFundsPaise,
+      liquidHoldPaise,
+      totalUnallocatedPaise
+    );
+  }, [effectiveLiquidFundsPaise, liquidHoldPaise, totalUnallocatedPaise]);
+
   const totalMonthlyRecurringPaise = React.useMemo(() => {
     return calculateNormalizedMonthlyCostPaise(recurringRules);
   }, [recurringRules]);
@@ -651,9 +664,28 @@ export const App: React.FC = () => {
                         <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums truncate animate-fade-in">
                           {formatINR(effectiveLiquidFundsPaise)}
                         </div>
+                        {effectiveLiquidFundsPaise > 0n && (
+                          <div className="w-full bg-neutral-800/80 rounded-full h-1.5 overflow-hidden flex my-2 border border-white/5">
+                            <div
+                              className="bg-emerald-400 h-full transition-all duration-300"
+                              style={{ width: `${liquidRatio.barFreeWidth}%` }}
+                              title={`Free Spendable: ${formatINR(totalUnallocatedPaise)} (${liquidRatio.freeDisplayPercent.toFixed(1)}%)`}
+                            />
+                            <div
+                              className="bg-amber-400/90 h-full transition-all duration-300"
+                              style={{ width: `${liquidRatio.barHeldWidth}%` }}
+                              title={`Reserved in Holds: ${formatINR(liquidHoldPaise)} (${liquidRatio.heldDisplayPercent.toFixed(1)}%)`}
+                            />
+                          </div>
+                        )}
                         <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
                           <span className="text-[11px] font-mono text-emerald-400/90 font-medium">
                             Free: {formatINR(totalUnallocatedPaise)}
+                            {effectiveLiquidFundsPaise > 0n && (
+                              <span className="text-[10px] text-neutral-500 font-normal ml-1">
+                                ({liquidRatio.freeDisplayPercent.toFixed(1)}%)
+                              </span>
+                            )}
                           </span>
                           <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">Manage &rarr;</span>
                         </div>

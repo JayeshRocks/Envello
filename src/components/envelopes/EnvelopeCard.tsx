@@ -376,7 +376,7 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                 ? 'bg-amber-400'
                 : 'bg-sky-400'
             }`}
-            style={{ width: `${isOverspent ? 100 : Math.max(3, percentSpent)}%` }}
+            style={{ width: `${isOverspent ? 100 : envelope.spentPaise > 0n ? Math.max(2.5, Math.min(100, percentSpent)) : 0}%` }}
           />
         </div>
       </div>
