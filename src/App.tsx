@@ -651,13 +651,8 @@ export const App: React.FC = () => {
                     <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider group-hover:text-sky-300 transition-colors">
                       1. Liquidity
                     </span>
-                    <div className="flex items-center space-x-1.5">
-                      <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">
-                        Manage &rarr;
-                      </span>
-                      <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:bg-sky-500/20 group-hover:scale-105 transition-all">
-                        <Wallet className="w-5 h-5" />
-                      </div>
+                    <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:bg-sky-500/20 group-hover:scale-105 transition-all">
+                      <Wallet className="w-5 h-5" />
                     </div>
                   </div>
                   <div>
@@ -714,6 +709,12 @@ export const App: React.FC = () => {
                               </span>
                             )}
                           </div>
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1.5 flex items-center justify-between">
+                          <span>Bank Accounts & Cash</span>
+                          <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">
+                            Manage &rarr;
+                          </span>
                         </div>
                       </>
                     )}
