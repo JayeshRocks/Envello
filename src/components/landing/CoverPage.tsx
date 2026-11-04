@@ -42,7 +42,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
   const [lifestylePercent, setLifestylePercent] = useState<number>(20);
 
   // Rollover policy interactive demonstrator tab
-  const [activeRolloverDemo, setActiveRolloverDemo] = useState<'carry' | 'sweep' | 'reset'>('carry');
+  const [activeRolloverDemo, setActiveRolloverDemo] = useState<'carry' | 'release'>('carry');
 
   const totalPaise = BigInt(simulatorIncomeRupees) * 100n;
   const essentialsPaise = (totalPaise * BigInt(essentialsPercent)) / 100n;
@@ -369,28 +369,21 @@ export const CoverPage: React.FC<CoverPageProps> = ({
 
             {/* Interactive Policy Switcher Demo */}
             <div className="space-y-3 pt-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 p-1.5 rounded-xl bg-neutral-900 border border-white/10 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-1.5 rounded-xl bg-neutral-900 border border-white/10 w-full">
                 {[
                   {
                     id: 'carry',
                     label: 'Carry Forward',
-                    rule: 'Accumulates unspent envelope surplus into next month.',
+                    rule: 'Accumulates unspent envelope surplus into next month, keeping backing liquid account holds.',
                     example: 'Remaining ₹4,200 in Outing carries forward into next month for a ₹9,200 total pool.',
                     badge: 'Sinking Funds',
                   },
                   {
-                    id: 'sweep',
-                    label: 'Sweep to Spendable',
-                    rule: 'Returns unused category surplus back to your liquid Spendable pool.',
-                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable envelope on the 1st of the month.',
-                    badge: 'Liquid Surplus',
-                  },
-                  {
-                    id: 'reset',
-                    label: 'Reset to Bank',
-                    rule: 'Releases unused budget and backing holds back to your bank account free balance.',
-                    example: 'Unspent ₹2,000 is released back to your bank free balance on the 1st of the month.',
-                    badge: 'Strict Budgets',
+                    id: 'release',
+                    label: 'Release to Liquid Accounts',
+                    rule: 'Releases unused budget and backing holds back to respective bank accounts.',
+                    example: 'Unspent ₹3,500 in Dining is released back to your bank account free balance on the 1st of the month.',
+                    badge: 'Direct Liquidity',
                   },
                 ].map((item) => (
                   <button
@@ -413,21 +406,15 @@ export const CoverPage: React.FC<CoverPageProps> = ({
                 const policies: Record<string, { label: string; rule: string; example: string; badge: string }> = {
                   carry: {
                     label: 'Carry Forward',
-                    rule: 'Accumulates unspent envelope surplus into next month.',
+                    rule: 'Accumulates unspent envelope surplus into next month, keeping backing liquid account holds.',
                     example: 'Remaining ₹4,200 in Outing carries forward into next month for a ₹9,200 total pool.',
                     badge: 'Sinking Funds',
                   },
-                  sweep: {
-                    label: 'Sweep to Spendable',
-                    rule: 'Returns unused category surplus back to your liquid Spendable pool.',
-                    example: 'Unspent ₹3,500 in Dining is swept back to Spendable envelope on the 1st of the month.',
-                    badge: 'Liquid Surplus',
-                  },
-                  reset: {
-                    label: 'Reset to Bank',
-                    rule: 'Releases unused budget and backing holds back to your bank account free balance.',
-                    example: 'Unspent ₹2,000 is released back to your bank free balance on the 1st of the month.',
-                    badge: 'Strict Budgets',
+                  release: {
+                    label: 'Release to Liquid Accounts',
+                    rule: 'Releases unused budget and backing holds back to respective bank accounts.',
+                    example: 'Unspent ₹3,500 in Dining is released back to your bank account free balance on the 1st of the month.',
+                    badge: 'Direct Liquidity',
                   },
                 };
                 const active = policies[activeRolloverDemo] || policies.carry;

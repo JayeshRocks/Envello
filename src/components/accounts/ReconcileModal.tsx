@@ -96,6 +96,14 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
     if (!currentAccount) return;
     setError(null);
 
+    const currentHoldPaise = currentAccount.allocatedPaise ?? 0n;
+    if (statementPaise < currentHoldPaise) {
+      setError(
+        `Statement balance cannot be set to ${formatINR(statementPaise)} because ${formatINR(currentHoldPaise)} is currently held in envelopes. An account's balance cannot be decreased below active envelope holds.`
+      );
+      return;
+    }
+
     if (discrepancyResult.status !== 'matched' && !reason.trim()) {
       setError('Please provide a reason for the discrepancy adjustment.');
       return;

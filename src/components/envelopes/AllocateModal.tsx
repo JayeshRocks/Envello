@@ -201,12 +201,6 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
     handleAmountChange(activeRowIndex, (current + amountRupees).toString());
   };
 
-  const handleShortcutMax = () => {
-    if (!activeRow) return;
-    const headroom = getAccountHeadroomPaise(activeRow.accountId);
-    handleAmountChange(activeRowIndex, toRupees(headroom).toString());
-  };
-
   const handleShortcutClear = () => {
     if (!activeRow) return;
     handleAmountChange(activeRowIndex, '0');
@@ -519,14 +513,6 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
                     +₹{amt.toLocaleString('en-IN')}
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onClick={handleShortcutMax}
-                  className="text-xs px-2.5 py-1.5 min-h-[36px] rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 text-sky-300 font-mono transition active:scale-95 flex items-center cursor-pointer"
-                  title="Fill remaining headroom for this account"
-                >
-                  Max Available
-                </button>
                 <button
                   type="button"
                   onClick={handleShortcutClear}

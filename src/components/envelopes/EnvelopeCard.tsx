@@ -81,12 +81,11 @@ function formatRolloverPolicy(policy?: string) {
   switch (policy) {
     case 'carry_forward':
       return 'Rollover: Carry Forward';
-    case 'sweep_to_regular':
-      return 'Rollover: Sweep to Spendable';
     case 'reset':
-      return 'Rollover: Reset to Bank';
+    case 'sweep_to_regular':
+      return 'Rollover: Release to Accounts';
     default:
-      return `Rollover: ${policy?.replace(/_/g, ' ') || 'Carry Forward'}`;
+      return 'Rollover: Carry Forward';
   }
 }
 

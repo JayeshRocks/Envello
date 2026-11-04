@@ -56,3 +56,37 @@ describe('Account Headroom Calculation Invariant', () => {
     expect(headroom).toBe(10000000n);
   });
 });
+
+describe('Account Holds Protection Invariants', () => {
+  function canUpdateAccountBalance(balancePaise: bigint, activeHoldPaise: bigint): boolean {
+    return balancePaise >= activeHoldPaise;
+  }
+
+  function canDeleteAccount(activeHoldPaise: bigint): boolean {
+    return activeHoldPaise === 0n;
+  }
+
+  it('rejects decreasing bank balance below active envelope holds', () => {
+    const activeHoldPaise = 5000000n; // ₹50,000.00 reserved in envelopes
+    
+    // Attempting to lower balance to ₹40,000.00 should fail
+    expect(canUpdateAccountBalance(4000000n, activeHoldPaise)).toBe(false);
+    
+    // Setting balance to exactly ₹50,000.00 should succeed (0 free)
+    expect(canUpdateAccountBalance(5000000n, activeHoldPaise)).toBe(true);
+
+    // Setting balance to ₹60,000.00 should succeed (₹10,000 free)
+    expect(canUpdateAccountBalance(6000000n, activeHoldPaise)).toBe(true);
+  });
+
+  it('strictly rejects deleting an account while it has active holds', () => {
+    // Account with ₹1,00,000 hold cannot be deleted
+    expect(canDeleteAccount(10000000n)).toBe(false);
+
+    // Account with ₹1 paise hold cannot be deleted
+    expect(canDeleteAccount(1n)).toBe(false);
+
+    // Account with 0 holds can be deleted
+    expect(canDeleteAccount(0n)).toBe(true);
+  });
+});

@@ -108,11 +108,17 @@ export async function fetchAccounts(
     if (periodData?.id) {
       const { data: allocs } = await supabase
         .from('envelope_allocations')
-        .select('id')
+        .select('id, allocated_paise')
         .eq('period_id', periodData.id)
         .eq('user_id', userId);
 
       const allocIds = (allocs || []).map((a) => a.id);
+      const totalAllocatedAcrossEnvelopes = (allocs || []).reduce(
+        (sum, a) => sum + BigInt(a.allocated_paise ?? 0),
+        0n
+      );
+
+      let holdsSumFromSources = 0n;
       if (allocIds.length > 0) {
         const { data: sources, error: srcError } = await supabase
           .from('envelope_allocation_sources')
@@ -120,11 +126,42 @@ export async function fetchAccounts(
           .eq('user_id', userId)
           .in('allocation_id', allocIds);
 
-        if (!srcError && sources) {
+        if (!srcError && sources && sources.length > 0) {
           for (const src of sources) {
+            const amt = BigInt(src.amount_paise);
             const current = holdsMap.get(src.account_id) ?? 0n;
-            holdsMap.set(src.account_id, current + BigInt(src.amount_paise));
+            holdsMap.set(src.account_id, current + amt);
+            holdsSumFromSources += amt;
           }
+        }
+      }
+
+      // Authoritative Invariant: If total envelope allocations exceed holds tracked in sources
+      // (e.g. legacy allocations, initial seeds, or remote sources synchronization gap),
+      // greedily assign the remaining unassigned hold across active accounts (largest balance first)
+      if (totalAllocatedAcrossEnvelopes > holdsSumFromSources && data && data.length > 0) {
+        let unassignedPaise = totalAllocatedAcrossEnvelopes - holdsSumFromSources;
+        const sortedAccs = [...data].sort((a, b) => {
+          const balA = BigInt(a.balance_paise) - (holdsMap.get(a.id) ?? 0n);
+          const balB = BigInt(b.balance_paise) - (holdsMap.get(b.id) ?? 0n);
+          return balB > balA ? 1 : -1;
+        });
+
+        for (const acc of sortedAccs) {
+          if (unassignedPaise <= 0n) break;
+          const currentHold = holdsMap.get(acc.id) ?? 0n;
+          const availableBal = BigInt(acc.balance_paise) - currentHold;
+          if (availableBal > 0n) {
+            const assign = unassignedPaise > availableBal ? availableBal : unassignedPaise;
+            holdsMap.set(acc.id, currentHold + assign);
+            unassignedPaise -= assign;
+          }
+        }
+
+        // If allocations exceed total liquid balance, assign remainder to primary account
+        if (unassignedPaise > 0n && sortedAccs[0]) {
+          const cur = holdsMap.get(sortedAccs[0].id) ?? 0n;
+          holdsMap.set(sortedAccs[0].id, cur + unassignedPaise);
         }
       }
     }
@@ -196,13 +233,30 @@ export async function createAccount(
 }
 
 /**
+ * Calculates current active envelope holds on an account.
+ */
+export async function getAccountHoldPaise(accountId: string, userId: string): Promise<bigint> {
+  const accounts = await fetchAccounts(userId);
+  const target = accounts.find((a) => a.id === accountId);
+  return target?.allocatedPaise ?? 0n;
+}
+
+/**
  * Updates an existing account's balance or metadata.
+ * Guarded against decreasing balance below active envelope holds.
  */
 export async function updateAccountBalance(
   accountId: string,
   userId: string,
   newBalancePaise: bigint
 ): Promise<void> {
+  const currentHold = await getAccountHoldPaise(accountId, userId);
+  if (newBalancePaise < currentHold) {
+    throw new Error(
+      `Cannot decrease account balance below ₹${(Number(currentHold) / 100).toFixed(2)} because ₹${(Number(currentHold) / 100).toFixed(2)} is currently reserved in envelope holds.`
+    );
+  }
+
   const { error } = await supabase
     .from('accounts')
     .update({
@@ -220,6 +274,7 @@ export async function updateAccountBalance(
 
 /**
  * Updates an account's name, institution, type, or balance.
+ * Guarded against decreasing balance below active envelope holds.
  */
 export async function updateAccount(
   accountId: string,
@@ -231,6 +286,15 @@ export async function updateAccount(
     balancePaise?: bigint;
   }
 ): Promise<AccountItem> {
+  if (data.balancePaise !== undefined) {
+    const currentHold = await getAccountHoldPaise(accountId, userId);
+    if (data.balancePaise < currentHold) {
+      throw new Error(
+        `Cannot decrease account balance below ₹${(Number(currentHold) / 100).toFixed(2)} because ₹${(Number(currentHold) / 100).toFixed(2)} is currently reserved in envelope holds.`
+      );
+    }
+  }
+
   const updatePayload: Database['public']['Tables']['accounts']['Update'] = {
     updated_at: new Date().toISOString(),
   };
@@ -268,9 +332,17 @@ export async function updateAccount(
 }
 
 /**
- * Deletes an account (or deactivates it if it has foreign key references)
+ * Deletes an account (or deactivates it if it has foreign key references).
+ * Strictly blocked if the account has active envelope holds.
  */
 export async function deleteAccount(accountId: string, userId: string): Promise<void> {
+  const currentHold = await getAccountHoldPaise(accountId, userId);
+  if (currentHold > 0n) {
+    throw new Error(
+      `Cannot delete account while ₹${(Number(currentHold) / 100).toFixed(2)} is reserved in envelope holds. Please reallocate or release envelope funds first.`
+    );
+  }
+
   const { error } = await supabase
     .from('accounts')
     .delete()

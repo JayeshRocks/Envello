@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Landmark, Layers, Sparkles, ShieldCheck } from 'lucide-react';
+import { X, Landmark, Layers, ShieldCheck } from 'lucide-react';
 import type { EnvelopeWithAllocation, AllocationSourceRecord } from '@/types/accounting.types';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
@@ -99,18 +99,17 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
             <div className="text-xs font-semibold uppercase tracking-wider text-neutral-400 flex items-center space-x-1.5">
               <Landmark className="w-3.5 h-3.5 text-sky-400" />
               <span>
-                Funding Account Sources ({sources.length > 0 ? sources.length : 1})
+                Funding Account Sources ({totalAllocated > 0n && sources.length > 0 ? sources.length : 0})
               </span>
             </div>
 
-            {sources.length === 0 ? (
-              <div className="p-3.5 rounded-xl bg-neutral-800/40 border border-white/5 text-neutral-300 text-xs space-y-1">
-                <div className="font-medium text-white flex items-center space-x-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Primary Liquid Account</span>
+            {totalAllocated === 0n || sources.length === 0 ? (
+              <div className="p-5 rounded-2xl bg-neutral-950/60 border border-white/5 text-center space-y-1.5 animate-in fade-in">
+                <div className="text-xs font-semibold text-neutral-300">
+                  Currently no budget allocated
                 </div>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">
-                  Budget funds are backed by your default liquid accounts. Allocate or modify budget to set specific account funding.
+                <p className="text-[11px] text-neutral-500 leading-relaxed max-w-xs mx-auto">
+                  This envelope has ₹0 allocated for the current month. Tap &quot;Modify Budget&quot; below to assign funds from your liquid accounts.
                 </p>
               </div>
             ) : (
@@ -149,7 +148,7 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
                             {formatINR(src.amountPaise)}
                           </div>
                           <div className="text-[10px] text-neutral-400 font-mono">
-                            {sharePercent}% of envelope
+                            {sharePercent}% of budget
                           </div>
                         </div>
                       </div>

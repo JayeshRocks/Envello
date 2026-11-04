@@ -92,10 +92,10 @@ Never classify a transaction as an expense unless purchasing power is actually c
    - **Spendable**, **Emergency**, and **Savings** spawn automatically upon workspace initialization alongside custom categories.
    - **Protected Reserve Feature**: Any envelope can be toggled on/off as a Protected Reserve (Emergency and Savings spawn with this enabled by default). When active, it displays a compact green shield symbol and requires explicit user authorization confirmation before funds can be withdrawn or spent.
    - **Backing Account Holds & Multi-Account Funding**: Allocating budget to an envelope places an explicit hold on backing liquid accounts (`envelope_allocation_sources`). Users can fund an envelope from multiple accounts via "Add from another account", which locks previous account selectors and offers row-level revert buttons. Each account's funding is strictly capped at its available headroom ($\text{unallocatedPaise} + \text{existingHoldOnEnvelope} \le \text{balancePaise}$), preventing over-allocation.
-   - **Month-End Rollover Policies**:
+   - **Account Holds Protection Invariant**: While a liquid account has active holds on its money, the balance cannot be decreased below the sum of active holds (`newBalancePaise >= allocatedPaise`), nor can that account be deleted while `allocatedPaise > 0n`.
+   - **Month-End Rollover Policies**: Exactly two deterministic rollover mechanics:
      - **Carry Forward** (`carry_forward`): Retains unused funds and backing account holds in this envelope into next month.
-     - **Sweep to Spendable** (`sweep_to_regular`): Transfers unused budget surplus to the Spendable envelope at month-end.
-     - **Reset to Bank** (`reset`): Releases unused budget and holds back to the backing bank account's free unallocated balance.
+     - **Release to Respective Liquid Accounts** (`reset`): Releases unused budget surplus and clears holds directly back to the backing bank accounts' free unallocated balances at month-end.
 2. **User-Defined Lifestyle Envelopes**: Custom envelopes (e.g. `Dining Out`, `Groceries`, `Utilities`, `Travel`, `Entertainment`).
 3. **Cards & Debts Separation**: Credit cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT envelopes.
 
@@ -107,8 +107,8 @@ Never classify a transaction as an expense unless purchasing power is actually c
 
 ### 5.3 Rollover Mechanics
 - At the start of a new budget period (`YYYY-MM`):
-  - Envelopes with `carry_forward` keep their unspent balance: $\text{Available} = \text{Allocated} + \text{Carried Over} - \text{Spent}$.
-  - Envelopes with `sweep_to_spendable` return unused funds to Spendable.
+  - Envelopes with **Carry Forward** (`carry_forward`) keep their unspent balance and maintain backing account holds: $\text{Available} = \text{Allocated} + \text{Carried Over} - \text{Spent}$.
+  - Envelopes with **Release to Respective Liquid Accounts** (`reset`) release unspent budget and holds directly back to the backing bank accounts' free unallocated balances.
   - Overspent envelopes are strictly prevented by the transaction engine; zero or positive available balances are guaranteed.
 
 ### 5.4 Planning vs Actuals (Monthly Targets & Recurring Costs)

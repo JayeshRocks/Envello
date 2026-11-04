@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Landmark, Wallet, Plus, AlertCircle, Edit2, Trash2, Check, ArrowRight, Scale } from 'lucide-react';
 import type { AccountItem } from '@/lib/api/accounts';
 import type { AccountType } from '@/types/accounting.types';
-import { toPaise, formatINR } from '@/lib/accounting/currency';
+import { toPaise, toRupees, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
 import { useConfirm } from '@/context/ConfirmContext';
@@ -10,6 +10,7 @@ import { useConfirm } from '@/context/ConfirmContext';
 interface AccountListModalProps {
   isOpen: boolean;
   accounts: AccountItem[];
+  onRefreshAccounts?: () => Promise<void>;
   onClose: () => void;
   onAddAccount: (params: {
     name: string;
@@ -33,6 +34,7 @@ interface AccountListModalProps {
 export const AccountListModal: React.FC<AccountListModalProps> = ({
   isOpen,
   accounts,
+  onRefreshAccounts,
   onClose,
   onAddAccount,
   onEditAccount,
@@ -42,6 +44,13 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const confirm = useConfirm();
+
+  // Refresh accounts on modal open to ensure up-to-date holds
+  React.useEffect(() => {
+    if (isOpen) {
+      onRefreshAccounts?.();
+    }
+  }, [isOpen, onRefreshAccounts]);
 
   // New account form state
   const [name, setName] = useState('');
@@ -81,9 +90,19 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
       return;
     }
 
+    const targetAcc = accounts.find((a) => a.id === editingAccountId);
+    const currentHoldPaise = targetAcc?.allocatedPaise ?? 0n;
+    const newBalPaise = toPaise(editBalanceRupees || '0');
+
+    if (newBalPaise < currentHoldPaise) {
+      setError(
+        `Cannot decrease balance of "${targetAcc?.name || 'this account'}" to ${formatINR(newBalPaise)}. It currently has ${formatINR(currentHoldPaise)} reserved across active envelope holds. Balance cannot be lower than the sum of active holds.`
+      );
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      const newBalPaise = toPaise(editBalanceRupees || '0');
       await onEditAccount(editingAccountId, {
         name: editName.trim(),
         institution: editInstitution.trim(),
@@ -257,35 +276,62 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] text-neutral-400">Reconciled Balance (₹)</label>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <label className="text-neutral-400">Reconciled Balance (₹)</label>
+                      {(acc.allocatedPaise ?? 0n) > 0n && (
+                        <span className="text-amber-400 font-mono font-medium">
+                          Min: {formatINR(acc.allocatedPaise!)} (Reserved in holds)
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="number"
                       step="any"
+                      min={toRupees(acc.allocatedPaise ?? 0n)}
                       value={editBalanceRupees}
                       onChange={(e) => setEditBalanceRupees(e.target.value)}
                       required
-                      className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-white/10 text-base sm:text-sm text-white font-mono"
+                      className={`w-full px-3 py-2 rounded-lg bg-neutral-800 border text-base sm:text-sm text-white font-mono ${
+                        toPaise(editBalanceRupees || '0') < (acc.allocatedPaise ?? 0n)
+                          ? 'border-red-500/60 focus:ring-red-500'
+                          : 'border-white/10'
+                      }`}
                     />
                     <span className="text-[10px] text-neutral-500 block">
                       Directly aligns your ledger balance with your physical bank balance.
                     </span>
+                    {toPaise(editBalanceRupees || '0') < (acc.allocatedPaise ?? 0n) && (
+                      <span className="text-[10px] text-red-400 block font-medium">
+                        Cannot be lower than {formatINR(acc.allocatedPaise!)} currently reserved across envelope holds.
+                      </span>
+                    )}
                   </div>
 
                   <div className="pt-1 flex items-center justify-between">
                     {onDeleteAccount && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(acc.id, acc.name)}
-                        className="text-xs text-red-400 hover:text-red-300 flex items-center space-x-1 min-h-[38px] px-2 py-1 rounded-lg"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete</span>
-                      </button>
+                      (acc.allocatedPaise ?? 0n) > 0n ? (
+                        <div
+                          title={`Cannot delete: "${acc.name}" has ${formatINR(acc.allocatedPaise!)} reserved in envelope holds`}
+                          className="text-xs text-neutral-500 flex items-center space-x-1 min-h-[38px] px-2 py-1 rounded-lg cursor-not-allowed opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete (Locked by Holds)</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(acc.id, acc.name)}
+                          className="text-xs text-red-400 hover:text-red-300 flex items-center space-x-1 min-h-[38px] px-2 py-1 rounded-lg cursor-pointer transition active:scale-95"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      )
                     )}
                     <button
                       type="submit"
-                      disabled={isSubmitting}
-                      className="ml-auto px-4 py-2 min-h-[38px] rounded-lg bg-sky-600 hover:bg-sky-500 text-xs text-white font-medium flex items-center space-x-1.5 shadow-md active:scale-95"
+                      disabled={isSubmitting || toPaise(editBalanceRupees || '0') < (acc.allocatedPaise ?? 0n)}
+                      className="ml-auto px-4 py-2 min-h-[38px] rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:pointer-events-none text-xs text-white font-medium flex items-center space-x-1.5 shadow-md active:scale-95 cursor-pointer"
                     >
                       <Check className="w-3.5 h-3.5" />
                       <span>{isSubmitting ? 'Saving...' : 'Save Changes'}</span>

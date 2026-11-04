@@ -1023,6 +1023,7 @@ export const App: React.FC = () => {
       <AccountListModal
         isOpen={isAccountsModalOpen}
         accounts={accounts}
+        onRefreshAccounts={refreshAccounts}
         onClose={() => setIsAccountsModalOpen(false)}
         onAddAccount={async (params) => {
           await addAccount(params);

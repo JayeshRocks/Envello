@@ -57,13 +57,13 @@ This document is the authoritative, permanent instructions guide for any AI agen
   - Envelopes act as "Ghost Banks": users can choose an envelope as the payment method for an expense. The engine runs a greedy largest-first deduction across backing liquid accounts.
   - On completing an envelope expense, a real-life settlement receipt prompt appears with the exact bank-by-bank payout breakdown and dual actions: "Mark as completed" and 1-click "Revert this Transaction".
   - Direct account spending (direct bills, credit card bill payments, loan settlements) is strictly guarded against exceeding the account's free unallocated balance (`amountPaise <= unallocatedPaise`), preventing overdrafts on reserved envelope funds.
+  - Account Holds Protection Invariant: While a liquid account has active holds on its money, the balance cannot be decreased below the sum of active holds (`newBalancePaise >= allocatedPaise`), nor can that account be deleted while `allocatedPaise > 0n`.
   - Transfers between envelopes shift backing account holds without data loss.
   - Envelope cards feature card-wide click-to-view allocation triggers, enlarged quick action buttons (Edit, Transfer, Modify Budget) with stopPropagation containment, and a bottom-right "View Allocation →" link opening the backing account hold breakdown.
 - **Month-End Rollover Policies & Reversion Process**:
-  - Three deterministic rollover mechanics:
+  - Two deterministic rollover mechanics:
     1. **Carry Forward** (`carry_forward`): Keep unused funds and backing account holds reserved in this envelope into next month.
-    2. **Sweep to Spendable** (`sweep_to_regular`): Transfer unused budget surplus to the Spendable envelope at month-end.
-    3. **Reset to Bank** (`reset`): Release unused budget and holds back to the backing bank account's free unallocated balance.
+    2. **Release to Respective Liquid Accounts** (`reset`): Release unused budget and holds back to the backing bank accounts' free unallocated balance.
   - Detailed Reversion Process & 3-Day Rollover Policy: Transaction reversions require an in-app preview detailing exact double-entry ledger impact across accounts, envelopes, cards, and debts, referencing target accounts and envelopes by name rather than generic phrases. Allowed for the current month and up to 3 days post month-end. Reversions are guarded against driving envelope balances below zero if allocated funds were already spent.
 - **Reimagined Recurring Costs Engine**: Supports dual frequency models:
   1. **Interval in Days** (`interval_days`): repeat every X days for rolling supplies and consumables (e.g., water cans every 15 days, protein every 45 days).

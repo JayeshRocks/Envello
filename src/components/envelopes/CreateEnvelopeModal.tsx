@@ -176,13 +176,10 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
                 className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
               >
                 <option value="carry_forward" className="bg-neutral-900 text-white">
-                  Carry Forward (Keep unused funds & account holds reserved for next month)
-                </option>
-                <option value="sweep_to_regular" className="bg-neutral-900 text-white">
-                  Sweep to Spendable (Transfer unused budget surplus to Spendable envelope at month-end)
+                  Carry Forward (Keep unused funds & account holds in this envelope for next month)
                 </option>
                 <option value="reset" className="bg-neutral-900 text-white">
-                  Reset to Bank (Release unused budget & holds back to bank account's free balance)
+                  Release to Respective Liquid Accounts (Return unused budget & holds back to bank accounts)
                 </option>
               </select>
 
@@ -193,14 +190,9 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
                     <strong className="text-white">Carry Forward:</strong> Any unused funds remain reserved in this envelope into the next month, preserving backing liquid account holds without release.
                   </span>
                 )}
-                {rolloverPolicy === 'sweep_to_regular' && (
+                {(rolloverPolicy === 'reset' || rolloverPolicy === 'sweep_to_regular') && (
                   <span>
-                    <strong className="text-white">Sweep to Spendable:</strong> Unspent budget surplus at month-end is transferred into the Spendable envelope, consolidating leftover funds into your main spending pool.
-                  </span>
-                )}
-                {rolloverPolicy === 'reset' && (
-                  <span>
-                    <strong className="text-white">Reset to Bank:</strong> Unspent envelope funds are zeroed out at month-end, clearing holds and releasing money back to the backing bank accounts' free unallocated balances.
+                    <strong className="text-white">Release to Respective Liquid Accounts:</strong> Unspent envelope funds and holds are released at month-end, returning money back to the respective liquid bank accounts&apos; free unallocated balances.
                   </span>
                 )}
               </div>

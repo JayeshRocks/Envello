@@ -288,6 +288,15 @@ export async function fetchEnvelopesWithAllocations(
   // 4b. Fetch allocation sources for all allocations in this period
   const sourcesMap = new Map<string, AllocationSourceRecord[]>();
   const allocIds = (allocationsData || []).map((a) => a.id);
+
+  const { data: accountsData } = await supabase
+    .from('accounts')
+    .select('id, name, is_active')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+
+  const accMap = new Map((accountsData || []).map((a) => [a.id, a.name]));
+
   if (allocIds.length > 0) {
     try {
       const { data: sourcesData } = await supabase
@@ -295,13 +304,6 @@ export async function fetchEnvelopesWithAllocations(
         .select('id, allocation_id, account_id, amount_paise')
         .eq('user_id', userId)
         .in('allocation_id', allocIds);
-
-      const { data: accountsData } = await supabase
-        .from('accounts')
-        .select('id, name')
-        .eq('user_id', userId);
-
-      const accMap = new Map((accountsData || []).map((a) => [a.id, a.name]));
 
       for (const src of sourcesData || []) {
         const list = sourcesMap.get(src.allocation_id) || [];
@@ -337,6 +339,26 @@ export async function fetchEnvelopesWithAllocations(
     const spentPaise = BigInt(alloc?.spent_paise ?? 0);
     const availablePaise = calculateAvailableEnvelopeBalance(allocatedPaise, carriedOverPaise, spentPaise);
 
+    let sources = alloc?.id ? sourcesMap.get(alloc.id) || [] : [];
+    // If allocatedPaise > 0 but sources list is empty (e.g. legacy allocation or remote sync gap),
+    // supply a backing source hold from the primary liquid account
+    if (sources.length === 0 && allocatedPaise > 0n && alloc?.id) {
+      const primaryAcc = (accountsData || []).find((a) => a.is_active !== false) || accountsData?.[0];
+      if (primaryAcc) {
+        sources = [
+          {
+            id: `fallback-${alloc.id}`,
+            allocationId: alloc.id,
+            accountId: primaryAcc.id,
+            accountName: primaryAcc.name,
+            amountPaise: allocatedPaise,
+          },
+        ];
+      }
+    } else if (allocatedPaise === 0n) {
+      sources = [];
+    }
+
     return {
       id: env.id,
       name: env.name,
@@ -352,7 +374,7 @@ export async function fetchEnvelopesWithAllocations(
       carriedOverPaise,
       spentPaise,
       availablePaise,
-      sources: alloc?.id ? sourcesMap.get(alloc.id) || [] : [],
+      sources,
     };
   });
 }
@@ -451,7 +473,10 @@ export async function upsertEnvelopeAllocation(
             }));
 
           if (rows.length > 0) {
-            await supabase.from('envelope_allocation_sources').insert(rows);
+            const { error: insErr } = await supabase.from('envelope_allocation_sources').insert(rows);
+            if (insErr) {
+              console.warn('[Envello API] Warning inserting allocation sources:', insErr.message);
+            }
           }
         }
       } else if (allocatedPaise > 0n) {
@@ -474,12 +499,15 @@ export async function upsertEnvelopeAllocation(
             .maybeSingle();
 
           if (firstAcc?.id) {
-            await supabase.from('envelope_allocation_sources').insert({
+            const { error: insSingleErr } = await supabase.from('envelope_allocation_sources').insert({
               user_id: userId,
               allocation_id: allocationId,
               account_id: firstAcc.id,
               amount_paise: Number(allocatedPaise),
             });
+            if (insSingleErr) {
+              console.warn('[Envello API] Warning inserting fallback allocation source:', insSingleErr.message);
+            }
           }
         } else {
           // Update single existing source amount if exactly one exists
