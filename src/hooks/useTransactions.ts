@@ -18,14 +18,16 @@ export function useTransactions() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const loadTransactions = useCallback(async () => {
+  const loadTransactions = useCallback(async (silent = false) => {
     if (!user) {
       setTransactions([]);
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    if (!silent) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await fetchTransactions(user.id, {
@@ -114,10 +116,14 @@ export function useTransactions() {
   const removeTransaction = async (transactionId: string) => {
     if (!user) throw new Error('User not authenticated');
     setError(null);
+    const prevTransactions = transactions;
+    // Fast Optimistic Removal: immediately remove the reverted row from UI
+    setTransactions((prev) => prev.filter((t) => t.id !== transactionId));
     try {
       await deleteTransaction(transactionId, user.id);
-      await loadTransactions();
+      await loadTransactions(true);
     } catch (err: unknown) {
+      setTransactions(prevTransactions);
       const message = err instanceof Error ? err.message : 'Failed to delete transaction.';
       setError(message);
       throw err;

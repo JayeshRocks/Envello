@@ -348,19 +348,25 @@ export const App: React.FC = () => {
   const effectiveCardUtilization = overallUtilizationPercent;
   const effectiveCardStatus = getCreditCardUtilizationStatus(effectiveCardUtilization);
 
-  const handleTransactionRecorded = async () => {
+  const handleTransactionRecorded = async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent ?? true;
+    // Fast path: high-frequency financial entities refreshed first in parallel
     await Promise.all([
-      refreshAccounts(),
-      refreshEnvelopes(),
-      refreshTransactions(),
+      refreshAccounts(isSilent),
+      refreshEnvelopes(isSilent),
+      refreshTransactions(isSilent),
       refreshCards(),
+    ]);
+
+    // Secondary items refreshed in background without blocking UI interactivity
+    Promise.all([
       refreshFDs(),
       refreshSelfEmis(),
       refreshDebts(),
       refreshDebtsLoans(),
       refreshTargets(),
       refreshRecurringRules(),
-    ]);
+    ]).catch(() => {});
   };
 
   // Keyboard shortcut listener (Escape to close, 'T' to record transaction)

@@ -707,6 +707,21 @@ export interface Database {
         Args: Record<string, never>;
         Returns: number;
       };
+      upsert_envelope_allocation_atomic: {
+        Args: {
+          p_envelope_id: string;
+          p_year_month: string;
+          p_allocated_paise: number;
+          p_funding_sources?: Array<{ accountId: string; amountPaise: number }>;
+        };
+        Returns: string;
+      };
+      revert_transaction_atomic: {
+        Args: {
+          p_transaction_id: string;
+        };
+        Returns: boolean;
+      };
     };
     Enums: Record<string, never>;
   };

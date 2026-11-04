@@ -211,6 +211,9 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
   }
 }
 
+// In-memory session cache to avoid redundant ensureDefaultEnvelopes DB checks on every fetch
+const initializedEnvelopesUsers = new Set<string>();
+
 /**
  * Fetches all envelopes for a user along with their allocation figures for the chosen year-month.
  */
@@ -218,23 +221,30 @@ export async function fetchEnvelopesWithAllocations(
   userId: string,
   yearMonth: string
 ): Promise<EnvelopeWithAllocation[]> {
-  // 1. Ensure user has default envelopes seeded
-  await ensureDefaultEnvelopes(userId);
+  // 1. Ensure user has default envelopes seeded (run once per session or if empty)
+  if (!initializedEnvelopesUsers.has(userId)) {
+    await ensureDefaultEnvelopes(userId);
+    initializedEnvelopesUsers.add(userId);
+  }
 
-  // 2. Resolve budget_period ID
-  const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+  // 2. Fetch budget_period ID, envelopes, and accounts in PARALLEL to eliminate network waterfall
+  const [periodId, envelopesResult, accountsResult] = await Promise.all([
+    getOrCreateBudgetPeriod(userId, yearMonth),
+    supabase
+      .from('envelopes')
+      .select('*')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('accounts')
+      .select('id, name, is_active')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
+  ]);
 
-  // 3. Fetch all user envelopes (excluding deprecated credit-cards and emis)
-  // Attempt to query ordered by sort_order, with graceful fallback to created_at
-  let envelopesData: Database['public']['Tables']['envelopes']['Row'][] | null = null;
-  const { data: orderedData, error: sortError } = await supabase
-    .from('envelopes')
-    .select('*')
-    .eq('user_id', userId)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true });
-
-  if (sortError) {
+  let envelopesData = envelopesResult.data;
+  if (envelopesResult.error) {
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('envelopes')
       .select('*')
@@ -246,8 +256,18 @@ export async function fetchEnvelopesWithAllocations(
       throw fallbackError;
     }
     envelopesData = fallbackData;
-  } else {
-    envelopesData = orderedData;
+  }
+
+  // If user unexpectedly has 0 envelopes, seed defaults and re-fetch once
+  if (!envelopesData || envelopesData.length === 0) {
+    await ensureDefaultEnvelopes(userId);
+    const { data: reseeded } = await supabase
+      .from('envelopes')
+      .select('*')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    envelopesData = reseeded || [];
   }
 
   const validEnvelopes = (envelopesData || []).filter(
@@ -278,24 +298,18 @@ export async function fetchEnvelopesWithAllocations(
     });
   }
 
-  // 4. Fetch allocations for the specified period
+  // 3. Fetch allocations for the specified period
   const { data: allocationsData, error: allocError } = await supabase
     .from('envelope_allocations')
     .select('*')
     .eq('user_id', userId)
     .eq('period_id', periodId);
 
-  // 4b. Fetch allocation sources for all allocations in this period
+  // 4. Fetch allocation sources for all allocations in this period in parallel with account mapping
   const sourcesMap = new Map<string, AllocationSourceRecord[]>();
   const allocIds = (allocationsData || []).map((a) => a.id);
-
-  const { data: accountsData } = await supabase
-    .from('accounts')
-    .select('id, name, is_active')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true });
-
-  const accMap = new Map((accountsData || []).map((a) => [a.id, a.name]));
+  const accountsData = accountsResult.data || [];
+  const accMap = new Map(accountsData.map((a) => [a.id, a.name]));
 
   if (allocIds.length > 0) {
     try {
@@ -392,6 +406,34 @@ export async function upsertEnvelopeAllocation(
 ): Promise<void> {
   if (allocatedPaise < 0n) {
     throw new Error('Allocation amount cannot be negative.');
+  }
+
+  // Fast Path: Try atomic database RPC function first (1 single network round-trip)
+  try {
+    const { data: rpcAllocId, error: rpcError } = await supabase.rpc(
+      'upsert_envelope_allocation_atomic',
+      {
+        p_envelope_id: envelopeId,
+        p_year_month: yearMonth,
+        p_allocated_paise: Number(allocatedPaise),
+        p_funding_sources: (fundingSources || []).map((s) => ({
+          accountId: s.accountId,
+          amountPaise: Number(s.amountPaise),
+        })),
+      }
+    );
+
+    if (!rpcError && rpcAllocId) {
+      return;
+    }
+    if (rpcError && rpcError.message && rpcError.message.includes('Cannot set allocation lower')) {
+      throw new Error(rpcError.message);
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('Cannot set allocation lower')) {
+      throw err;
+    }
+    // Fall back to client-side batched verification & execution
   }
 
   const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);

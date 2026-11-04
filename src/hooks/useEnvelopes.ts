@@ -61,14 +61,16 @@ export function useEnvelopes() {
     setSelectedPeriod(getCurrentYearMonth());
   }, []);
 
-  const loadEnvelopes = useCallback(async () => {
+  const loadEnvelopes = useCallback(async (silent = false) => {
     if (!user) {
       setEnvelopes([]);
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    if (!silent) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await fetchEnvelopesWithAllocations(user.id, selectedPeriod);
@@ -120,6 +122,33 @@ export function useEnvelopes() {
     setError(null);
     const target = envelopes.find((e) => e.id === envelopeId);
     const prevAllocated = target ? target.allocatedPaise : 0n;
+    const prevEnvelopes = envelopes;
+
+    // Fast Optimistic Update: instantly update the envelope card without waiting for network round-trip
+    if (target) {
+      const delta = amountPaise - prevAllocated;
+      const newAvailable = target.availablePaise + delta;
+      setEnvelopes((prev) =>
+        prev.map((e) =>
+          e.id === envelopeId
+            ? {
+                ...e,
+                allocatedPaise: amountPaise,
+                availablePaise: newAvailable,
+                sources: fundingSources
+                  ? fundingSources.map((s, idx) => ({
+                      id: `temp-${idx}`,
+                      allocationId: e.allocationId || 'temp',
+                      accountId: s.accountId,
+                      accountName: 'Liquid Account',
+                      amountPaise: s.amountPaise,
+                    }))
+                  : e.sources,
+              }
+            : e
+        )
+      );
+    }
 
     try {
       await upsertEnvelopeAllocation(
@@ -144,8 +173,9 @@ export function useEnvelopes() {
         setUndoStack((prev) => [historyEntry, ...prev].slice(0, 10));
       }
 
-      await loadEnvelopes();
+      await loadEnvelopes(true);
     } catch (err: unknown) {
+      setEnvelopes(prevEnvelopes);
       const message = err instanceof Error ? err.message : 'Failed to update allocation.';
       setError(message);
       throw err;

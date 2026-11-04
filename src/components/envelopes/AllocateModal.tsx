@@ -251,8 +251,8 @@ export const AllocateModal: React.FC<AllocateModalProps> = ({
     setIsSubmitting(true);
     try {
       await onAllocate(envelope.id, totalEnteredPaise, validSources);
-      await onRefreshAccounts?.();
       onClose();
+      onRefreshAccounts?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update allocation.');
     } finally {

@@ -11,7 +11,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
-import { useAccounts } from '@/hooks/useAccounts';
 import { EnvelopeCard } from './EnvelopeCard';
 import { AllocateModal } from './AllocateModal';
 import { TransferModal } from './TransferModal';
@@ -58,9 +57,8 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
     lastAllocation,
   } = useEnvelopes();
 
-  const { accounts: internalAccounts, refreshAccounts: internalRefresh } = useAccounts();
-  const accounts = accountsProp ?? internalAccounts;
-  const refreshAccounts = onRefreshAccounts ?? internalRefresh;
+  const accounts = accountsProp ?? [];
+  const refreshAccounts = onRefreshAccounts ?? (async () => {});
 
   const [allocatingEnvelope, setAllocatingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [viewingAllocationEnvelope, setViewingAllocationEnvelope] = useState<EnvelopeWithAllocation | null>(null);

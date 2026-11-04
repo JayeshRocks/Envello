@@ -16,14 +16,16 @@ export function useAccounts() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadAccounts = useCallback(async () => {
+  const loadAccounts = useCallback(async (silent = false) => {
     if (!user) {
       setAccounts([]);
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    if (!silent) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await fetchAccounts(user.id);

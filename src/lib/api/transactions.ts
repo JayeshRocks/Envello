@@ -914,6 +914,28 @@ export async function fetchTransactions(
  * 3. Deletes transaction_entries and transaction
  */
 export async function deleteTransaction(transactionId: string, userId: string): Promise<void> {
+  // Fast Path: Try atomic database RPC function first (1 single round-trip!)
+  try {
+    const { data: rpcSuccess, error: rpcErr } = await supabase.rpc(
+      'revert_transaction_atomic',
+      {
+        p_transaction_id: transactionId,
+      }
+    );
+
+    if (!rpcErr && rpcSuccess) {
+      return;
+    }
+    if (rpcErr && rpcErr.message && rpcErr.message.includes('Cannot revert')) {
+      throw new Error(rpcErr.message);
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('Cannot revert')) {
+      throw err;
+    }
+    // Fall back to client-side batched verification & execution
+  }
+
   // 1. Fetch transaction record
   const { data: tx, error: txError } = await supabase
     .from('transactions')

@@ -68,6 +68,9 @@ export async function ensureDefaultAccounts(userId: string): Promise<void> {
   }
 }
 
+// Session cache to prevent repeated ensureDefaultAccounts DB round-trips
+const initializedAccountsUsers = new Set<string>();
+
 /**
  * Fetches all active accounts for a user and calculates active envelope holds
  * and free unallocated balances for the specified or current budget period.
@@ -76,34 +79,56 @@ export async function fetchAccounts(
   userId: string,
   periodKey?: string
 ): Promise<AccountItem[]> {
-  await ensureDefaultAccounts(userId);
+  if (!initializedAccountsUsers.has(userId)) {
+    await ensureDefaultAccounts(userId);
+    initializedAccountsUsers.add(userId);
+  }
 
-  const { data, error } = await supabase
-    .from('accounts')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: true });
+  const now = new Date();
+  const activePeriod =
+    periodKey ||
+    `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+  // Fetch accounts and active budget period in PARALLEL
+  const [accountsRes, periodRes] = await Promise.all([
+    supabase
+      .from('accounts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('budget_periods')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('period_key', activePeriod)
+      .maybeSingle(),
+  ]);
+
+  let data = accountsRes.data;
+  const error = accountsRes.error;
 
   if (error) {
     console.error('[Envello Accounts API] Error fetching accounts:', error.message);
     throw error;
   }
 
+  // Fallback: If 0 accounts found, seed defaults and re-fetch once
+  if (!data || data.length === 0) {
+    await ensureDefaultAccounts(userId);
+    const { data: reseeded } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+    data = reseeded || [];
+  }
+
   // Calculate allocation holds per account for the period
   const holdsMap = new Map<string, bigint>();
   try {
-    const now = new Date();
-    const activePeriod =
-      periodKey ||
-      `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-
-    const { data: periodData } = await supabase
-      .from('budget_periods')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('period_key', activePeriod)
-      .maybeSingle();
+    const periodData = periodRes.data;
 
     if (periodData?.id) {
       const { data: allocs } = await supabase
