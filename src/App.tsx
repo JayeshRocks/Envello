@@ -649,7 +649,11 @@ export const App: React.FC = () => {
                               : 'text-red-400'
                           }`}
                       >
-                        {effectiveCardUtilization.toFixed(1)}% ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
+                        {(effectiveCreditCardLiabilitiesPaise > 0n && effectiveCardUtilization < 0.1
+                          ? 0.1
+                          : effectiveCardUtilization
+                        ).toFixed(1)}
+                        % ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
                       </span>
                     </div>
                     <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">

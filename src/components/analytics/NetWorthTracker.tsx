@@ -34,12 +34,40 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
     };
   }, [effectiveLiquidFunds, savingsAndFDsPaise, creditCardLiabilitiesPaise, actualDebtsPaise]);
 
-  // Ratio calculation
+  // Ratio calculation with minimum 0.1% active liability visibility
   const totalVolume = totalAssetsPaise + totalLiabilitiesPaise;
-  const assetSharePercent =
-    totalVolume > 0n ? Number((totalAssetsPaise * 10000n) / totalVolume) / 100 : 100;
-  const liabilitySharePercent =
-    totalVolume > 0n ? Number((totalLiabilitiesPaise * 10000n) / totalVolume) / 100 : 0;
+
+  const liabilitySharePercent = useMemo(() => {
+    if (totalLiabilitiesPaise === 0n || totalVolume === 0n) return 0;
+    const raw = Number((totalLiabilitiesPaise * 10000n) / totalVolume) / 100;
+    // If liabilities exist, guarantee at least 0.1% is displayed so small liabilities are never rounded to 0.0%
+    return raw > 0 && raw < 0.1 ? 0.1 : raw;
+  }, [totalLiabilitiesPaise, totalVolume]);
+
+  const assetSharePercent = useMemo(() => {
+    if (totalAssetsPaise === 0n) return 0;
+    if (totalVolume === 0n) return 100;
+    const raw = Number((totalAssetsPaise * 10000n) / totalVolume) / 100;
+    // If assets exist, guarantee at least 0.1% is displayed
+    if (raw > 0 && raw < 0.1) return 0.1;
+    // If liabilities were clamped up to 0.1%, balance assets so total displayed is 100%
+    if (totalLiabilitiesPaise > 0n && liabilitySharePercent === 0.1 && raw > 99.9) {
+      return 99.9;
+    }
+    return raw;
+  }, [totalAssetsPaise, totalVolume, totalLiabilitiesPaise, liabilitySharePercent]);
+
+  // Visual Bar widths: Guarantee a noticeable, tactile strip (minimum 1.5%) whenever liabilities exist (>0)
+  const barLiabilityWidth = useMemo(() => {
+    if (totalLiabilitiesPaise === 0n) return 0;
+    return Math.max(1.5, Math.min(100, liabilitySharePercent));
+  }, [totalLiabilitiesPaise, liabilitySharePercent]);
+
+  const barAssetWidth = useMemo(() => {
+    if (totalAssetsPaise === 0n) return 0;
+    if (totalLiabilitiesPaise === 0n) return 100;
+    return Math.max(0, 100 - barLiabilityWidth);
+  }, [totalAssetsPaise, totalLiabilitiesPaise, barLiabilityWidth]);
 
   return (
     <SpotlightCard
@@ -113,11 +141,11 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
         <div className="w-full bg-neutral-900 rounded-full h-2.5 overflow-hidden flex border border-white/5">
           <div
             className="bg-emerald-500 h-full transition-all duration-500"
-            style={{ width: `${assetSharePercent}%` }}
+            style={{ width: `${barAssetWidth}%` }}
           />
           <div
             className="bg-rose-500 h-full transition-all duration-500"
-            style={{ width: `${liabilitySharePercent}%` }}
+            style={{ width: `${barLiabilityWidth}%` }}
           />
         </div>
         <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">

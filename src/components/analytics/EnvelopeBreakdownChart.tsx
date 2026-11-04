@@ -14,6 +14,7 @@ interface Segment {
   color: string;
   amountPaise: bigint;
   percent: number;
+  displayPercent: number;
 }
 
 const DEFAULT_COLORS = [
@@ -45,6 +46,7 @@ export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ 
           : env.spentPaise;
         const percent =
           baseTotal > 0n ? Number((amt * 10000n) / baseTotal) / 100 : 0;
+        const displayPercent = amt > 0n && percent < 0.1 ? 0.1 : percent;
 
         return {
           id: env.id,
@@ -52,6 +54,7 @@ export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ 
           color: env.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
           amountPaise: amt,
           percent,
+          displayPercent,
         };
       })
       .filter((s) => s.amountPaise > 0n)
@@ -180,7 +183,7 @@ export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ 
                   <span className="font-medium text-neutral-200 truncate">{seg.name}</span>
                 </div>
                 <div className="flex items-center space-x-3 flex-shrink-0 font-mono text-[11px]">
-                  <span className="text-neutral-400 font-semibold">{seg.percent.toFixed(1)}%</span>
+                  <span className="text-neutral-400 font-semibold">{seg.displayPercent.toFixed(1)}%</span>
                   <span className="text-white font-medium tabular-nums">{formatINR(seg.amountPaise)}</span>
                 </div>
               </div>

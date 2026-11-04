@@ -92,7 +92,12 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
           </div>
           <p className="text-xs text-neutral-400">
             Total Outstanding: <span className="font-mono text-purple-400 font-semibold">{formatINR(totalOutstandingPaise)}</span> of{' '}
-            <span className="font-mono text-neutral-300">{formatINR(totalLimitPaise)}</span> ({overallUtilizationPercent.toFixed(1)}% aggregate)
+            <span className="font-mono text-neutral-300">{formatINR(totalLimitPaise)}</span> (
+            {(totalOutstandingPaise > 0n && overallUtilizationPercent < 0.1
+              ? 0.1
+              : overallUtilizationPercent
+            ).toFixed(1)}
+            % aggregate)
           </p>
         </div>
 
@@ -136,6 +141,8 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {cards.map((card) => {
             const util = card.utilization_percent;
+            const displayUtil = card.outstanding_balance_paise > 0 && util < 0.1 ? 0.1 : util;
+            const barWidth = card.outstanding_balance_paise > 0 ? Math.max(1.5, Math.min(100, util)) : 0;
             const status = card.utilization_status;
             const barColor =
               status === 'safe'
@@ -160,7 +167,7 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center space-x-1.5">
-                    {getStatusBadge(status, util)}
+                    {getStatusBadge(status, displayUtil)}
                     {onUpdateCard && (
                       <button
                         onClick={() => setEditingCard(card)}
@@ -193,7 +200,7 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
                   <div className="w-full bg-neutral-800 rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full ${barColor} transition-all duration-500`}
-                      style={{ width: `${Math.min(100, Math.max(0, util))}%` }}
+                      style={{ width: `${barWidth}%` }}
                     />
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-neutral-400">
