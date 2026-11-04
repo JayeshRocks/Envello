@@ -215,19 +215,19 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
               onClose();
               onOpenReconcileModal();
             }}
-            className="w-full flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-neutral-900 to-emerald-950/50 hover:from-emerald-900/80 hover:to-emerald-950/80 border border-emerald-500/50 ring-2 ring-emerald-500/30 text-emerald-200 text-xs sm:text-sm font-semibold transition-all duration-300 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:shadow-[0_0_28px_rgba(16,185,129,0.55)] group cursor-pointer"
+            className="w-full flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-neutral-900/90 hover:bg-neutral-850/90 border border-emerald-500/25 hover:border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-medium transition-all duration-200 active:scale-95 shadow-[0_0_12px_rgba(16,185,129,0.12)] hover:shadow-[0_0_16px_rgba(16,185,129,0.22)] group cursor-pointer"
             title="Audit account balances against monthly bank statements"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-105 shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all flex-shrink-0">
-                <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-all flex-shrink-0">
+                <Scale className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="text-left">
                 <div className="flex items-center space-x-1.5">
-                  <span className="text-sm font-bold text-white group-hover:text-emerald-200 transition-colors">
+                  <span className="text-xs sm:text-sm font-semibold text-white group-hover:text-emerald-200 transition-colors">
                     Reconcile Accounts
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">
                     Audit
                   </span>
                 </div>
@@ -236,7 +236,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                 </p>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+            <ArrowRight className="w-4 h-4 text-emerald-400/80 group-hover:text-emerald-300 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
           </button>
         )}
 
