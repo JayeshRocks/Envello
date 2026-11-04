@@ -48,15 +48,19 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       action?: ToastAction
     ) => {
       let resolvedType: ToastType = 'success';
-      let resolvedDuration = durationMs;
       let resolvedAction: ToastAction | undefined = action;
+      const defaultDuration = action ? 6000 : message.length > 80 ? 5500 : 4000;
+      let resolvedDuration = defaultDuration;
 
       if (typeof typeOrOptions === 'object' && typeOrOptions !== null) {
         resolvedType = typeOrOptions.type ?? 'success';
-        resolvedDuration = typeOrOptions.durationMs ?? 3500;
-        resolvedAction = typeOrOptions.action;
+        resolvedDuration = typeOrOptions.durationMs ?? defaultDuration;
+        resolvedAction = typeOrOptions.action ?? action;
       } else if (typeof typeOrOptions === 'string') {
         resolvedType = typeOrOptions;
+        if (durationMs !== undefined && durationMs !== 3500) {
+          resolvedDuration = durationMs;
+        }
       }
 
       const now = Date.now();
@@ -88,7 +92,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       {children}
 
       {/* Floating Toast Container */}
-      <div className="fixed top-4 left-4 right-4 sm:left-auto sm:top-auto sm:bottom-5 sm:right-5 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm sm:w-full">
+      <div className="fixed top-4 left-4 right-4 sm:left-auto sm:top-auto sm:bottom-5 sm:right-5 z-50 flex flex-col space-y-2.5 pointer-events-none w-auto max-w-[calc(100vw-32px)] sm:w-[28rem] sm:max-w-md md:max-w-lg">
         {toasts.map((toast) => {
           const isSuccess = toast.type === 'success';
           const isError = toast.type === 'error';
@@ -96,7 +100,9 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto p-3.5 rounded-2xl glass-card border shadow-2xl flex items-center justify-between space-x-3 animate-slide-up transition-all ${
+              role="status"
+              aria-live="polite"
+              className={`pointer-events-auto p-3.5 sm:p-4 rounded-2xl glass-card border shadow-2xl flex items-start justify-between gap-3 animate-slide-up transition-all ${
                 isSuccess
                   ? 'bg-emerald-950/95 border-emerald-500/30 text-emerald-200'
                   : isError
@@ -104,39 +110,44 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                   : 'bg-sky-950/95 border-sky-500/30 text-sky-200'
               }`}
             >
-              <div className="flex items-center space-x-2.5 min-w-0">
-                {isSuccess && <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
-                {isError && <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />}
-                {!isSuccess && !isError && <Info className="w-4 h-4 text-sky-400 flex-shrink-0" />}
-                <span className="text-xs font-medium leading-relaxed truncate">{toast.message}</span>
+              <div className="flex items-start space-x-3 min-w-0 flex-1">
+                {isSuccess && <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />}
+                {isError && <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />}
+                {!isSuccess && !isError && <Info className="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />}
+                <div className="min-w-0 flex-1 space-y-2">
+                  <p className="text-xs sm:text-sm font-medium leading-relaxed break-words whitespace-normal text-pretty select-text">
+                    {toast.message}
+                  </p>
+                  {toast.action && (
+                    <div className="pt-0.5">
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          removeToast(toast.id);
+                          try {
+                            await toast.action!.onClick();
+                          } catch (err) {
+                            console.error('Toast action failed:', err);
+                          }
+                        }}
+                        className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white transition border border-white/20 min-h-[36px] cursor-pointer shadow-sm"
+                      >
+                        {toast.action.label}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                {toast.action && (
-                  <button
-                    type="button"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      removeToast(toast.id);
-                      try {
-                        await toast.action!.onClick();
-                      } catch (err) {
-                        console.error('Toast action failed:', err);
-                      }
-                    }}
-                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/15 hover:bg-white/25 active:scale-95 text-white transition border border-white/15 min-h-[36px] flex items-center justify-center cursor-pointer shadow-sm"
-                  >
-                    {toast.action.label}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeToast(toast.id)}
-                  className="text-neutral-400 hover:text-white transition p-1 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg hover:bg-white/5 active:scale-95"
-                  aria-label="Close notification"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
+
+              <button
+                type="button"
+                onClick={() => removeToast(toast.id)}
+                className="text-neutral-400 hover:text-white transition p-1.5 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-xl hover:bg-white/10 active:scale-95 flex-shrink-0 -mt-0.5 -mr-1 cursor-pointer"
+                aria-label="Close notification"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           );
         })}
