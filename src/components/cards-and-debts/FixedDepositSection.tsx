@@ -4,6 +4,7 @@ import type { FixedDepositRow, DepositType } from '@/lib/api/fixedDeposits';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { AddFixedDepositModal } from './AddFixedDepositModal';
+import { SkeletonCardsGrid } from '@/components/common/Skeleton';
 
 interface FixedDepositSectionProps {
   fixedDeposits: FixedDepositRow[];
@@ -230,7 +231,7 @@ export const FixedDepositSection: React.FC<FixedDepositSectionProps> = ({
 
       {/* Grid of Deposits */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading term deposits...</div>
+        <SkeletonCardsGrid count={3} />
       ) : filteredDeposits.length === 0 ? (
         <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3 bg-white/[0.01]">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20">

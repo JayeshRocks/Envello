@@ -5,6 +5,7 @@ import type { SelfEmiInsert } from '@/lib/api/selfEmis';
 import { formatINR, toPaise } from '@/lib/accounting/currency';
 import { AddSelfEmiModal } from './AddSelfEmiModal';
 import { EditSelfEmiModal } from './EditSelfEmiModal';
+import { SkeletonCardsGrid } from '@/components/common/Skeleton';
 
 interface SelfEmiSectionProps {
   selfEmis: SelfEmiWithProgress[];
@@ -93,7 +94,7 @@ export const SelfEmiSection: React.FC<SelfEmiSectionProps> = ({
 
       {/* Grid */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading self EMIs...</div>
+        <SkeletonCardsGrid count={3} />
       ) : activeEmis.length === 0 ? (
         <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto">

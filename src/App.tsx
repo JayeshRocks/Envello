@@ -40,6 +40,7 @@ import { calculateNormalizedMonthlyCostPaise } from '@/lib/accounting/recurringS
 import { TransactionTable } from '@/components/transactions/TransactionTable';
 import { LiabilitiesAndAssetsContainer, type SubTabType } from '@/components/cards-and-debts/LiabilitiesAndAssetsContainer';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { Skeleton } from '@/components/common/Skeleton';
 import { ExportDataModal } from '@/components/export/ExportDataModal';
 import { SetPasswordModal } from '@/components/auth/SetPasswordModal';
 import { SetNameModal } from '@/components/auth/SetNameModal';
@@ -239,6 +240,7 @@ export const App: React.FC = () => {
   // Live hooks
   const {
     accounts,
+    isLoading: isAccountsLoading,
     totalLiquidFundsPaise,
     totalUnallocatedPaise,
     addAccount,
@@ -249,6 +251,7 @@ export const App: React.FC = () => {
 
   const {
     envelopes,
+    isLoading: isEnvelopesLoading,
     totalAllocatedPaise,
     refresh: refreshEnvelopes,
   } = useEnvelopes();
@@ -340,6 +343,7 @@ export const App: React.FC = () => {
     rules: recurringRules,
     dueRules: dueRecurringRules,
     totalDuePaise: totalRecurringDuePaise,
+    isLoading: isRecurringLoading,
     currentYearMonth,
     addRule: addRecurringRule,
     toggleRuleActive: toggleRecurringRuleActive,
@@ -570,15 +574,24 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums truncate">
-                      {formatINR(effectiveLiquidFundsPaise)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span className="text-[11px] font-mono text-emerald-400/90 font-medium">
-                        Free: {formatINR(totalUnallocatedPaise)}
-                      </span>
-                      <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">Manage &rarr;</span>
-                    </div>
+                    {isAccountsLoading ? (
+                      <div className="space-y-1.5 py-1">
+                        <Skeleton className="h-7 w-36 rounded-lg" />
+                        <Skeleton className="h-4 w-28 rounded-md" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-sky-400 tabular-nums truncate animate-fade-in">
+                          {formatINR(effectiveLiquidFundsPaise)}
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                          <span className="text-[11px] font-mono text-emerald-400/90 font-medium">
+                            Free: {formatINR(totalUnallocatedPaise)}
+                          </span>
+                          <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">Manage &rarr;</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </SpotlightCard>
 
@@ -599,13 +612,22 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-indigo-300 tabular-nums truncate">
-                      {formatINR(effectiveEnvelopeAllocationsPaise)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Allocated for Current Month Spending</span>
-                      <span className="text-[10px] text-indigo-400/80 group-hover:text-indigo-300 font-medium transition-colors">Manage &rarr;</span>
-                    </div>
+                    {isEnvelopesLoading ? (
+                      <div className="space-y-1.5 py-1">
+                        <Skeleton className="h-7 w-36 rounded-lg" />
+                        <Skeleton className="h-4 w-44 rounded-md" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-indigo-300 tabular-nums truncate animate-fade-in">
+                          {formatINR(effectiveEnvelopeAllocationsPaise)}
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                          <span>Allocated for Current Month Spending</span>
+                          <span className="text-[10px] text-indigo-400/80 group-hover:text-indigo-300 font-medium transition-colors">Manage &rarr;</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </SpotlightCard>
 
@@ -629,13 +651,22 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums truncate">
-                      {formatINR(effectiveSavingsAndFDsPaise)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Term Deposits & Growth</span>
-                      <span className="text-[10px] text-amber-400/80 group-hover:text-amber-300 font-medium transition-colors">Manage &rarr;</span>
-                    </div>
+                    {isFdsLoading ? (
+                      <div className="space-y-1.5 py-1">
+                        <Skeleton className="h-7 w-36 rounded-lg" />
+                        <Skeleton className="h-4 w-32 rounded-md" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-amber-300 tabular-nums truncate animate-fade-in">
+                          {formatINR(effectiveSavingsAndFDsPaise)}
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                          <span>Term Deposits & Growth</span>
+                          <span className="text-[10px] text-amber-400/80 group-hover:text-amber-300 font-medium transition-colors">Manage &rarr;</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </SpotlightCard>
 
@@ -659,30 +690,39 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-purple-400 tabular-nums truncate">
-                      {formatINR(effectiveCreditCardLiabilitiesPaise)}
-                    </div>
-                    <div className="flex items-center space-x-2 text-xs mt-1">
-                      <span className="text-neutral-400">Utilization:</span>
-                      <span
-                        className={`font-semibold font-mono ${effectiveCardStatus === 'safe'
-                            ? 'text-emerald-400'
-                            : effectiveCardStatus === 'warning'
-                              ? 'text-amber-400'
-                              : 'text-red-400'
-                          }`}
-                      >
-                        {(effectiveCreditCardLiabilitiesPaise > 0n && effectiveCardUtilization < 0.1
-                          ? 0.1
-                          : effectiveCardUtilization
-                        ).toFixed(1)}
-                        % ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
-                      </span>
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Card balances & cycles</span>
-                      <span className="text-[10px] text-purple-400/80 group-hover:text-purple-300 font-medium transition-colors">Manage &rarr;</span>
-                    </div>
+                    {isCardsLoading ? (
+                      <div className="space-y-1.5 py-1">
+                        <Skeleton className="h-7 w-36 rounded-lg" />
+                        <Skeleton className="h-4 w-40 rounded-md" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-purple-400 tabular-nums truncate animate-fade-in">
+                          {formatINR(effectiveCreditCardLiabilitiesPaise)}
+                        </div>
+                        <div className="flex items-center space-x-2 text-xs mt-1">
+                          <span className="text-neutral-400">Utilization:</span>
+                          <span
+                            className={`font-semibold font-mono ${effectiveCardStatus === 'safe'
+                                ? 'text-emerald-400'
+                                : effectiveCardStatus === 'warning'
+                                  ? 'text-amber-400'
+                                  : 'text-red-400'
+                              }`}
+                          >
+                            {(effectiveCreditCardLiabilitiesPaise > 0n && effectiveCardUtilization < 0.1
+                              ? 0.1
+                              : effectiveCardUtilization
+                            ).toFixed(1)}
+                            % ({effectiveCardStatus === 'safe' ? '<30% Safe' : effectiveCardStatus === 'warning' ? '30-50% Warning' : 'Danger >50%'})
+                          </span>
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                          <span>Card balances & cycles</span>
+                          <span className="text-[10px] text-purple-400/80 group-hover:text-purple-300 font-medium transition-colors">Manage &rarr;</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </SpotlightCard>
 
@@ -706,13 +746,22 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums truncate">
-                      {formatINR(totalDebtLoanRemainingPaise)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>Personal & External Loans Owed</span>
-                      <span className="text-[10px] text-orange-400/80 group-hover:text-orange-300 font-medium transition-colors">Manage &rarr;</span>
-                    </div>
+                    {isDebtsLoading ? (
+                      <div className="space-y-1.5 py-1">
+                        <Skeleton className="h-7 w-36 rounded-lg" />
+                        <Skeleton className="h-4 w-32 rounded-md" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-orange-400 tabular-nums truncate animate-fade-in">
+                          {formatINR(totalDebtLoanRemainingPaise)}
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                          <span>Personal & External Loans Owed</span>
+                          <span className="text-[10px] text-orange-400/80 group-hover:text-orange-300 font-medium transition-colors">Manage &rarr;</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </SpotlightCard>
 
@@ -736,23 +785,32 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-emerald-300 tabular-nums truncate">
-                      {formatINR(effectiveStandingMonthlyCostsPaise)}
-                      <span className="text-xs font-normal text-neutral-400 ml-1">/ mo</span>
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                      <span>
-                        {dueRecurringRules.length > 0 ? (
-                          <span className="text-amber-400 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                            {dueRecurringRules.length} due ({formatINR(totalRecurringDuePaise)})
+                    {isRecurringLoading ? (
+                      <div className="space-y-1.5 py-1">
+                        <Skeleton className="h-7 w-36 rounded-lg" />
+                        <Skeleton className="h-4 w-36 rounded-md" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xl xs:text-2xl font-bold font-mono tracking-tight text-emerald-300 tabular-nums truncate animate-fade-in">
+                          {formatINR(effectiveStandingMonthlyCostsPaise)}
+                          <span className="text-xs font-normal text-neutral-400 ml-1">/ mo</span>
+                        </div>
+                        <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
+                          <span>
+                            {dueRecurringRules.length > 0 ? (
+                              <span className="text-amber-400 font-semibold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                                {dueRecurringRules.length} due ({formatINR(totalRecurringDuePaise)})
+                              </span>
+                            ) : (
+                              `${recurringRules.filter((r) => r.isActive).length} active subscriptions & bills`
+                            )}
                           </span>
-                        ) : (
-                          `${recurringRules.filter((r) => r.isActive).length} active subscriptions & bills`
-                        )}
-                      </span>
-                      <span className="text-[10px] text-emerald-400/80 group-hover:text-emerald-300 font-medium transition-colors">Manage &rarr;</span>
-                    </div>
+                          <span className="text-[10px] text-emerald-400/80 group-hover:text-emerald-300 font-medium transition-colors">Manage &rarr;</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </SpotlightCard>
               </div>
@@ -760,6 +818,7 @@ export const App: React.FC = () => {
 
             {/* Section: Analytics & Interactive Visual Insights */}
             <AnalyticsDashboard
+              isLoading={isAccountsLoading || isTxLoading || isCardsLoading || isFdsLoading || isDebtsLoading}
               transactions={transactions}
               envelopes={envelopes}
               spendableCashPaise={effectiveLiquidFundsPaise}
@@ -1026,6 +1085,7 @@ export const App: React.FC = () => {
       {/* Accounts Management Modal */}
       <AccountListModal
         isOpen={isAccountsModalOpen}
+        isLoading={isAccountsLoading}
         accounts={accounts}
         onRefreshAccounts={refreshAccounts}
         onClose={() => setIsAccountsModalOpen(false)}

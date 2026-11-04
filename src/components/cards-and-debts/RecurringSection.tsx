@@ -21,6 +21,7 @@ import type { AccountItem } from '@/lib/api/accounts';
 import type { CreditCardRow } from '@/lib/api/creditCards';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { useConfirm } from '@/context/ConfirmContext';
+import { SkeletonCardsGrid } from '@/components/common/Skeleton';
 import {
   getRecurringRuleDueStatus,
   formatFrequencyLabel,
@@ -510,7 +511,7 @@ export const RecurringSection: React.FC<RecurringSectionProps> = ({
 
       {/* Rules Grid */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading recurring costs...</div>
+        <SkeletonCardsGrid count={3} />
       ) : rules.length === 0 ? (
         <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3 bg-white/[0.01]">
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto">

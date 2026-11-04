@@ -10,6 +10,7 @@ import { EditSelfEmiModal } from './EditSelfEmiModal';
 import { AddExternalEmiModal } from './AddExternalEmiModal';
 import { EditExternalEmiModal } from './EditExternalEmiModal';
 import { useConfirm } from '@/context/ConfirmContext';
+import { SkeletonCardsGrid } from '@/components/common/Skeleton';
 
 interface EmiSectionProps {
   selfEmis: SelfEmiWithProgress[];
@@ -285,7 +286,7 @@ export const EmiSection: React.FC<EmiSectionProps> = ({
 
       {/* Cards Grid */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading EMI schedules...</div>
+        <SkeletonCardsGrid count={3} />
       ) : activeSelfEmis.length === 0 && activeExternalEmis.length === 0 ? (
         <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3 bg-white/[0.01]">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/20">

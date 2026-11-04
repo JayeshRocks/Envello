@@ -6,6 +6,7 @@ import { formatINR } from '@/lib/accounting/currency';
 import { AddCreditCardModal } from './AddCreditCardModal';
 import { RecordCardPaymentModal } from './RecordCardPaymentModal';
 import { EditCreditCardModal } from './EditCreditCardModal';
+import { SkeletonCardsGrid } from '@/components/common/Skeleton';
 
 interface CreditCardSectionProps {
   cards: CreditCardWithDetails[];
@@ -123,7 +124,7 @@ export const CreditCardSection: React.FC<CreditCardSectionProps> = ({
 
       {/* Cards Grid */}
       {isLoading ? (
-        <div className="p-8 text-center text-xs text-neutral-500">Loading credit cards...</div>
+        <SkeletonCardsGrid count={3} />
       ) : cards.length === 0 ? (
         <div className="p-8 rounded-2xl border border-dashed border-white/10 text-center space-y-3">
           <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto">

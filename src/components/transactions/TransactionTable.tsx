@@ -18,6 +18,7 @@ import { formatINR } from '@/lib/accounting/currency';
 import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
 import { useDevice } from '@/hooks/useDevice';
 import { RevertTransactionModal } from './RevertTransactionModal';
+import { Skeleton } from '@/components/common/Skeleton';
 
 interface TransactionTableProps {
   transactions: TransactionRecord[];
@@ -164,13 +165,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           }
         >
           {isLoading && filteredTransactions.length === 0 ? (
-            [1, 2, 3, 4].map((i) => (
-              <div key={i} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3 animate-pulse">
+            [1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="glass-card rounded-2xl p-4 border border-white/5 space-y-3 relative overflow-hidden">
                 <div className="flex justify-between items-center">
-                  <div className="w-32 h-4 bg-neutral-800 rounded" />
-                  <div className="w-20 h-4 bg-neutral-800 rounded" />
+                  <Skeleton className="w-32 h-4 rounded" />
+                  <Skeleton className="w-20 h-4 rounded" />
                 </div>
-                <div className="w-48 h-3 bg-neutral-800 rounded" />
+                <div className="flex justify-between items-center pt-1">
+                  <Skeleton className="w-44 h-3.5 rounded" />
+                  <Skeleton className="w-16 h-3.5 rounded" />
+                </div>
               </div>
             ))
           ) : filteredTransactions.length === 0 ? (
@@ -324,14 +328,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               </thead>
               <tbody className="divide-y divide-white/5 text-neutral-300">
                 {isLoading && filteredTransactions.length === 0 ? (
-                  [1, 2, 3, 4].map((i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="py-4 px-4"><div className="w-16 h-3 bg-neutral-800 rounded" /></td>
-                      <td className="py-4 px-4"><div className="w-32 h-3 bg-neutral-800 rounded" /></td>
-                      <td className="py-4 px-4"><div className="w-14 h-3 bg-neutral-800 rounded" /></td>
-                      <td className="py-4 px-4"><div className="w-24 h-3 bg-neutral-800 rounded" /></td>
-                      <td className="py-4 px-4 text-right"><div className="w-20 h-3 bg-neutral-800 rounded ml-auto" /></td>
-                      <td className="py-4 pr-6 pl-2 text-center"><div className="w-7 h-3 bg-neutral-800 rounded mx-auto" /></td>
+                  [1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="border-b border-white/5">
+                      <td className="py-4 px-4"><Skeleton className="w-16 h-3.5 rounded" /></td>
+                      <td className="py-4 px-4"><Skeleton className="w-36 h-3.5 rounded" /></td>
+                      <td className="py-4 px-4"><Skeleton className="w-16 h-4 rounded-full" /></td>
+                      <td className="py-4 px-4"><Skeleton className="w-24 h-3.5 rounded" /></td>
+                      <td className="py-4 px-4 text-right"><Skeleton className="w-20 h-3.5 rounded ml-auto" /></td>
+                      <td className="py-4 pr-6 pl-2 text-center"><Skeleton className="w-8 h-3.5 rounded mx-auto" /></td>
                     </tr>
                   ))
                 ) : filteredTransactions.length === 0 ? (

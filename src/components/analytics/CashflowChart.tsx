@@ -3,9 +3,11 @@ import { TrendingUp, ArrowDownRight, ArrowUpRight, Percent } from 'lucide-react'
 import type { TransactionWithEntries } from '@/lib/api/transactions';
 import { formatINR } from '@/lib/accounting/currency';
 import { SpotlightCard } from '@/components/common/SpotlightCard';
+import { Skeleton } from '@/components/common/Skeleton';
 
 interface CashflowChartProps {
   transactions: TransactionWithEntries[];
+  isLoading?: boolean;
 }
 
 interface MonthlyCashflow {
@@ -17,7 +19,7 @@ interface MonthlyCashflow {
   savingsRate: number;
 }
 
-export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) => {
+export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions, isLoading = false }) => {
   const [hoveredMonthKey, setHoveredMonthKey] = React.useState<string | null>(null);
   const [selectedMonthKey, setSelectedMonthKey] = React.useState<string | null>(null);
 
@@ -140,38 +142,64 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
             <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
             <span>Monthly Inflow</span>
           </div>
-          <div className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-1 truncate tabular-nums transition-all">
-            {formatINR(displayMonth.incomePaise)}
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-6 w-24 rounded-lg my-1" />
+          ) : (
+            <div className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-1 truncate tabular-nums transition-all animate-fade-in">
+              {formatINR(displayMonth.incomePaise)}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-[11px] text-neutral-400 flex items-center space-x-1 font-semibold uppercase tracking-wider">
             <ArrowDownRight className="w-3.5 h-3.5 text-rose-400" />
             <span>Monthly Outflow</span>
           </div>
-          <div className="text-sm sm:text-base font-bold font-mono text-rose-400 mt-1 truncate tabular-nums transition-all">
-            {formatINR(displayMonth.expensePaise)}
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-6 w-24 rounded-lg my-1" />
+          ) : (
+            <div className="text-sm sm:text-base font-bold font-mono text-rose-400 mt-1 truncate tabular-nums transition-all animate-fade-in">
+              {formatINR(displayMonth.expensePaise)}
+            </div>
+          )}
         </div>
         <div>
           <div className="text-[11px] text-neutral-400 flex items-center space-x-1 font-semibold uppercase tracking-wider">
             <Percent className="w-3.5 h-3.5 text-sky-400" />
             <span>Savings Rate</span>
           </div>
-          <div
-            className={`text-sm sm:text-base font-bold font-mono mt-1 truncate tabular-nums transition-all ${
-              displayMonth.savingsRate >= 0 ? 'text-emerald-400' : 'text-rose-400'
-            }`}
-          >
-            {displayMonth.savingsRate.toFixed(1)}%
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-6 w-16 rounded-lg my-1" />
+          ) : (
+            <div
+              className={`text-sm sm:text-base font-bold font-mono mt-1 truncate tabular-nums transition-all animate-fade-in ${
+                displayMonth.savingsRate >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}
+            >
+              {displayMonth.savingsRate.toFixed(1)}%
+            </div>
+          )}
         </div>
       </div>
 
       {/* Interactive Bar Chart Visualization */}
       <div className="space-y-2 pt-2">
         <div className="h-44 sm:h-48 flex items-end justify-between gap-1.5 sm:gap-4 md:gap-8 px-1 sm:px-2 border-b border-white/5 pb-2 relative">
-          {monthlyData.map((m) => {
+          {isLoading ? (
+            [45, 65, 35, 75, 50, 85].map((heightPercent, idx) => (
+              <div key={idx} className="flex-1 flex items-end justify-center space-x-1 sm:space-x-2 h-full">
+                <Skeleton
+                  className="w-1/2 max-w-[20px] rounded-t-md opacity-70"
+                  style={{ height: `${heightPercent}%` }}
+                />
+                <Skeleton
+                  className="w-1/2 max-w-[20px] rounded-t-md opacity-50"
+                  style={{ height: `${Math.max(15, heightPercent - 20)}%` }}
+                />
+              </div>
+            ))
+          ) : (
+            monthlyData.map((m) => {
             const incomeHeight =
               maxVal > 0n ? Math.max(8, Number((m.incomePaise * 100n) / maxVal)) : 8;
             const expenseHeight =
@@ -251,31 +279,39 @@ export const CashflowChart: React.FC<CashflowChartProps> = ({ transactions }) =>
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
 
         {/* X-axis labels */}
         <div className="flex items-center justify-between gap-1.5 sm:gap-4 md:gap-8 px-1 sm:px-2 text-[10px] font-mono text-neutral-400">
-          {monthlyData.map((m) => {
-            const isActive = activeMonthKey === m.monthKey;
-            return (
-              <div
-                key={m.monthKey}
-                onMouseEnter={() => setHoveredMonthKey(m.monthKey)}
-                onMouseLeave={() => setHoveredMonthKey(null)}
-                onClick={() =>
-                  setSelectedMonthKey((prev) => (prev === m.monthKey ? null : m.monthKey))
-                }
-                className={`flex-1 text-center truncate cursor-pointer transition py-1 rounded-md ${
-                  isActive
-                    ? 'text-sky-300 font-bold bg-white/5'
-                    : 'hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {m.monthLabel}
+          {isLoading ? (
+            [1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="flex-1 text-center py-1">
+                <Skeleton className="h-3 w-8 sm:w-12 mx-auto rounded" />
               </div>
-            );
-          })}
+            ))
+          ) : (
+            monthlyData.map((m) => {
+              const isActive = activeMonthKey === m.monthKey;
+              return (
+                <div
+                  key={m.monthKey}
+                  onMouseEnter={() => setHoveredMonthKey(m.monthKey)}
+                  onMouseLeave={() => setHoveredMonthKey(null)}
+                  onClick={() =>
+                    setSelectedMonthKey((prev) => (prev === m.monthKey ? null : m.monthKey))
+                  }
+                  className={`flex-1 text-center truncate cursor-pointer transition py-1 rounded-md ${
+                    isActive
+                      ? 'text-sky-300 font-bold bg-white/5'
+                      : 'hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {m.monthLabel}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </SpotlightCard>

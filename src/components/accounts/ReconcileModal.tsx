@@ -17,6 +17,7 @@ import { useReconciliation } from '@/hooks/useReconciliation';
 import type { AccountItem } from '@/lib/api/accounts';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
+import { Skeleton } from '@/components/common/Skeleton';
 
 interface ReconcileModalProps {
   accounts: AccountItem[];
@@ -349,9 +350,22 @@ export const ReconcileModal: React.FC<ReconcileModalProps> = ({
           /* Audit History Tab */
           <div className="space-y-3">
             {isLoadingLogs ? (
-              <div className="py-8 flex flex-col items-center justify-center space-y-2 text-neutral-400">
-                <Loader2 className="w-6 h-6 animate-spin text-sky-400" />
-                <span className="text-xs">Loading audit trail...</span>
+              <div className="space-y-2.5">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-xl bg-neutral-900/60 border border-white/5 space-y-2 relative overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="w-36 h-4 rounded" />
+                      <Skeleton className="w-20 h-3.5 rounded" />
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <Skeleton className="w-48 h-3 rounded" />
+                      <Skeleton className="w-16 h-3 rounded" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : auditLogs.length === 0 ? (
               <div className="p-8 text-center rounded-xl bg-neutral-900/30 border border-white/5 space-y-1">

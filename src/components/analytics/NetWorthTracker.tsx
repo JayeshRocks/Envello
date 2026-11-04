@@ -2,8 +2,10 @@ import React, { useMemo } from 'react';
 import { ShieldCheck, ShieldAlert, Wallet } from 'lucide-react';
 import { formatINR } from '@/lib/accounting/currency';
 import { SpotlightCard } from '@/components/common/SpotlightCard';
+import { Skeleton } from '@/components/common/Skeleton';
 
 interface NetWorthTrackerProps {
+  isLoading?: boolean;
   liquidFundsPaise?: bigint;
   spendableCashPaise?: bigint;
   savingsAndFDsPaise: bigint;
@@ -12,6 +14,7 @@ interface NetWorthTrackerProps {
 }
 
 export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
+  isLoading = false,
   liquidFundsPaise,
   spendableCashPaise,
   savingsAndFDsPaise,
@@ -87,47 +90,68 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
           </p>
         </div>
 
-        <span
-          className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-semibold border font-mono ${
-            isSolvent
-              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-              : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-          }`}
-        >
-          {isSolvent ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
-          <span>{isSolvent ? 'Positive Net Worth' : 'Net Liability Balance'}</span>
-        </span>
+        {isLoading ? (
+          <Skeleton className="h-6 w-36 rounded-full" />
+        ) : (
+          <span
+            className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-semibold border font-mono ${
+              isSolvent
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+            }`}
+          >
+            {isSolvent ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
+            <span>{isSolvent ? 'Positive Net Worth' : 'Net Liability Balance'}</span>
+          </span>
+        )}
       </div>
 
       {/* Net Worth Hero Card */}
-      <div className="p-4 sm:p-5 rounded-xl bg-[#0b0c0e] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-inner">
+      <div className="p-4 sm:p-5 rounded-xl bg-[#0b0c0e] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-inner relative overflow-hidden">
         <div>
           <div className="text-xs text-neutral-400 font-medium">Authoritative Net Worth</div>
-          <div
-            className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight tabular-nums mt-1 ${
-              isSolvent ? 'text-white' : 'text-rose-400'
-            }`}
-          >
-            {formatINR(netWorthPaise)}
-          </div>
-          <div className="text-[11px] text-neutral-400 mt-1 font-mono">
-            Total Assets ({formatINR(totalAssetsPaise)}) − Total Obligations ({formatINR(totalLiabilitiesPaise)})
-          </div>
+          {isLoading ? (
+            <div className="space-y-1.5 py-1">
+              <Skeleton className="h-8 w-44 rounded-lg my-1" />
+              <Skeleton className="h-3.5 w-64 rounded" />
+            </div>
+          ) : (
+            <>
+              <div
+                className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight tabular-nums mt-1 animate-fade-in ${
+                  isSolvent ? 'text-white' : 'text-rose-400'
+                }`}
+              >
+                {formatINR(netWorthPaise)}
+              </div>
+              <div className="text-[11px] text-neutral-400 mt-1 font-mono">
+                Total Assets ({formatINR(totalAssetsPaise)}) − Total Obligations ({formatINR(totalLiabilitiesPaise)})
+              </div>
+            </>
+          )}
         </div>
 
         {/* Quick Summary Pill Boxes */}
         <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:space-x-3 text-xs w-full sm:w-auto">
-          <div className="p-3 rounded-xl bg-neutral-900/90 border border-white/5 space-y-0.5">
+          <div className="p-3 rounded-xl bg-neutral-900/90 border border-white/5 space-y-0.5 min-w-[120px]">
             <div className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Total Assets</div>
-            <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm truncate tabular-nums">
-              {formatINR(totalAssetsPaise)}
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-4 w-20 rounded mt-1" />
+            ) : (
+              <div className="font-mono font-bold text-emerald-400 text-xs sm:text-sm truncate tabular-nums animate-fade-in">
+                {formatINR(totalAssetsPaise)}
+              </div>
+            )}
           </div>
-          <div className="p-3 rounded-xl bg-neutral-900/90 border border-white/5 space-y-0.5">
+          <div className="p-3 rounded-xl bg-neutral-900/90 border border-white/5 space-y-0.5 min-w-[120px]">
             <div className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Total Obligations</div>
-            <div className="font-mono font-bold text-rose-400 text-xs sm:text-sm truncate tabular-nums">
-              {formatINR(totalLiabilitiesPaise)}
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-4 w-20 rounded mt-1" />
+            ) : (
+              <div className="font-mono font-bold text-rose-400 text-xs sm:text-sm truncate tabular-nums animate-fade-in">
+                {formatINR(totalLiabilitiesPaise)}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -138,20 +162,25 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
           <span className="text-emerald-400 font-semibold">Assets ({assetSharePercent.toFixed(1)}%)</span>
           <span className="text-rose-400 font-semibold">Liabilities ({liabilitySharePercent.toFixed(1)}%)</span>
         </div>
-        <div className="w-full bg-neutral-900 rounded-full h-2.5 overflow-hidden flex border border-white/5">
-          <div
-            className="bg-emerald-500 h-full transition-all duration-500"
-            style={{ width: `${barAssetWidth}%` }}
-          />
-          <div
-            className="bg-rose-500 h-full transition-all duration-500"
-            style={{ width: `${barLiabilityWidth}%` }}
-          />
-        </div>
-        <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">
-          <span>Liquid Funds: {formatINR(effectiveLiquidFunds)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
-          <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
-        </div>
+        {isLoading ? (
+          <Skeleton className="w-full h-2.5 rounded-full" />
+        ) : (
+          <div className="w-full bg-neutral-900 rounded-full h-2.5 overflow-hidden flex border border-white/5">
+            <div
+              className="bg-emerald-500 h-full transition-all duration-500"
+              style={{ width: `${barAssetWidth}%` }}
+            />
+            <div
+              className="bg-rose-500 h-full transition-all duration-500"
+              style={{ width: `${barLiabilityWidth}%` }}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">
+        <span>Liquid Funds: {formatINR(effectiveLiquidFunds)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
+        <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
       </div>
     </SpotlightCard>
   );

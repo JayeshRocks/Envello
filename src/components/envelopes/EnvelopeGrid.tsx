@@ -19,6 +19,7 @@ import { CreateEnvelopeModal } from './CreateEnvelopeModal';
 import { EnvelopeAllocationViewModal } from './EnvelopeAllocationViewModal';
 import { BudgetPeriodSelector } from './BudgetPeriodSelector';
 import { formatINR } from '@/lib/accounting/currency';
+import { Skeleton } from '@/components/common/Skeleton';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import type { AccountItem } from '@/lib/api/accounts';
 import { useToast } from '@/context/ToastContext';
@@ -370,14 +371,21 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="glass-card rounded-2xl p-5 space-y-4 animate-pulse border border-white/5 h-44"
+              className="glass-card rounded-2xl p-5 space-y-4 border border-white/5 h-44 relative overflow-hidden"
             >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-xl bg-neutral-800" />
-                <div className="w-28 h-4 rounded bg-neutral-800" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Skeleton className="w-8 h-8 rounded-xl" />
+                  <Skeleton className="w-28 h-4 rounded" />
+                </div>
+                <Skeleton className="w-16 h-5 rounded-full" />
               </div>
-              <div className="w-36 h-7 rounded bg-neutral-800" />
-              <div className="w-full h-2 rounded bg-neutral-800" />
+              <Skeleton className="w-36 h-7 rounded-lg my-1" />
+              <Skeleton className="w-full h-2 rounded-full" />
+              <div className="flex items-center justify-between pt-1">
+                <Skeleton className="w-24 h-3.5 rounded" />
+                <Skeleton className="w-16 h-3.5 rounded" />
+              </div>
             </div>
           ))}
         </div>

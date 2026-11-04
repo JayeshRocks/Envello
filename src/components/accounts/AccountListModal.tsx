@@ -6,9 +6,11 @@ import { toPaise, toRupees, formatINR } from '@/lib/accounting/currency';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
 import { useConfirm } from '@/context/ConfirmContext';
+import { Skeleton } from '@/components/common/Skeleton';
 
 interface AccountListModalProps {
   isOpen: boolean;
+  isLoading?: boolean;
   accounts: AccountItem[];
   onRefreshAccounts?: () => Promise<void>;
   onClose: () => void;
@@ -33,6 +35,7 @@ interface AccountListModalProps {
 
 export const AccountListModal: React.FC<AccountListModalProps> = ({
   isOpen,
+  isLoading = false,
   accounts,
   onRefreshAccounts,
   onClose,
@@ -249,7 +252,29 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
 
         {/* Existing Accounts List */}
         <div className="space-y-2.5">
-          {accounts.map((acc) => {
+          {isLoading && accounts.length === 0 ? (
+            [1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-4 rounded-xl bg-neutral-900/60 border border-white/5 space-y-3 relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="w-9 h-9 rounded-xl" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="w-28 h-4 rounded" />
+                      <Skeleton className="w-16 h-3 rounded" />
+                    </div>
+                  </div>
+                  <Skeleton className="w-24 h-6 rounded-lg" />
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                  <Skeleton className="w-28 h-3.5 rounded" />
+                  <Skeleton className="w-24 h-3.5 rounded" />
+                </div>
+              </div>
+            ))
+          ) : accounts.map((acc) => {
             const isEditing = editingAccountId === acc.id;
 
             if (isEditing) {
