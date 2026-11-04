@@ -122,6 +122,20 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
       const maturityPaise = Number(toPaise(m));
       const maturityDate = getComputedMaturityDate();
 
+      if (fundingAccountId) {
+        const fundingAcc = accounts.find((a) => a.id === fundingAccountId);
+        if (fundingAcc) {
+          const reqDebitPaise = BigInt(depositType === 'rd' ? monthlyPaise : principalPaise);
+          const freePaise = fundingAcc.unallocatedPaise ?? fundingAcc.balancePaise;
+          if (reqDebitPaise > freePaise) {
+            setError(
+              `Cannot fund deposit from "${fundingAcc.name}". Available free unallocated balance is ${formatINR(freePaise)}, but initial funding requires ${formatINR(reqDebitPaise)}.`
+            );
+            return;
+          }
+        }
+      }
+
       await onAddFD({
         institution: institution.trim(),
         principal_paise: principalPaise,
@@ -378,7 +392,7 @@ export const AddFixedDepositModal: React.FC<AddFixedDepositModalProps> = ({
                   <option value="">None (Already funded externally)</option>
                   {accounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.name} ({acc.institution}) — Balance: {formatINR(acc.balancePaise)}
+                      {acc.name} ({acc.institution}) — Free: {formatINR(acc.unallocatedPaise ?? acc.balancePaise)} (Total: {formatINR(acc.balancePaise)})
                     </option>
                   ))}
                 </select>

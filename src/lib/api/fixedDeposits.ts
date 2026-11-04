@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/types/database.types';
+import { getAccountHoldPaise } from './accounts';
+import { formatINR } from '@/lib/accounting/currency';
 
 export type FixedDepositRow = Database['public']['Tables']['fixed_deposits']['Row'];
 export type FixedDepositInsert = Database['public']['Tables']['fixed_deposits']['Insert'];
@@ -37,7 +39,8 @@ export async function fetchFixedDeposits(
 
 /**
  * Create a new fixed deposit, recurring deposit (RD), or term savings reserve.
- * Optionally debits a liquid account if funding is selected.
+ * Gracefully handles missing database columns via automatic schema fallback.
+ * Optionally debits a liquid account if funding is selected, guarded by headroom.
  */
 export async function createFixedDeposit(
   userId: string,
@@ -65,7 +68,7 @@ export async function createFixedDeposit(
     funding_account_id,
   } = params;
 
-  // 1. Create the deposit record
+  // 1. Try to create the deposit record with deposit_type and monthly_deposit_paise
   const insertPayload: any = {
     user_id: userId,
     institution,
@@ -79,60 +82,135 @@ export async function createFixedDeposit(
     monthly_deposit_paise,
   };
 
-  const { data: fd, error: fdError } = await supabase
+  let fd: FixedDepositRow;
+  const { data: fdData, error: fdError } = await supabase
     .from('fixed_deposits')
     .insert(insertPayload)
     .select()
     .single();
 
-  if (fdError || !fd) {
-    console.error('Error creating fixed deposit:', fdError);
-    throw fdError;
+  if (fdError) {
+    const errorMsg = (fdError.message || '').toLowerCase();
+    // If remote Supabase table does not yet have deposit_type / monthly_deposit_paise columns
+    if (
+      errorMsg.includes('deposit_type') ||
+      errorMsg.includes('monthly_deposit_paise') ||
+      errorMsg.includes('schema cache') ||
+      errorMsg.includes('column') ||
+      fdError.code === 'PGRST204'
+    ) {
+      console.warn('[Envello FD] Retrying insert with base fixed_deposits schema without extended columns');
+      const basePayload = {
+        user_id: userId,
+        institution:
+          deposit_type === 'rd' && !institution.toLowerCase().includes('rd')
+            ? `[RD] ${institution}`
+            : institution,
+        principal_paise,
+        interest_rate_percent,
+        start_date,
+        maturity_date,
+        maturity_amount_paise,
+        is_liquidated: false,
+      };
+
+      const { data: fallbackFd, error: fallbackError } = await supabase
+        .from('fixed_deposits')
+        .insert(basePayload)
+        .select()
+        .single();
+
+      if (fallbackError || !fallbackFd) {
+        console.error('Error creating fixed deposit with fallback:', fallbackError);
+        throw fallbackError;
+      }
+
+      fd = {
+        ...fallbackFd,
+        deposit_type,
+        monthly_deposit_paise,
+      };
+    } else {
+      console.error('Error creating fixed deposit:', fdError);
+      throw fdError;
+    }
+  } else {
+    fd = {
+      ...fdData,
+      deposit_type: fdData.deposit_type || deposit_type,
+      monthly_deposit_paise: fdData.monthly_deposit_paise ?? monthly_deposit_paise,
+    };
   }
 
   // 2. If funded from a liquid bank account, record the movement and debit account
   if (funding_account_id) {
-    const { data: account } = await supabase
+    const { data: account, error: accError } = await supabase
       .from('accounts')
       .select('*')
       .eq('id', funding_account_id)
       .eq('user_id', userId)
       .single();
 
-    if (account) {
-      const { data: tx } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: userId,
-          transaction_date: start_date,
-          type: 'fd_movement',
-          total_amount_paise: principal_paise,
-          description: `${deposit_type === 'rd' ? 'RD' : 'FD'} funded: ${institution}`,
-          notes: `Created ${deposit_type === 'rd' ? 'RD' : 'FD'} ID: ${fd.id}`,
-        })
-        .select()
-        .single();
-
-      if (tx) {
-        await supabase.from('transaction_entries').insert({
-          transaction_id: tx.id,
-          user_id: userId,
-          account_id: funding_account_id,
-          envelope_id: null,
-          direction: 'credit', // money leaves bank account to enter locked FD
-          amount_paise: principal_paise,
-        });
-
-        await supabase
-          .from('accounts')
-          .update({
-            balance_paise: account.balance_paise - principal_paise,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', funding_account_id)
-          .eq('user_id', userId);
-      }
+    if (accError || !account) {
+      throw new Error('Selected funding account not found.');
     }
+
+    // For RD, initial debit is first month installment; for FD, it is principal
+    const debitPaise =
+      deposit_type === 'rd' && monthly_deposit_paise > 0
+        ? monthly_deposit_paise
+        : principal_paise;
+
+    // Headroom invariant: ensure account has sufficient free unallocated funds
+    const activeHold = await getAccountHoldPaise(funding_account_id, userId);
+    const unallocatedPaise = BigInt(account.balance_paise) - activeHold;
+    if (BigInt(debitPaise) > unallocatedPaise) {
+      throw new Error(
+        `Cannot fund deposit: "${account.name}" only has ${formatINR(
+          unallocatedPaise > 0n ? unallocatedPaise : 0n
+        )} in free unallocated funds (${formatINR(
+          activeHold
+        )} is reserved across envelopes). Required initial funding is ${formatINR(
+          BigInt(debitPaise)
+        )}.`
+      );
+    }
+
+    const { data: tx, error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: userId,
+        transaction_date: start_date,
+        type: 'fd_movement',
+        total_amount_paise: debitPaise,
+        description: `${deposit_type === 'rd' ? 'RD Initial Deposit' : 'FD Placement'}: ${institution}`,
+        notes: `Funded ${deposit_type === 'rd' ? 'Recurring Deposit' : 'Fixed Deposit'} (${institution})`,
+      })
+      .select()
+      .single();
+
+    if (txError || !tx) {
+      console.error('Error creating funding transaction:', txError);
+      throw txError;
+    }
+
+    await supabase.from('transaction_entries').insert({
+      transaction_id: tx.id,
+      user_id: userId,
+      account_id: funding_account_id,
+      envelope_id: null,
+      direction: 'credit', // money leaves bank account to enter locked term deposit
+      amount_paise: debitPaise,
+    });
+
+    await supabase
+      .from('accounts')
+      .update({
+        balance_paise: Number(BigInt(account.balance_paise) - BigInt(debitPaise)),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', funding_account_id)
+      .eq('user_id', userId);
   }
 
   return fd;
@@ -180,7 +258,7 @@ export async function liquidateFixedDeposit(
       transaction_date: dateStr,
       type: 'fd_movement',
       total_amount_paise: finalAmount,
-      description: `${fd.deposit_type === 'rd' ? 'RD' : 'FD'} liquidated: ${fd.institution}`,
+      description: `${fd.deposit_type === 'rd' || fd.institution?.toLowerCase().includes('rd') ? 'RD' : 'FD'} liquidated: ${fd.institution}`,
       notes: `Matured/liquidated to ${account.name}`,
     })
     .select()
@@ -199,7 +277,7 @@ export async function liquidateFixedDeposit(
     await supabase
       .from('accounts')
       .update({
-        balance_paise: account.balance_paise + finalAmount,
+        balance_paise: Number(BigInt(account.balance_paise) + BigInt(finalAmount)),
         updated_at: new Date().toISOString(),
       })
       .eq('id', destinationAccountId)

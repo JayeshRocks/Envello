@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/types/database.types';
+import { getAccountHoldPaise } from './accounts';
+import { formatINR } from '@/lib/accounting/currency';
 
 export type ActualDebtRow = Database['public']['Tables']['actual_debts']['Row'];
 export type ActualDebtInsert = Database['public']['Tables']['actual_debts']['Insert'];
@@ -96,7 +98,20 @@ export async function recordDebtPayment(
   // Invariant enforcement: payment cannot exceed remaining debt liability
   if (amountPaise > debt.remaining_debt_paise) {
     throw new Error(
-      `Payment amount (₹${(amountPaise / 100).toFixed(2)}) cannot exceed remaining debt of ₹${(debt.remaining_debt_paise / 100).toFixed(2)}.`
+      `Payment amount (${formatINR(BigInt(amountPaise))}) cannot exceed remaining debt of ${formatINR(BigInt(debt.remaining_debt_paise))}.`
+    );
+  }
+
+  // Account headroom guard: check free unallocated balance
+  const activeHold = await getAccountHoldPaise(fromAccountId, userId);
+  const unallocatedPaise = BigInt(account.balance_paise) - activeHold;
+  if (BigInt(amountPaise) > unallocatedPaise) {
+    throw new Error(
+      `Cannot pay debt from "${account.name}": Available free unallocated balance is ${formatINR(
+        unallocatedPaise > 0n ? unallocatedPaise : 0n
+      )} (${formatINR(activeHold)} is reserved across envelopes). Payment of ${formatINR(
+        BigInt(amountPaise)
+      )} exceeds unallocated funds.`
     );
   }
 

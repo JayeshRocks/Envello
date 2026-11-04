@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
 import type { Database } from '@/types/database.types';
+import { getAccountHoldPaise } from './accounts';
+import { formatINR } from '@/lib/accounting/currency';
 
 export type CreditCardRow = Database['public']['Tables']['credit_cards']['Row'];
 export type CreditCardInsert = Database['public']['Tables']['credit_cards']['Insert'];
@@ -133,7 +135,20 @@ export async function recordCreditCardPayment(
   // Invariant enforcement: payment cannot exceed outstanding liability
   if (amountPaise > card.outstanding_balance_paise) {
     throw new Error(
-      `Payment amount (₹${(amountPaise / 100).toFixed(2)}) cannot exceed card outstanding balance of ₹${(card.outstanding_balance_paise / 100).toFixed(2)}.`
+      `Payment amount (${formatINR(BigInt(amountPaise))}) cannot exceed card outstanding balance of ${formatINR(BigInt(card.outstanding_balance_paise))}.`
+    );
+  }
+
+  // Account headroom guard: check free unallocated balance
+  const activeHold = await getAccountHoldPaise(fromAccountId, userId);
+  const unallocatedPaise = BigInt(account.balance_paise) - activeHold;
+  if (BigInt(amountPaise) > unallocatedPaise) {
+    throw new Error(
+      `Cannot pay card bill from "${account.name}": Available free unallocated balance is ${formatINR(
+        unallocatedPaise > 0n ? unallocatedPaise : 0n
+      )} (${formatINR(activeHold)} is reserved across envelopes). Payment of ${formatINR(
+        BigInt(amountPaise)
+      )} exceeds unallocated funds.`
     );
   }
 

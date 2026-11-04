@@ -376,6 +376,57 @@ export function analyzeTransactionReversion(
       break;
     }
 
+    case 'fd_movement': {
+      const accEntry = tx.entries.find((e) => e.accountId);
+      if (accEntry) {
+        if (accEntry.direction === 'credit') {
+          // Money originally left bank account to fund FD -> Revert refunds bank account
+          impacts.push({
+            targetType: 'account',
+            targetName: accEntry.accountName || 'Bank Account',
+            action: 'credit',
+            amountPaise: accEntry.amountPaise,
+            description: `${formatINR(accEntry.amountPaise)} will be refunded back to ${accEntry.accountName || 'your account'}.`,
+            isRefund: true,
+          });
+        } else {
+          // Money originally entered bank account upon liquidation -> Revert deducts proceeds
+          if (accEntry.accountId && accMap.has(accEntry.accountId)) {
+            const liveAcc = accMap.get(accEntry.accountId)!;
+            if (liveAcc.balancePaise < accEntry.amountPaise) {
+              canSafelyRevert = false;
+              blockingReason = `Cannot revert deposit liquidation: "${liveAcc.name}" only has ${formatINR(liveAcc.balancePaise)} balance. Deducting ${formatINR(accEntry.amountPaise)} would cause a negative balance.`;
+            } else if (liveAcc.unallocatedPaise < accEntry.amountPaise) {
+              canSafelyRevert = false;
+              blockingReason = `Cannot revert deposit liquidation: "${liveAcc.name}" has active envelope holds. Reverting requires deducting ${formatINR(accEntry.amountPaise)}, which exceeds free unallocated balance (${formatINR(liveAcc.unallocatedPaise)}).`;
+            }
+          }
+
+          impacts.push({
+            targetType: 'account',
+            targetName: accEntry.accountName || 'Bank Account',
+            action: 'debit',
+            amountPaise: accEntry.amountPaise,
+            description: `${formatINR(accEntry.amountPaise)} liquidation deposit will be deducted from ${accEntry.accountName || 'your account'}.`,
+            isRefund: false,
+          });
+        }
+      }
+      break;
+    }
+
+    case 'self_emi_repayment': {
+      impacts.push({
+        targetType: 'loan',
+        targetName: 'Self EMI',
+        action: 'debit',
+        amountPaise: tx.totalAmountPaise,
+        description: `${formatINR(tx.totalAmountPaise)} will be deducted from your reimbursed Self EMI progress.`,
+        isRefund: false,
+      });
+      break;
+    }
+
     default: {
       impacts.push({
         targetType: 'account',

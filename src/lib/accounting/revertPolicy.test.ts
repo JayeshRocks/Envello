@@ -557,4 +557,92 @@ describe('analyzeTransactionReversion — Financial Ledger Impact & Negative Env
       expect(analysis.blockingReason).toContain('active envelope holds');
     });
   });
+
+  describe('FD Movement & Self EMI Reversion Impacts', () => {
+    it('accurately previews term deposit funding reversion refunding bank account', () => {
+      const fdFundingTx: TransactionRecord = {
+        id: 'tx-fd-funding',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'fd_movement',
+        totalAmountPaise: 5000000n, // ₹50,000
+        description: 'FD Placement: HDFC Bank',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-fd-1',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Primary Savings',
+            direction: 'credit', // money left bank
+            amountPaise: 5000000n,
+          },
+        ],
+      };
+
+      const analysis = analyzeTransactionReversion(fdFundingTx, mockEnvelopes, refDate);
+      expect(analysis.canSafelyRevert).toBe(true);
+      expect(analysis.impacts[0].action).toBe('credit');
+      expect(analysis.impacts[0].isRefund).toBe(true);
+      expect(analysis.impacts[0].description).toContain('will be refunded back to Primary Savings');
+    });
+
+    it('accurately previews term deposit liquidation reversion debiting proceeds from account', () => {
+      const fdLiquidationTx: TransactionRecord = {
+        id: 'tx-fd-liq',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'fd_movement',
+        totalAmountPaise: 5500000n, // ₹55,000
+        description: 'FD liquidated: HDFC Bank',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-fd-2',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Primary Savings',
+            direction: 'debit', // money entered bank
+            amountPaise: 5500000n,
+          },
+        ],
+      };
+
+      const accounts = [
+        {
+          id: 'acc-savings',
+          name: 'Primary Savings',
+          balancePaise: 6000000n,
+          unallocatedPaise: 6000000n,
+        },
+      ];
+
+      const analysis = analyzeTransactionReversion(fdLiquidationTx, mockEnvelopes, refDate, accounts);
+      expect(analysis.canSafelyRevert).toBe(true);
+      expect(analysis.impacts[0].action).toBe('debit');
+      expect(analysis.impacts[0].isRefund).toBe(false);
+      expect(analysis.impacts[0].description).toContain('liquidation deposit will be deducted');
+    });
+
+    it('accurately previews self EMI repayment reversion', () => {
+      const selfEmiTx: TransactionRecord = {
+        id: 'tx-self-emi',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'self_emi_repayment',
+        totalAmountPaise: 300000n, // ₹3,000
+        description: 'Self EMI Reimbursement: Laptop Upgrade',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [],
+      };
+
+      const analysis = analyzeTransactionReversion(selfEmiTx, mockEnvelopes, refDate);
+      expect(analysis.canSafelyRevert).toBe(true);
+      expect(analysis.impacts[0].targetType).toBe('loan');
+      expect(analysis.impacts[0].description).toContain('will be deducted from your reimbursed Self EMI progress');
+    });
+  });
 });

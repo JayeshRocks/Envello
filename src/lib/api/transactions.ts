@@ -1253,6 +1253,26 @@ export async function deleteTransaction(transactionId: string, userId: string): 
         .eq('id', matchedLoan.id)
         .eq('user_id', userId);
     }
+  } else if (tx.type === 'self_emi_repayment') {
+    // Reverting a Self EMI reimbursement reduces the total_reimbursed_paise
+    const { data: emis } = await supabase
+      .from('self_emis')
+      .select('id, description, total_reimbursed_paise')
+      .eq('user_id', userId);
+
+    const matchedEmi = emis?.find((e) => tx.description.includes(e.description));
+    if (matchedEmi) {
+      const newReimbursed = Math.max(0, matchedEmi.total_reimbursed_paise - tx.total_amount_paise);
+      await supabase
+        .from('self_emis')
+        .update({
+          total_reimbursed_paise: newReimbursed,
+          is_completed: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', matchedEmi.id)
+        .eq('user_id', userId);
+    }
   }
 
   // 6. Delete transaction entries
