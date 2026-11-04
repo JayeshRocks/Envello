@@ -204,7 +204,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
         <div className="space-y-1">
           <div className="inline-flex items-center space-x-1.5 text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
             <Landmark className="w-3.5 h-3.5" />
-            <span>Liquid Cash Accounts</span>
+            <span>Liquidity & Accounts</span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">Manage Accounts & Wallets</h2>
           <p className="text-xs text-neutral-400">
@@ -250,74 +250,6 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
             <span>{error}</span>
           </div>
         )}
-
-        {/* Aggregate Balance & Holding Ratio Surface */}
-        {accounts.length > 0 && (() => {
-          const totalBalancePaise = accounts.reduce((sum, a) => sum + a.balancePaise, 0n);
-          const totalHeldPaise = accounts.reduce((sum, a) => sum + (a.allocatedPaise ?? 0n), 0n);
-          const totalFreePaise = accounts.reduce((sum, a) => sum + (a.unallocatedPaise ?? a.balancePaise), 0n);
-          const aggRatio = calculateAccountHoldVisualRatio(totalBalancePaise, totalHeldPaise, totalFreePaise);
-
-          return (
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-neutral-950/70 border border-white/10 space-y-2.5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                  Total Liquid Cash
-                </span>
-                <span className="text-base sm:text-lg font-mono font-bold text-white tabular-nums">
-                  {formatINR(totalBalancePaise)}
-                </span>
-              </div>
-
-              {/* Aggregate Progress Bar */}
-              <div className="w-full bg-neutral-800/80 rounded-full h-2 overflow-hidden flex border border-white/5">
-                {totalBalancePaise > 0n ? (
-                  <>
-                    <div
-                      className="bg-emerald-400 h-full transition-all duration-300"
-                      style={{ width: `${aggRatio.barFreeWidth}%` }}
-                      title={`Free Spendable: ${formatINR(totalFreePaise)} (${aggRatio.freeDisplayPercent.toFixed(1)}%)`}
-                    />
-                    <div
-                      className="bg-amber-400/90 h-full transition-all duration-300"
-                      style={{ width: `${aggRatio.barHeldWidth}%` }}
-                      title={`Reserved in Holds: ${formatINR(totalHeldPaise)} (${aggRatio.heldDisplayPercent.toFixed(1)}%)`}
-                    />
-                  </>
-                ) : (
-                  <div className="bg-neutral-700 w-full h-full" />
-                )}
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] font-mono leading-none">
-                <div className="flex items-center space-x-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  <span className="text-neutral-400">Total Free:</span>
-                  <span className={`font-semibold tabular-nums ${totalFreePaise < 0n ? 'text-rose-400' : 'text-emerald-400'}`}>
-                    {formatINR(totalFreePaise)}
-                  </span>
-                  <span className="text-[10px] text-neutral-500 font-medium">
-                    ({aggRatio.freeDisplayPercent.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="flex items-center space-x-1.5">
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${totalHeldPaise > 0n ? 'bg-amber-400' : 'bg-neutral-600'}`}
-                  />
-                  <span className="text-neutral-400">Total Held:</span>
-                  <span
-                    className={`font-semibold tabular-nums ${totalHeldPaise > 0n ? 'text-amber-400/90' : 'text-neutral-500'}`}
-                  >
-                    {formatINR(totalHeldPaise)}
-                  </span>
-                  <span className="text-[10px] text-neutral-500 font-medium">
-                    ({aggRatio.heldDisplayPercent.toFixed(1)}%)
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Existing Accounts List */}
         <div className="space-y-2.5">
@@ -554,8 +486,8 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] font-mono leading-none">
-                    <div className="flex items-center space-x-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] font-mono leading-none">
+                    <div className="flex items-center space-x-1.5 min-w-0">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                       <span className="text-neutral-400">Free:</span>
                       <span className={`font-semibold tabular-nums ${freePaise < 0n ? 'text-rose-400' : 'text-emerald-400'}`}>
@@ -565,7 +497,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
                         ({ratio.freeDisplayPercent.toFixed(1)}%)
                       </span>
                     </div>
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center space-x-1.5 min-w-0">
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${heldPaise > 0n ? 'bg-amber-400' : 'bg-neutral-600'}`}
                       />
@@ -589,7 +521,7 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
         {/* Add Account Section */}
         {isAdding ? (
           <form onSubmit={handleCreate} className="space-y-3 p-4 rounded-xl bg-neutral-900/50 border border-white/5">
-            <div className="text-xs font-semibold text-neutral-200">Add New Liquid Account</div>
+            <div className="text-xs font-semibold text-neutral-200">Add New Account</div>
 
             <div className="space-y-1">
               <label className="text-[11px] font-medium text-neutral-400">Account Nickname</label>

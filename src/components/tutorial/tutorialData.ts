@@ -22,9 +22,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     whyItMatters:
       'In traditional apps, seeing "₹1,50,000 Total Balance" might make you feel wealthy until you realize ₹80,000 is locked in an FD and ₹40,000 is credit card debt due in 3 days. Envello separates wealth into six distinct, deterministic pillars.',
     realWorldExample:
-      'You have ₹50,000 in your checking account, ₹1,00,000 locked in a 1-year Fixed Deposit, and ₹15,000 outstanding on your HDFC credit card. Envello reports your Liquid Funds as exactly ₹50,000, your FDs as ₹1,00,000, and your Liabilities as ₹15,000—never an ambiguous ₹1,35,000.',
+      'You have ₹50,000 in your checking account, ₹1,00,000 locked in a 1-year Fixed Deposit, and ₹15,000 outstanding on your HDFC credit card. Envello reports your Liquidity as exactly ₹50,000, your FDs as ₹1,00,000, and your Liabilities as ₹15,000—never an ambiguous ₹1,35,000.',
     keyRules: [
-      'Pillar 1: Liquid Funds (Liquid checking, savings, physical cash).',
+      'Pillar 1: Liquidity (Liquid checking, savings, physical cash).',
       'Pillar 2: Envelope Allocations (Assigned monthly spending funds).',
       'Pillar 3: FDs & RDs (Locked term deposits and recurring deposit assets).',
       'Pillar 4: Credit Card Liabilities (Unsettled debt; managed in Cards & Debts).',

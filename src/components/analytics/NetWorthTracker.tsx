@@ -86,7 +86,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
             <h4 className="text-sm font-semibold text-white tracking-tight">Net Worth & Solvency Health</h4>
           </div>
           <p className="text-xs text-neutral-400">
-            Authoritative solvency: Liquid funds + locked term assets vs all unsettled obligations
+            Authoritative solvency: Liquidity + locked term assets vs all unsettled obligations
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
       </div>
 
       <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">
-        <span>Liquid Funds: {formatINR(effectiveLiquidFunds)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
+        <span>Liquidity: {formatINR(effectiveLiquidFunds)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
         <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
       </div>
     </SpotlightCard>

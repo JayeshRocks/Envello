@@ -308,6 +308,7 @@ export const App: React.FC = () => {
     accounts,
     isLoading: isAccountsLoading,
     totalLiquidFundsPaise,
+    totalAllocatedPaise: totalLiquidAllocatedPaise,
     totalUnallocatedPaise,
     addAccount,
     editAccount,
@@ -426,10 +427,11 @@ export const App: React.FC = () => {
   const effectiveCreditCardLiabilitiesPaise = totalCardOutstandingPaise;
   const effectiveActualDebtsPaise = totalRemainingDebtPaise + totalDebtLoanRemainingPaise;
 
-  const liquidHoldPaise =
-    effectiveLiquidFundsPaise >= totalUnallocatedPaise
-      ? effectiveLiquidFundsPaise - totalUnallocatedPaise
-      : 0n;
+  const liquidHoldPaise = totalLiquidAllocatedPaise !== undefined
+    ? totalLiquidAllocatedPaise
+    : effectiveLiquidFundsPaise >= totalUnallocatedPaise
+    ? effectiveLiquidFundsPaise - totalUnallocatedPaise
+    : 0n;
   const liquidRatio = React.useMemo(() => {
     return calculateAccountHoldVisualRatio(
       effectiveLiquidFundsPaise,
@@ -637,20 +639,25 @@ export const App: React.FC = () => {
 
               {/* The 6 Pillars Grid (Cult UI Cursor-Tracking Spotlight Cards) */}
               <div id="pillars-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 scroll-mt-24">
-                {/* 1. Liquid Funds */}
+                {/* 1. Liquidity */}
                 <SpotlightCard
                   as="button"
                   onClick={() => setIsAccountsModalOpen(true)}
                   spotlightColor="rgba(56, 189, 248, 0.18)"
                   className="space-y-3 relative overflow-hidden group cursor-pointer"
-                  title="Manage Liquid Accounts & Cash"
+                  title="Manage Liquidity & Cash"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider group-hover:text-sky-300 transition-colors">
-                      1. Liquid Funds
+                      1. Liquidity
                     </span>
-                    <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:bg-sky-500/20 group-hover:scale-105 transition-all">
-                      <Wallet className="w-5 h-5" />
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">
+                        Manage &rarr;
+                      </span>
+                      <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:bg-sky-500/20 group-hover:scale-105 transition-all">
+                        <Wallet className="w-5 h-5" />
+                      </div>
                     </div>
                   </div>
                   <div>
@@ -678,16 +685,35 @@ export const App: React.FC = () => {
                             />
                           </div>
                         )}
-                        <div className="text-xs text-neutral-400 mt-1 flex items-center justify-between">
-                          <span className="text-[11px] font-mono text-emerald-400/90 font-medium">
-                            Free: {formatINR(totalUnallocatedPaise)}
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] font-mono mt-1">
+                          <div className="flex items-center space-x-1.5 min-w-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                            <span className="text-neutral-400 text-[10px]">Free:</span>
+                            <span className={`font-semibold tabular-nums text-[11px] ${totalUnallocatedPaise < 0n ? 'text-rose-400' : 'text-emerald-400'}`}>
+                              {formatINR(totalUnallocatedPaise)}
+                            </span>
                             {effectiveLiquidFundsPaise > 0n && (
-                              <span className="text-[10px] text-neutral-500 font-normal ml-1">
+                              <span className="text-[10px] text-neutral-500 font-medium">
                                 ({liquidRatio.freeDisplayPercent.toFixed(1)}%)
                               </span>
                             )}
-                          </span>
-                          <span className="text-[10px] text-sky-400/80 group-hover:text-sky-300 font-medium transition-colors">Manage &rarr;</span>
+                          </div>
+                          <div className="flex items-center space-x-1.5 min-w-0">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${liquidHoldPaise > 0n ? 'bg-amber-400' : 'bg-neutral-600'}`}
+                            />
+                            <span className="text-neutral-400 text-[10px]">Held:</span>
+                            <span
+                              className={`font-semibold tabular-nums text-[11px] ${liquidHoldPaise > 0n ? 'text-amber-400/90' : 'text-neutral-500'}`}
+                            >
+                              {formatINR(liquidHoldPaise)}
+                            </span>
+                            {effectiveLiquidFundsPaise > 0n && (
+                              <span className="text-[10px] text-neutral-500 font-medium">
+                                ({liquidRatio.heldDisplayPercent.toFixed(1)}%)
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </>
                     )}

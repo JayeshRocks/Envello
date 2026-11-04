@@ -139,7 +139,7 @@ export const CoverPage: React.FC<CoverPageProps> = ({
             {/* Micro Dashboard Strip */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-neutral-900/60 border border-white/5 space-y-1">
-                <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider">Liquid Funds</div>
+                <div className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider">Liquidity</div>
                 <div className="text-lg font-bold font-mono text-white">₹82,450.00</div>
                 <div className="text-[10px] text-emerald-400 flex items-center space-x-1">
                   <ArrowUpRight className="w-3 h-3" />
@@ -212,11 +212,11 @@ export const CoverPage: React.FC<CoverPageProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Pillar 1: Liquid Funds */}
+          {/* Pillar 1: Liquidity */}
           <SpotlightCard spotlightColor="rgba(56, 189, 248, 0.18)">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">
-                1. Liquid Funds
+                1. Liquidity
               </span>
               <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
                 <Wallet className="w-4 h-4" />

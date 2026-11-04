@@ -46,7 +46,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
       title: 'Six Financial Pillars',
       badge: 'Balance Taxonomy',
       description:
-        'Envello never shows an ambiguous "Total Balance". Liquid funds in bank accounts and cash are always separated from locked FDs & RDs, card debt, and loans.',
+        'Envello never shows an ambiguous "Total Balance". Liquidity in bank accounts and cash is always separated from locked FDs & RDs, card debt, and loans.',
       actionText: 'Scroll to Envelopes',
       onAction: () => {
         document.getElementById('core-system-envelopes')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
