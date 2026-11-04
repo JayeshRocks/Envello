@@ -284,19 +284,11 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
 
       {/* Rearrange Mode Instructions Banner */}
       {isReorderMode && envelopes.length > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 sm:p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-sky-200 text-xs animate-fade-in shadow-inner">
-          <div className="flex items-center space-x-2">
-            <ArrowUpDown className="w-4 h-4 text-sky-400 flex-shrink-0" />
-            <span>
-              <strong>Rearrange Mode Active:</strong> Click the arrows or drag cards to change their order. Your custom sequence is saved automatically.
-            </span>
-          </div>
-          <button
-            onClick={() => setIsReorderMode(false)}
-            className="self-end sm:self-auto px-3 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-semibold border border-sky-500/30 transition cursor-pointer active:scale-95 min-h-[32px] flex items-center justify-center"
-          >
-            Done
-          </button>
+        <div className="flex items-center justify-center gap-2 p-3 sm:p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-sky-200 text-xs animate-fade-in shadow-inner text-center">
+          <ArrowUpDown className="w-4 h-4 text-sky-400 flex-shrink-0" />
+          <span>
+            <strong>Rearrange Mode Active:</strong> Click the arrows or drag cards to change their order. Your custom sequence is saved automatically.
+          </span>
         </div>
       )}
 
