@@ -9,6 +9,9 @@ Disallow: /dashboard/
 Allow: /$
 Allow: /privacy
 Allow: /terms
+Allow: /*.png
+Allow: /*.svg
+Allow: /manifest.json
 
 # Sitemaps
-# Sitemap: https://envello.app/sitemap.xml
+Sitemap: https://envello.app/sitemap.xml

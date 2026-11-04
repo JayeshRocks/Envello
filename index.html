@@ -2,19 +2,87 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+
+    <!-- Primary SEO & Title -->
+    <title>Envello — Personal Finance & Envelope Budgeting</title>
+    <meta name="title" content="Envello — Personal Finance & Envelope Budgeting" />
+    <meta name="description" content="High-precision personal finance management and envelope budgeting. Plan expenses, eliminate floating-point drift, track multi-account bank holds, and achieve true financial clarity." />
+    <meta name="keywords" content="personal finance, envelope budgeting, zero-based budgeting, money manager, financial tracker, expense tracker, accounting, integer math" />
+    <meta name="author" content="Jayesh Yadav" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://envello.app/" />
+
+    <!-- Open Graph / Facebook / WhatsApp / LinkedIn / Slack / Discord -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Envello" />
+    <meta property="og:url" content="https://envello.app/" />
+    <meta property="og:title" content="Envello — Personal Finance & Envelope Budgeting" />
+    <meta property="og:description" content="High-precision personal finance and envelope budgeting. Plan expenses, eliminate floating-point drift, track multi-account bank holds, and achieve true financial clarity." />
+    <meta property="og:image" content="https://envello.app/og-image.png" />
+    <meta property="og:image:secure_url" content="https://envello.app/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Envello — High-Precision Personal Finance and Envelope Budgeting" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://envello.app/" />
+    <meta name="twitter:title" content="Envello — Personal Finance & Envelope Budgeting" />
+    <meta name="twitter:description" content="High-precision personal finance and envelope budgeting. Plan expenses, eliminate floating-point drift, and track multi-account bank holds." />
+    <meta name="twitter:image" content="https://envello.app/og-image.png" />
+    <meta name="twitter:image:alt" content="Envello — Personal Finance & Envelope Budgeting" />
+
+    <!-- Favicons & App Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Mobile Browser Chrome & Theme Styling -->
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#09090b" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="application-name" content="Envello" />
+    <meta name="apple-mobile-web-app-title" content="Envello" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="Envello — High-precision personal finance management and envelope budgeting." />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Security Headers -->
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <title>Envello — Personal Finance & Envelope Budgeting</title>
+
+    <!-- Structured Data (JSON-LD) for Search & Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Envello",
+      "url": "https://envello.app",
+      "image": "https://envello.app/og-image.png",
+      "description": "High-precision deterministic personal finance management and envelope budgeting application with multi-account holds.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "All",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Jayesh Yadav"
+      }
+    }
+    </script>
+
+    <!-- Typography Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   </head>
   <body class="bg-neutral-950 text-neutral-100 min-h-screen selection:bg-sky-500/30 selection:text-sky-200 antialiased font-sans w-full max-w-full overflow-x-hidden">
     <div id="root" class="w-full max-w-full overflow-x-hidden"></div>
