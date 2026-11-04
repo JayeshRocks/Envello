@@ -310,16 +310,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       {/* Desktop Table Surface (Shown only on Desktop-class devices) */}
       {isDesktop && (
         <div className="bg-[#0f1011] rounded-2xl border border-white/10 overflow-hidden shadow-xl">
-          <div className="w-full">
-            <table className="table-fixed w-full text-left text-xs">
+          <div className="w-full overflow-x-auto">
+            <table className="table-fixed w-full min-w-[800px] text-left text-xs">
               <thead className="bg-[#0b0c0e] border-b border-white/10 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
                 <tr>
-                  <th className="py-3 px-4 w-[13%]">Date</th>
-                  <th className="py-3 px-4 w-[32%]">Description / Payee</th>
-                  <th className="py-3 px-4 w-[13%]">Type</th>
-                  <th className="py-3 px-4 w-[22%]">Envelope / Account</th>
+                  <th className="py-3 px-4 w-[12%]">Date</th>
+                  <th className="py-3 px-4 w-[31%]">Description / Payee</th>
+                  <th className="py-3 px-4 w-[12%]">Type</th>
+                  <th className="py-3 px-4 w-[21%]">Envelope / Account</th>
                   <th className="py-3 px-4 text-right w-[14%]">Amount</th>
-                  <th className="py-3 px-4 text-center w-[6%] min-w-[50px]">Actions</th>
+                  <th className="py-3 pr-6 pl-2 text-center w-[10%] min-w-[80px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-neutral-300">
@@ -331,7 +331,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       <td className="py-4 px-4"><div className="w-14 h-3 bg-neutral-800 rounded" /></td>
                       <td className="py-4 px-4"><div className="w-24 h-3 bg-neutral-800 rounded" /></td>
                       <td className="py-4 px-4 text-right"><div className="w-20 h-3 bg-neutral-800 rounded ml-auto" /></td>
-                      <td className="py-4 px-4 text-center"><div className="w-6 h-3 bg-neutral-800 rounded mx-auto" /></td>
+                      <td className="py-4 pr-6 pl-2 text-center"><div className="w-7 h-3 bg-neutral-800 rounded mx-auto" /></td>
                     </tr>
                   ))
                 ) : filteredTransactions.length === 0 ? (
@@ -435,7 +435,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <td className="py-3.5 pr-6 pl-2 text-center whitespace-nowrap">
                           {(() => {
                             const eligibility = checkReversionEligibility(tx.transactionDate);
                             return (
