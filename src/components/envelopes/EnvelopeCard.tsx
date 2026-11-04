@@ -252,13 +252,14 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                   ? 'Locked: Move to the current month to edit this envelope'
                   : 'Edit Envelope Details'
               }
-              className={`p-2 rounded-xl border transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm ${
+              aria-disabled={isReadOnly}
+              className={`p-2 rounded-xl border transition-all duration-200 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center shadow-sm ${
                 isReadOnly
-                  ? 'bg-neutral-900/60 border-white/5 text-neutral-500 hover:text-amber-400 hover:border-amber-500/20'
-                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white'
+                  ? 'bg-white/[0.02] border-white/5 text-neutral-500 opacity-40 hover:opacity-60 cursor-not-allowed active:scale-100'
+                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white cursor-pointer active:scale-95'
               }`}
             >
-              {isReadOnly ? <Lock className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+              <Pencil className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -275,10 +276,11 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                   ? 'Locked: Move to the current month to transfer funds'
                   : 'Transfer / Reallocate Funds'
               }
-              className={`p-2 rounded-xl border transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm ${
+              aria-disabled={isReadOnly}
+              className={`p-2 rounded-xl border transition-all duration-200 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center shadow-sm ${
                 isReadOnly
-                  ? 'bg-neutral-900/60 border-white/5 text-neutral-500 hover:text-amber-400 hover:border-amber-500/20'
-                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white'
+                  ? 'bg-white/[0.02] border-white/5 text-neutral-500 opacity-40 hover:opacity-60 cursor-not-allowed active:scale-100'
+                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white cursor-pointer active:scale-95'
               }`}
             >
               <ArrowRightLeft className="w-4 h-4" />
@@ -298,10 +300,11 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                   ? 'Locked: Move to the current month to modify budget'
                   : 'Modify Budget'
               }
-              className={`p-2 rounded-xl border transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm ${
+              aria-disabled={isReadOnly}
+              className={`p-2 rounded-xl border transition-all duration-200 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center shadow-sm ${
                 isReadOnly
-                  ? 'bg-neutral-900/60 border-white/5 text-neutral-500 hover:text-amber-400 hover:border-amber-500/20'
-                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white'
+                  ? 'bg-white/[0.02] border-white/5 text-neutral-500 opacity-40 hover:opacity-60 cursor-not-allowed active:scale-100'
+                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white cursor-pointer active:scale-95'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />

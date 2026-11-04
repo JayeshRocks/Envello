@@ -311,14 +311,14 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
                   setIsReorderMode((prev) => !prev);
                 }
               }}
-              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] ${
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition min-h-[44px] sm:min-h-[36px] ${
                 isReorderMode
-                  ? 'bg-sky-500 text-neutral-950 shadow-md shadow-sky-500/25 ring-2 ring-sky-400/40'
+                  ? 'bg-sky-500 text-neutral-950 shadow-md shadow-sky-500/25 ring-2 ring-sky-400/40 active:scale-95 cursor-pointer'
                   : isPastPeriod
-                  ? 'bg-neutral-900/60 text-neutral-500 border border-white/5 hover:text-neutral-300'
-                  : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-white/10 hover:text-white'
+                  ? 'bg-white/[0.02] text-neutral-500 border border-white/5 opacity-50 hover:opacity-75 cursor-not-allowed'
+                  : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-white/10 hover:text-white active:scale-95 cursor-pointer'
               }`}
-              title={isPastPeriod ? 'Move to the current month to rearrange envelopes' : 'Rearrange envelope display order'}
+              title={isPastPeriod ? 'Locked: Move to the current month to rearrange envelopes' : 'Rearrange envelope display order'}
             >
               {isReorderMode ? (
                 <>
@@ -327,7 +327,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
                 </>
               ) : (
                 <>
-                  <ArrowUpDown className="w-3.5 h-3.5 text-sky-400" />
+                  <ArrowUpDown className={`w-3.5 h-3.5 ${isPastPeriod ? 'text-neutral-500' : 'text-sky-400'}`} />
                   <span>Rearrange</span>
                 </>
               )}
@@ -342,14 +342,14 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
                 setIsCreateModalOpen(true);
               }
             }}
-            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] shadow-md ${
+            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition min-h-[44px] sm:min-h-[36px] ${
               isPastPeriod
-                ? 'bg-neutral-800 text-neutral-400 border border-white/5 hover:bg-neutral-700 hover:text-white'
-                : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 shadow-sky-500/20'
+                ? 'bg-white/[0.02] text-neutral-500 border border-white/5 opacity-50 hover:opacity-75 cursor-not-allowed shadow-none'
+                : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 shadow-md shadow-sky-500/20 active:scale-95 cursor-pointer'
             }`}
-            title={isPastPeriod ? 'Move to the current month to create new envelopes' : 'Create New Envelope'}
+            title={isPastPeriod ? 'Locked: Move to the current month to create new envelopes' : 'Create New Envelope'}
           >
-            <Plus className={`w-4 h-4 stroke-[2.5] ${isPastPeriod ? 'text-neutral-400' : 'text-neutral-950'}`} />
+            <Plus className={`w-4 h-4 stroke-[2.5] ${isPastPeriod ? 'text-neutral-500' : 'text-neutral-950'}`} />
             <span>New Envelope</span>
           </button>
         </div>
