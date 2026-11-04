@@ -18,6 +18,7 @@ export interface AuthContextType {
   error: string | null;
   isPasswordRecovery: boolean;
   setIsPasswordRecovery: (value: boolean) => void;
+  hasPassword: boolean | null;
   needsPasswordSetup: boolean;
   needsNameSetup: boolean;
   displayName: string;
@@ -587,6 +588,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         isPasswordRecovery,
         setIsPasswordRecovery,
+        hasPassword,
         needsPasswordSetup,
         needsNameSetup,
         displayName,

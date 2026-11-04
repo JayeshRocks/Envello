@@ -92,6 +92,7 @@ export const App: React.FC = () => {
     user,
     isLoading: isAuthLoading,
     isPasswordRecovery,
+    hasPassword,
     needsPasswordSetup,
     needsNameSetup,
     deletionStatus,
@@ -128,7 +129,34 @@ export const App: React.FC = () => {
     deductionPlan?: GreedyDeductionPlan;
   } | null>(null);
 
-  // Guided on-screen tour: ONLY for first-time users inside their workspace
+  // Onboarding Sequence Flags:
+  // Step 1: Confirm preferred display name ("What should we call you?")
+  const isNameSetupPending = Boolean(
+    user &&
+    needsNameSetup &&
+    typeof window !== 'undefined' &&
+    !localStorage.getItem(`envello_dismissed_name_prompt_${user.id}`)
+  );
+
+  // Step 2: Set account password for Google OAuth or Magic Link users if they don't have one
+  const isPasswordSetupPending = Boolean(
+    user &&
+    needsPasswordSetup &&
+    typeof window !== 'undefined' &&
+    !localStorage.getItem(`envello_dismissed_password_prompt_${user.id}`)
+  );
+
+  // Tracks whether any account setup modal/step is currently active or pending
+  const isAccountSetupActiveOrPending = Boolean(
+    isSetNameModalOpen ||
+    isNameSetupPending ||
+    isSetPasswordModalOpen ||
+    isPasswordSetupPending ||
+    hasPassword === null // Still verifying if user has a password in DB
+  );
+
+  // Onboarding Sequence Step 3: Interactive Spotlight Tutorial
+  // ONLY launches once Step 1 (name setup) and Step 2 (password setup, if required) are completed or dismissed.
   // Once completed or skipped, it is saved to localStorage, Supabase auth metadata, and PostgreSQL profiles
   // so it is permanently synchronized and NEVER shown again across all devices (mobile, tablet, desktop).
   useEffect(() => {
@@ -158,11 +186,25 @@ export const App: React.FC = () => {
       return;
     }
 
+    // Do NOT swarm screen while account setup (name or password) or other primary auth modals are open/pending
+    if (isAccountSetupActiveOrPending || isAuthModalOpen || isLegalModalOpen) {
+      return;
+    }
+
+    // Immediately trigger tutorial after onboarding setup is done (with brief 200ms grace for modal exit animation)
     const timer = setTimeout(() => {
       setIsTourOpen(true);
-    }, 600);
+    }, 200);
     return () => clearTimeout(timer);
-  }, [user, isEmailConfirmedLanding, hasCompletedTutorial, completeTutorial]);
+  }, [
+    user,
+    isEmailConfirmedLanding,
+    hasCompletedTutorial,
+    completeTutorial,
+    isAccountSetupActiveOrPending,
+    isAuthModalOpen,
+    isLegalModalOpen,
+  ]);
 
   const handleTourComplete = async () => {
     setIsTourOpen(false);
@@ -246,25 +288,19 @@ export const App: React.FC = () => {
 
   // Onboarding Sequence Step 1: "What should we call you?" prompt
   useEffect(() => {
-    if (user && needsNameSetup) {
-      const dismissed = localStorage.getItem(`envello_dismissed_name_prompt_${user.id}`);
-      if (!dismissed) {
-        setIsSetNameModalOpen(true);
-        setIsFirstTimeNameModal(true);
-      }
+    if (isNameSetupPending) {
+      setIsSetNameModalOpen(true);
+      setIsFirstTimeNameModal(true);
     }
-  }, [user, needsNameSetup]);
+  }, [isNameSetupPending]);
 
-  // Onboarding Sequence Step 2: "Create Account Password" prompt for magic link users
+  // Onboarding Sequence Step 2: "Create Account Password" prompt for magic link / oauth users
   // (Only open after name prompt is completed or dismissed)
   useEffect(() => {
-    if (user && needsPasswordSetup && !isSetNameModalOpen) {
-      const dismissed = localStorage.getItem(`envello_dismissed_password_prompt_${user.id}`);
-      if (!dismissed) {
-        setIsSetPasswordModalOpen(true);
-      }
+    if (!isSetNameModalOpen && !isNameSetupPending && isPasswordSetupPending) {
+      setIsSetPasswordModalOpen(true);
     }
-  }, [user, needsPasswordSetup, isSetNameModalOpen]);
+  }, [isSetNameModalOpen, isNameSetupPending, isPasswordSetupPending]);
 
   // Live hooks
   const {
@@ -1238,7 +1274,10 @@ export const App: React.FC = () => {
         {isSetNameModalOpen && (
           <SetNameModal
             isOpen={isSetNameModalOpen}
-            onClose={() => setIsSetNameModalOpen(false)}
+            onClose={() => {
+              setIsSetNameModalOpen(false);
+              setIsFirstTimeNameModal(false);
+            }}
             isFirstTime={isFirstTimeNameModal}
           />
         )}
