@@ -127,12 +127,20 @@ export function analyzeTransactionReversion(
       // 2. Envelope entry (money was debited from envelope): Reversion credits envelope (reduces spent)
       const envEntry = tx.entries.find((e) => e.envelopeId);
       if (envEntry) {
+        const liveEnv = envEntry.envelopeId ? envMap.get(envEntry.envelopeId) : undefined;
+        const policy = liveEnv?.rolloverPolicy || 'carry_forward';
+        const isCarryForward = policy === 'carry_forward';
+
         impacts.push({
           targetType: 'envelope',
           targetName: envEntry.envelopeName || 'Envelope',
           action: 'credit',
           amountPaise: envEntry.amountPaise,
-          description: `${formatINR(envEntry.amountPaise)} will be refunded back into available budget (spent decreases).`,
+          description: eligibility.isMonthEndGracePeriod
+            ? isCarryForward
+              ? `${formatINR(envEntry.amountPaise)} will be restored to previous month's ${envEntry.envelopeName || 'envelope'} and immediately rolled forward into the active month.`
+              : `${formatINR(envEntry.amountPaise)} will be restored to previous month's ${envEntry.envelopeName || 'envelope'} and released to liquid bank account free balance per its rollover policy.`
+            : `${formatINR(envEntry.amountPaise)} will be refunded back into available budget (spent decreases).`,
           isRefund: true,
         });
       }
@@ -208,7 +216,9 @@ export function analyzeTransactionReversion(
           targetName: envEntry.envelopeName || 'Envelope',
           action: 'debit',
           amountPaise: envEntry.amountPaise,
-          description: `${formatINR(envEntry.amountPaise)} will be unallocated from monthly envelope budget.`,
+          description: eligibility.isMonthEndGracePeriod
+            ? `${formatINR(envEntry.amountPaise)} will be unallocated from previous month and removed from active month rollover.`
+            : `${formatINR(envEntry.amountPaise)} will be unallocated from monthly envelope budget.`,
           isRefund: false,
         });
       }

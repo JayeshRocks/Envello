@@ -969,7 +969,7 @@ export async function deleteTransaction(transactionId: string, userId: string): 
 
         const { data: env } = await supabase
           .from('envelopes')
-          .select('name')
+          .select('name, rollover_policy')
           .eq('id', entry.envelope_id)
           .single();
 
@@ -982,6 +982,33 @@ export async function deleteTransaction(transactionId: string, userId: string): 
             throw new Error(
               `Cannot revert: "${envName}" has already spent these funds (${formatINR(BigInt(alloc.spent_paise || 0))} spent). Deducting ${formatINR(BigInt(entry.amount_paise))} would force the envelope into a negative balance.`
             );
+          }
+        }
+
+        // If reverting a previous month transaction and envelope rollover policy is carry_forward,
+        // also verify that the active month hasn't already spent those rolled-over funds
+        const now = new Date();
+        const currentYearMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        const txYearMonth = tx.transaction_date.substring(0, 7);
+
+        if (txYearMonth < currentYearMonth && env?.rollover_policy === 'carry_forward') {
+          const currentPeriodId = await getOrCreateBudgetPeriod(userId, currentYearMonth);
+          const { data: activeAlloc } = await supabase
+            .from('envelope_allocations')
+            .select('allocated_paise, carried_over_paise, spent_paise')
+            .eq('user_id', userId)
+            .eq('envelope_id', entry.envelope_id)
+            .eq('period_id', currentPeriodId)
+            .maybeSingle();
+
+          if (activeAlloc) {
+            const activeSafeCapacity =
+              (activeAlloc.allocated_paise || 0) + (activeAlloc.carried_over_paise || 0) - (activeAlloc.spent_paise || 0);
+            if (entry.amount_paise > activeSafeCapacity) {
+              throw new Error(
+                `Cannot revert: Rolled-over funds in "${envName}" have already been spent in the active month (${formatINR(BigInt(activeAlloc.spent_paise || 0))} spent). Deducting ${formatINR(BigInt(entry.amount_paise))} would force the active envelope balance below zero.`
+              );
+            }
           }
         }
       }
@@ -1186,6 +1213,196 @@ export async function deleteTransaction(transactionId: string, userId: string): 
                 updated_at: new Date().toISOString(),
               })
               .eq('id', alloc.id);
+          }
+        }
+      }
+    }
+  }
+
+  // 5.4 Month-End Rollover Policy Execution for Previous Month Reversions
+  // When a previous month transaction is reverted within the 3-day grace window,
+  // the envelope in the previous month has been updated. Now, the reverted balance
+  // must immediately follow that envelope's rollover policy into the active month!
+  const currentNow = new Date();
+  const currentYearMonth = `${currentNow.getFullYear()}-${(currentNow.getMonth() + 1).toString().padStart(2, '0')}`;
+  const txYearMonth = tx.transaction_date.substring(0, 7);
+
+  if (txYearMonth < currentYearMonth) {
+    const currentPeriodId = await getOrCreateBudgetPeriod(userId, currentYearMonth);
+
+    for (const entry of txEntries) {
+      if (entry.envelope_id) {
+        // Fetch envelope's rollover policy
+        const { data: envData } = await supabase
+          .from('envelopes')
+          .select('id, name, rollover_policy')
+          .eq('id', entry.envelope_id)
+          .eq('user_id', userId)
+          .single();
+
+        const policy = envData?.rollover_policy || 'carry_forward';
+
+        // Case A: Expense Reversion -> restores entry.amount_paise back into envelope surplus
+        if (tx.type === 'expense' && entry.direction === 'debit') {
+          if (policy === 'carry_forward') {
+            // Under carry_forward: surplus immediately rolls over into active month's carried_over_paise
+            const { data: activeAlloc } = await supabase
+              .from('envelope_allocations')
+              .select('id, carried_over_paise')
+              .eq('user_id', userId)
+              .eq('envelope_id', entry.envelope_id)
+              .eq('period_id', currentPeriodId)
+              .maybeSingle();
+
+            let targetActiveAllocId = activeAlloc?.id;
+
+            if (activeAlloc) {
+              await supabase
+                .from('envelope_allocations')
+                .update({
+                  carried_over_paise: activeAlloc.carried_over_paise + entry.amount_paise,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', activeAlloc.id);
+            } else {
+              const { data: newAlloc } = await supabase
+                .from('envelope_allocations')
+                .insert({
+                  user_id: userId,
+                  envelope_id: entry.envelope_id,
+                  period_id: currentPeriodId,
+                  allocated_paise: 0,
+                  carried_over_paise: entry.amount_paise,
+                  spent_paise: 0,
+                })
+                .select('id')
+                .single();
+              targetActiveAllocId = newAlloc?.id;
+            }
+
+            // Restore backing account hold for the active month under carry_forward
+            if (targetActiveAllocId) {
+              const creditedAccEntries = txEntries.filter((e) => e.account_id && e.direction === 'credit');
+              for (const cAcc of creditedAccEntries) {
+                try {
+                  const { data: existingSrc } = await supabase
+                    .from('envelope_allocation_sources')
+                    .select('id, amount_paise')
+                    .eq('allocation_id', targetActiveAllocId)
+                    .eq('account_id', cAcc.account_id!)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                  if (existingSrc?.id) {
+                    await supabase
+                      .from('envelope_allocation_sources')
+                      .update({
+                        amount_paise: existingSrc.amount_paise + cAcc.amount_paise,
+                        updated_at: new Date().toISOString(),
+                      })
+                      .eq('id', existingSrc.id);
+                  } else {
+                    await supabase.from('envelope_allocation_sources').insert({
+                      user_id: userId,
+                      allocation_id: targetActiveAllocId,
+                      account_id: cAcc.account_id!,
+                      amount_paise: cAcc.amount_paise,
+                    });
+                  }
+                } catch (srcErr) {
+                  console.warn('[Envello API] Error updating active period allocation source on rollover:', srcErr);
+                }
+              }
+            }
+          } else {
+            // Under reset (Release to Respective Liquid Accounts):
+            // The money was already refunded to the bank account balance in step 4.
+            // Under reset policy, no carried_over_paise is added and no hold is placed in the active month,
+            // so the refunded amount remains 100% free unallocated balance in the backing bank account!
+          }
+        }
+
+        // Case B: Income Reversion -> removes entry.amount_paise from envelope allocation
+        if (tx.type === 'income' && entry.direction === 'credit') {
+          if (policy === 'carry_forward') {
+            const { data: activeAlloc } = await supabase
+              .from('envelope_allocations')
+              .select('id, carried_over_paise')
+              .eq('user_id', userId)
+              .eq('envelope_id', entry.envelope_id)
+              .eq('period_id', currentPeriodId)
+              .maybeSingle();
+
+            if (activeAlloc && activeAlloc.carried_over_paise > 0) {
+              const newCarried = Math.max(0, activeAlloc.carried_over_paise - entry.amount_paise);
+              await supabase
+                .from('envelope_allocations')
+                .update({
+                  carried_over_paise: newCarried,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', activeAlloc.id);
+
+              // Decrement active month hold if present
+              const debitedAcc = txEntries.find((e) => e.account_id && e.direction === 'debit');
+              if (debitedAcc?.account_id) {
+                const { data: srcRow } = await supabase
+                  .from('envelope_allocation_sources')
+                  .select('id, amount_paise')
+                  .eq('allocation_id', activeAlloc.id)
+                  .eq('account_id', debitedAcc.account_id)
+                  .eq('user_id', userId)
+                  .maybeSingle();
+
+                if (srcRow) {
+                  const rem = srcRow.amount_paise - entry.amount_paise;
+                  if (rem <= 0) {
+                    await supabase.from('envelope_allocation_sources').delete().eq('id', srcRow.id);
+                  } else {
+                    await supabase
+                      .from('envelope_allocation_sources')
+                      .update({ amount_paise: rem, updated_at: new Date().toISOString() })
+                      .eq('id', srcRow.id);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Case C: Envelope Reallocation Reversion
+        if (tx.type === 'envelope_allocation' && policy === 'carry_forward') {
+          const { data: activeAlloc } = await supabase
+            .from('envelope_allocations')
+            .select('id, carried_over_paise')
+            .eq('user_id', userId)
+            .eq('envelope_id', entry.envelope_id)
+            .eq('period_id', currentPeriodId)
+            .maybeSingle();
+
+          if (entry.direction === 'credit') {
+            // Source envelope restored -> rolled forward surplus increases
+            if (activeAlloc) {
+              await supabase
+                .from('envelope_allocations')
+                .update({
+                  carried_over_paise: activeAlloc.carried_over_paise + entry.amount_paise,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', activeAlloc.id);
+            }
+          } else if (entry.direction === 'debit') {
+            // Destination envelope surrendered -> rolled forward surplus decreases
+            if (activeAlloc && activeAlloc.carried_over_paise > 0) {
+              const newCarried = Math.max(0, activeAlloc.carried_over_paise - entry.amount_paise);
+              await supabase
+                .from('envelope_allocations')
+                .update({
+                  carried_over_paise: newCarried,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', activeAlloc.id);
+            }
           }
         }
       }

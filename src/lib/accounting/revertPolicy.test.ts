@@ -644,5 +644,91 @@ describe('analyzeTransactionReversion — Financial Ledger Impact & Negative Env
       expect(analysis.impacts[0].targetType).toBe('loan');
       expect(analysis.impacts[0].description).toContain('will be deducted from your reimbursed Self EMI progress');
     });
+
+    it('accurately previews month-end grace period reversion with carry_forward policy rolling forward into active month', () => {
+      const pastExpenseTx: TransactionRecord = {
+        id: 'tx-past-1',
+        userId: 'user-1',
+        transactionDate: '2026-10-31', // Last day of October
+        type: 'expense',
+        totalAmountPaise: 100000n, // ₹1,000
+        description: 'End of Month Supplies',
+        notes: null,
+        createdAt: '2026-10-31T20:00:00Z',
+        entries: [
+          {
+            id: 'e-p1',
+            accountId: 'acc-bank',
+            envelopeId: null,
+            accountName: 'HDFC Savings',
+            direction: 'credit',
+            amountPaise: 100000n,
+          },
+          {
+            id: 'e-p2',
+            accountId: null,
+            envelopeId: 'env-groceries',
+            envelopeName: 'Groceries',
+            direction: 'debit',
+            amountPaise: 100000n,
+          },
+        ],
+      };
+
+      const analysis = analyzeTransactionReversion(pastExpenseTx, mockEnvelopes, refDate);
+      expect(analysis.eligibility.isReversible).toBe(true);
+      expect(analysis.eligibility.isMonthEndGracePeriod).toBe(true);
+      expect(analysis.canSafelyRevert).toBe(true);
+
+      const envImpact = analysis.impacts.find((i) => i.targetType === 'envelope');
+      expect(envImpact?.description).toContain('immediately rolled forward into the active month');
+    });
+
+    it('accurately previews month-end grace period reversion with reset policy releasing to liquid accounts', () => {
+      const resetEnvelopes: EnvelopeWithAllocation[] = [
+        {
+          ...mockEnvelopes[0],
+          id: 'env-reset',
+          name: 'Reset Category',
+          rolloverPolicy: 'reset',
+        },
+      ];
+
+      const pastExpenseTx: TransactionRecord = {
+        id: 'tx-past-2',
+        userId: 'user-1',
+        transactionDate: '2026-10-31',
+        type: 'expense',
+        totalAmountPaise: 50000n, // ₹500
+        description: 'Supplies',
+        notes: null,
+        createdAt: '2026-10-31T20:00:00Z',
+        entries: [
+          {
+            id: 'e-p3',
+            accountId: 'acc-bank',
+            envelopeId: null,
+            accountName: 'HDFC Savings',
+            direction: 'credit',
+            amountPaise: 50000n,
+          },
+          {
+            id: 'e-p4',
+            accountId: null,
+            envelopeId: 'env-reset',
+            envelopeName: 'Reset Category',
+            direction: 'debit',
+            amountPaise: 50000n,
+          },
+        ],
+      };
+
+      const analysis = analyzeTransactionReversion(pastExpenseTx, resetEnvelopes, refDate);
+      expect(analysis.eligibility.isReversible).toBe(true);
+      expect(analysis.eligibility.isMonthEndGracePeriod).toBe(true);
+
+      const envImpact = analysis.impacts.find((i) => i.targetType === 'envelope');
+      expect(envImpact?.description).toContain('released to liquid bank account free balance per its rollover policy');
+    });
   });
 });

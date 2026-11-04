@@ -194,7 +194,7 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center space-x-2.5">
               <RotateCcw className="w-4 h-4 flex-shrink-0 text-amber-400" />
               <span>
-                <strong>Month-End Grace Window:</strong> This transaction was recorded at the end of the previous month and is within the 3-day reversal window.
+                <strong>Month-End Grace Window:</strong> This transaction was recorded at the end of the previous month and is within the 3-day reversal window. Reverted envelope funds will update the previous month and immediately follow the envelope&apos;s rollover policy.
               </span>
             </div>
           )}
