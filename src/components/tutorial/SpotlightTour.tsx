@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  X,
   ChevronRight,
   ChevronLeft,
   CheckCircle2,
@@ -175,7 +174,56 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
     }
   }, [currentStep.targetId, currentStep.fallbackTargetId]);
 
-  // Smooth-scroll element into view with header offset when step changes
+  // 1. Strictly disable user scrolling of the page until the user has completed or skipped the tutorial
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Prevent wheel and touch drag scrolling gestures
+    const preventUserScroll = (e: Event) => {
+      e.preventDefault();
+    };
+
+    // Prevent keyboard scroll triggers (PageUp/Down, Arrows, Space)
+    const preventScrollKeys = (e: KeyboardEvent) => {
+      const scrollKeys = [
+        'ArrowUp',
+        'ArrowDown',
+        'PageUp',
+        'PageDown',
+        'Home',
+        'End',
+        'Space',
+        ' ',
+      ];
+      if (scrollKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+    };
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    window.addEventListener('wheel', preventUserScroll, { passive: false });
+    window.addEventListener('touchmove', preventUserScroll, { passive: false });
+    window.addEventListener('keydown', preventScrollKeys, { passive: false });
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.touchAction = originalBodyTouchAction;
+
+      window.removeEventListener('wheel', preventUserScroll);
+      window.removeEventListener('touchmove', preventUserScroll);
+      window.removeEventListener('keydown', preventScrollKeys);
+    };
+  }, [isOpen]);
+
+  // 2. Smooth-scroll target element into view when step changes, then lock solid
   useEffect(() => {
     if (!isOpen) return;
 
@@ -192,17 +240,33 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
 
         // 64px fixed header + 24px safety buffer = 88px offset
         const targetScrollTop = Math.max(0, elementAbsoluteTop - 88);
+
+        // Temporarily release overflow to allow programmatic smooth scrolling to center the target
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+
         window.scrollTo({
           top: targetScrollTop,
           behavior: 'smooth',
         });
+
+        // Re-lock overflow solid once the programmatic scroll settles so the view stays locked
+        const lockTimer = setTimeout(() => {
+          if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            updateTargetPosition();
+          }
+        }, 450);
+
+        return () => clearTimeout(lockTimer);
       }
     }, 50);
 
     return () => clearTimeout(timeout);
-  }, [isOpen, currentStepIndex, currentStep.targetId, currentStep.fallbackTargetId]);
+  }, [isOpen, currentStepIndex, currentStep.targetId, currentStep.fallbackTargetId, updateTargetPosition]);
 
-  // Continuous 60fps RAF tracking loop to guarantee 100% position accuracy during scroll & resize
+  // Continuous 60fps RAF tracking loop to guarantee 100% position accuracy during transitions & resize
   useEffect(() => {
     if (!isOpen) return;
 
@@ -331,17 +395,30 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
         />
       </svg>
 
-      {/* Target Highlight Border Ring (surgical fit, zero lag, zero drifting, no exploding animations) */}
+      {/* Target Highlight Border Ring with Pulsating Glow Effect (anchored tight, pulsating attention halo) */}
       {targetRect && (
-        <div
-          className="fixed z-50 pointer-events-none rounded-2xl border-2 border-sky-400 shadow-[0_0_24px_rgba(56,189,248,0.45)] transition-none"
-          style={{
-            top: Math.max(0, targetRect.top - padding),
-            left: Math.max(0, targetRect.left - padding),
-            width: targetRect.width + padding * 2,
-            height: targetRect.height + padding * 2,
-          }}
-        />
+        <>
+          {/* Pulsating outer halo ring */}
+          <div
+            className="fixed z-50 pointer-events-none rounded-2xl border-2 border-sky-400 shadow-[0_0_35px_rgba(56,189,248,0.7)] animate-pulse transition-none"
+            style={{
+              top: Math.max(0, targetRect.top - padding),
+              left: Math.max(0, targetRect.left - padding),
+              width: targetRect.width + padding * 2,
+              height: targetRect.height + padding * 2,
+            }}
+          />
+          {/* Inner crisp high-contrast border */}
+          <div
+            className="fixed z-50 pointer-events-none rounded-2xl border border-sky-300/90 shadow-[inset_0_0_12px_rgba(56,189,248,0.35)] transition-none"
+            style={{
+              top: Math.max(0, targetRect.top - padding),
+              left: Math.max(0, targetRect.left - padding),
+              width: targetRect.width + padding * 2,
+              height: targetRect.height + padding * 2,
+            }}
+          />
+        </>
       )}
 
       {/* Floating Pointer Popover Card */}
@@ -372,10 +449,10 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
           />
         )}
 
-        {/* Card Header: Step Pill & Close */}
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+        {/* Card Header: Step Pill & Taxonomy Badge (no 'X' button) */}
+        <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2.5">
           <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
+            <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
               Step {currentStepIndex + 1} of {steps.length}
             </span>
             <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
@@ -383,21 +460,18 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="w-7 h-7 rounded-lg bg-neutral-800/80 hover:bg-neutral-700 text-neutral-400 hover:text-white flex items-center justify-center transition active:scale-95 cursor-pointer"
-            title="Skip and never show again"
-            aria-label="Skip Tutorial"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse inline-block" />
+            <span className="text-[10px] font-mono text-sky-400/80 uppercase tracking-wider font-semibold">
+              Live Guide
+            </span>
+          </div>
         </div>
 
         {/* Card Body: Title & Punchy Description */}
         <div className="py-2.5 space-y-1.5">
           <div className="flex items-center space-x-2">
-            <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+            <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white flex-shrink-0 shadow-sm animate-pulse">
               <Compass className="w-3 h-3" />
             </div>
             <h3 id="spotlight-title" className="text-sm sm:text-base font-bold text-white tracking-tight">
@@ -417,7 +491,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
               onClick={() => {
                 if (currentStep.onAction) currentStep.onAction();
               }}
-              className="w-full py-1.5 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-200 hover:text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition active:scale-95 cursor-pointer group shadow-sm"
+              className="w-full py-1.5 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-200 hover:text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition active:scale-95 cursor-pointer group shadow-sm min-h-[38px]"
             >
               <MousePointerClick className="w-3.5 h-3.5 text-sky-400 group-hover:scale-110 transition-transform flex-shrink-0" />
               <span>{currentStep.actionText}</span>
@@ -425,18 +499,20 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
           </div>
         )}
 
-        {/* Card Footer: Skip, Progress Dots, Back, Next */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+        {/* Card Footer: Skip Tutorial, Progress Dots, Previous, Next */}
+        <div className="flex items-center justify-between pt-2.5 border-t border-white/10 text-xs">
           <button
             type="button"
             onClick={handleSkip}
-            className="text-neutral-400 hover:text-white transition active:scale-95 cursor-pointer font-medium text-[11px]"
+            className="text-neutral-400 hover:text-white transition active:scale-95 cursor-pointer font-medium text-xs px-2 py-1.5 rounded-lg hover:bg-white/5 min-h-[44px] flex items-center"
+            title="Skip tutorial and never show again"
+            aria-label="Skip Tutorial"
           >
-            Skip Tour
+            Skip Tutorial
           </button>
 
           {/* Dots Indicator */}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 px-1">
             {steps.map((_, idx) => (
               <button
                 key={idx}
@@ -450,6 +526,7 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
                       : 'bg-neutral-600'
                 }`}
                 title={`Step ${idx + 1}`}
+                aria-label={`Jump to step ${idx + 1}`}
               />
             ))}
           </div>
@@ -459,19 +536,23 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
               <button
                 type="button"
                 onClick={handlePrev}
-                className="p-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition active:scale-95 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white transition active:scale-95 cursor-pointer flex items-center space-x-1 text-xs font-semibold min-h-[44px]"
                 title="Previous Step"
+                aria-label="Previous Step"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Prev</span>
               </button>
             )}
             <button
               type="button"
               onClick={handleNext}
-              className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs flex items-center space-x-1 active:scale-95 transition cursor-pointer shadow-sm shadow-sky-500/20"
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs flex items-center space-x-1.5 active:scale-95 transition cursor-pointer shadow-md shadow-sky-500/25 min-h-[44px]"
+              title={isLastStep ? 'Complete Tutorial' : 'Next Step'}
+              aria-label={isLastStep ? 'Complete Tutorial' : 'Next Step'}
             >
               <span>{isLastStep ? 'Finish' : 'Next'}</span>
-              {!isLastStep ? <ChevronRight className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+              {!isLastStep ? <ChevronRight className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
             </button>
           </div>
         </div>

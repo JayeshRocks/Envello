@@ -67,6 +67,8 @@ export const App: React.FC = () => {
     deletionStatus,
     scheduledDeletionAt,
     cancelAccountDeletion,
+    hasCompletedTutorial,
+    completeTutorial,
   } = useAuth();
   const { showToast } = useToast();
   const { isMobileOrTablet, isLandscape } = useDevice();
@@ -97,29 +99,44 @@ export const App: React.FC = () => {
   } | null>(null);
 
   // Guided on-screen tour: ONLY for first-time users inside their workspace
-  // Once completed or skipped, it is saved to localStorage and NEVER shown again.
+  // Once completed or skipped, it is saved to localStorage, Supabase auth metadata, and PostgreSQL profiles
+  // so it is permanently synchronized and NEVER shown again across all devices (mobile, tablet, desktop).
   useEffect(() => {
     if (!user || isEmailConfirmedLanding) return;
-    try {
-      const isCompleted = localStorage.getItem('envello_tour_completed');
-      if (!isCompleted) {
-        const timer = setTimeout(() => {
-          setIsTourOpen(true);
-        }, 600);
-        return () => clearTimeout(timer);
-      }
-    } catch {
-      // Ignore localStorage access restrictions in private mode
-    }
-  }, [user, isEmailConfirmedLanding]);
 
-  const handleTourComplete = () => {
-    setIsTourOpen(false);
+    let isCompletedLocally = false;
     try {
-      localStorage.setItem('envello_tour_completed', 'true');
+      isCompletedLocally = localStorage.getItem('envello_tour_completed') === 'true';
     } catch {
-      // Ignore
+      // Ignore private mode restrictions
     }
+
+    const isCompletedInMetadata = user.user_metadata?.tutorial_completed === true;
+
+    if (hasCompletedTutorial || isCompletedLocally || isCompletedInMetadata) {
+      if (!isCompletedLocally) {
+        try {
+          localStorage.setItem('envello_tour_completed', 'true');
+        } catch {
+          // Ignore
+        }
+      }
+      // If completed locally on this browser but missing from database/metadata, sync to backend
+      if (isCompletedLocally && !isCompletedInMetadata && !hasCompletedTutorial) {
+        completeTutorial().catch(() => {});
+      }
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setIsTourOpen(true);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [user, isEmailConfirmedLanding, hasCompletedTutorial, completeTutorial]);
+
+  const handleTourComplete = async () => {
+    setIsTourOpen(false);
+    await completeTutorial();
   };
 
   const scrollToSection = (elementId: string) => {

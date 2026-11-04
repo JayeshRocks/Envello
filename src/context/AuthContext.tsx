@@ -33,6 +33,8 @@ export interface AuthContextType {
   signOut: () => Promise<{ error: Error | null }>;
   deletionStatus: 'active' | 'pending_deletion';
   scheduledDeletionAt: string | null;
+  hasCompletedTutorial: boolean;
+  completeTutorial: () => Promise<void>;
   requestAccountDeletion: () => Promise<{ error: Error | null; scheduledDeletionAt?: string }>;
   cancelAccountDeletion: () => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
@@ -53,6 +55,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasPassword, setHasPassword] = useState<boolean | null>(null);
   const [deletionStatus, setDeletionStatus] = useState<'active' | 'pending_deletion'>('active');
   const [scheduledDeletionAt, setScheduledDeletionAt] = useState<string | null>(null);
+  const [hasCompletedTutorial, setHasCompletedTutorial] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('envello_tour_completed') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // Check if current user has an actual password in the authoritative database
   const checkHasPassword = useCallback(async (currentUser?: User | null) => {
@@ -89,13 +98,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      if (currentUser.user_metadata?.tutorial_completed === true) {
+        setHasCompletedTutorial(true);
+        try {
+          localStorage.setItem('envello_tour_completed', 'true');
+        } catch {
+          // Ignore
+        }
+      }
+
       const { data, error: profileError } = await supabase
         .from('profiles')
-        .select('deletion_status, scheduled_deletion_at')
+        .select('deletion_status, scheduled_deletion_at, tutorial_completed')
         .eq('id', currentUser.id)
         .maybeSingle();
 
       if (!profileError && data) {
+        if (data.tutorial_completed) {
+          setHasCompletedTutorial(true);
+          try {
+            localStorage.setItem('envello_tour_completed', 'true');
+          } catch {
+            // Ignore
+          }
+        }
         if (data.deletion_status === 'pending_deletion') {
           // If scheduled date has expired, trigger sweep and sign out
           if (data.scheduled_deletion_at && new Date(data.scheduled_deletion_at) <= new Date()) {
@@ -495,6 +521,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearError = () => setError(null);
 
+  const completeTutorial = useCallback(async () => {
+    // 1. Mark in-memory and local storage immediately for zero latency
+    setHasCompletedTutorial(true);
+    try {
+      localStorage.setItem('envello_tour_completed', 'true');
+    } catch {
+      // Ignore
+    }
+
+    if (!user) return;
+
+    // 2. Persist to Supabase Auth metadata for instant cross-device detection upon sign-in
+    try {
+      const { data: authUpdateData, error: authErr } = await supabase.auth.updateUser({
+        data: {
+          tutorial_completed: true,
+        },
+      });
+      if (!authErr && authUpdateData.user) {
+        setUser(authUpdateData.user);
+      }
+    } catch (e) {
+      console.warn('[Envello Auth] Warning updating user metadata for tutorial:', e);
+    }
+
+    // 3. Persist to public.profiles relational table in PostgreSQL
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          tutorial_completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+    } catch (dbErr) {
+      console.warn('[Envello Auth] Warning updating profiles table for tutorial:', dbErr);
+    }
+  }, [user]);
+
   const needsPasswordSetup = hasPassword === false;
 
   // Determine user display name: check display_name, full_name, name, or email prefix
@@ -537,6 +602,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         deletionStatus,
         scheduledDeletionAt,
+        hasCompletedTutorial,
+        completeTutorial,
         requestAccountDeletion,
         cancelAccountDeletion,
         deleteAccount,

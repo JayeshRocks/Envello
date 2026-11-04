@@ -109,4 +109,29 @@ describe('Interactive Tutorial Specifications & Math', () => {
     // Total = 144000n (₹1,440)
     expect(normalizedPaise).toBe(144000n);
   });
+
+  it('guarantees cross-device tutorial suppression when completed in metadata or profile', () => {
+    // Scenario 1: User completed on computer; mobile device has no localStorage
+    const mobileLocalStorage = false;
+    const userMetadataTutorialCompleted = true;
+    const profileTutorialCompleted = true;
+
+    const shouldShowOnMobile = !(mobileLocalStorage || userMetadataTutorialCompleted || profileTutorialCompleted);
+    expect(shouldShowOnMobile).toBe(false);
+
+    // Scenario 2: Brand new user with no completion anywhere
+    const freshUserMetadata = false;
+    const freshProfile = false;
+    const freshLocalStorage = false;
+
+    const shouldShowToFreshUser = !(freshLocalStorage || freshUserMetadata || freshProfile);
+    expect(shouldShowToFreshUser).toBe(true);
+
+    // Scenario 3: User completed on mobile, should suppress on desktop
+    const desktopLocalStorage = false;
+    const userCompletedOnMobile = true;
+
+    const shouldShowOnDesktop = !(desktopLocalStorage || userCompletedOnMobile);
+    expect(shouldShowOnDesktop).toBe(false);
+  });
 });

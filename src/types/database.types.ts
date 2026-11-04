@@ -42,6 +42,7 @@ export interface Database {
           deletion_status: 'active' | 'pending_deletion';
           deletion_requested_at: string | null;
           scheduled_deletion_at: string | null;
+          tutorial_completed: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -54,6 +55,7 @@ export interface Database {
           deletion_status?: 'active' | 'pending_deletion';
           deletion_requested_at?: string | null;
           scheduled_deletion_at?: string | null;
+          tutorial_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -66,6 +68,7 @@ export interface Database {
           deletion_status?: 'active' | 'pending_deletion';
           deletion_requested_at?: string | null;
           scheduled_deletion_at?: string | null;
+          tutorial_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };
