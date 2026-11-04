@@ -1,5 +1,25 @@
 import React, { useState } from 'react';
-import { X, FolderPlus, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import {
+  X,
+  FolderPlus,
+  AlertCircle,
+  ArrowRight,
+  ShieldCheck,
+  Mail,
+  ShieldAlert,
+  Home,
+  Dumbbell,
+  Coffee,
+  Gift,
+  Folder,
+  Heart,
+  ShoppingBag,
+  Car,
+  Plane,
+  Utensils,
+  Book,
+  PiggyBank,
+} from 'lucide-react';
 import type { EnvelopeRolloverPolicy } from '@/types/accounting.types';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
@@ -27,6 +47,23 @@ const COLOR_PRESETS = [
   { name: 'Orange', hex: '#fb923c' },
 ];
 
+const ICON_OPTIONS = [
+  { name: 'Folder', icon: Folder },
+  { name: 'Mail', icon: Mail },
+  { name: 'ShieldAlert', icon: ShieldAlert },
+  { name: 'Home', icon: Home },
+  { name: 'Dumbbell', icon: Dumbbell },
+  { name: 'Coffee', icon: Coffee },
+  { name: 'Gift', icon: Gift },
+  { name: 'Heart', icon: Heart },
+  { name: 'ShoppingBag', icon: ShoppingBag },
+  { name: 'Car', icon: Car },
+  { name: 'Plane', icon: Plane },
+  { name: 'Utensils', icon: Utensils },
+  { name: 'Book', icon: Book },
+  { name: 'PiggyBank', icon: PiggyBank },
+];
+
 export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
   isOpen,
   onClose,
@@ -34,6 +71,7 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#38bdf8');
+  const [icon, setIcon] = useState('Folder');
   const [rolloverPolicy, setRolloverPolicy] = useState<EnvelopeRolloverPolicy>('carry_forward');
   const [isProtected, setIsProtected] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,10 +96,13 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
       await onCreate({
         name: cleanName,
         color,
+        icon,
         rolloverPolicy,
         isProtected,
       });
       setName('');
+      setIcon('Folder');
+      setColor('#38bdf8');
       setIsProtected(false);
       onClose();
     } catch (err: unknown) {
@@ -116,6 +157,32 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
                 autoFocus
                 className="w-full px-3.5 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white placeholder-neutral-500 focus:ring-1 focus:ring-sky-500"
               />
+            </div>
+
+            {/* Icon Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-neutral-300">Category Icon</label>
+              <div className="grid grid-cols-7 gap-2 pt-1">
+                {ICON_OPTIONS.map((item) => {
+                  const ItemIcon = item.icon;
+                  const isSelected = icon === item.name;
+                  return (
+                    <button
+                      key={item.name}
+                      type="button"
+                      onClick={() => setIcon(item.name)}
+                      className={`p-2 rounded-xl flex items-center justify-center transition border min-h-[38px] active:scale-95 ${
+                        isSelected
+                          ? 'bg-sky-500/20 border-sky-500 text-sky-300 ring-2 ring-sky-500/30'
+                          : 'bg-neutral-900/50 border-white/5 text-neutral-400 hover:text-white hover:bg-neutral-800'
+                      }`}
+                      title={item.name}
+                    >
+                      <ItemIcon className="w-4 h-4" />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Color Preset Palette */}

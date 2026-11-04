@@ -161,7 +161,7 @@ export async function getOrCreateBudgetPeriod(userId: string, periodKey: string)
 export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
   const { data: existing, error: checkError } = await supabase
     .from('envelopes')
-    .select('id, slug, name, sort_order')
+    .select('id, slug, name, sort_order, is_system_reserved')
     .eq('user_id', userId);
 
   if (checkError) {
@@ -171,8 +171,9 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
 
   // If user already has envelopes:
   // 1. Clean up unreferenced legacy envelopes (credit-cards, emis, monthly-targets)
-  // 2. Standardize 'Regular / Balance' or 'Spendable' to 'Regular'
-  // 3. Ensure Savings is in the third place (sort_order = 2)
+  // 2. Standardize 'Regular / Balance' or 'Spendable' to 'Regular' (reserve OFF)
+  // 3. Ensure Emergency and Savings have Protected Reserve ON
+  // 4. Ensure Savings is in the third place (sort_order = 2)
   if (existing && existing.length > 0) {
     const deprecatedEnvs = existing.filter((env) =>
       ['credit-cards', 'emis', 'monthly-targets'].includes(env.slug)
@@ -194,26 +195,55 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
       }
     }
 
-    // Standardize default envelope name to 'Regular'
-    const legacyRegular = existing.find(
-      (env) => env.slug === 'regular' && (env.name === 'Regular / Balance' || env.name === 'Regular/Balance' || env.name === 'Spendable')
+    // Standardize default envelope name to 'Regular' and ensure Reserve is OFF by default
+    const regularEnv = existing.find(
+      (env) => env.slug === 'regular' || env.name === 'Regular / Balance' || env.name === 'Regular/Balance' || env.name === 'Spendable'
     );
-    if (legacyRegular) {
-      try {
-        await supabase
-          .from('envelopes')
-          .update({ name: 'Regular' })
-          .eq('id', legacyRegular.id);
-        legacyRegular.name = 'Regular';
-      } catch (err) {
-        console.warn('[Envello API] Could not auto-rename regular envelope:', err);
+    if (regularEnv) {
+      const needsNameUpdate = regularEnv.name !== 'Regular';
+      const needsReserveUpdate = regularEnv.is_system_reserved === true;
+      if (needsNameUpdate || needsReserveUpdate) {
+        try {
+          await supabase
+            .from('envelopes')
+            .update({ name: 'Regular', is_system_reserved: false })
+            .eq('id', regularEnv.id);
+          regularEnv.name = 'Regular';
+          regularEnv.is_system_reserved = false;
+        } catch (err) {
+          console.warn('[Envello API] Could not auto-update regular envelope:', err);
+        }
       }
     }
 
-    // Ensure Savings is ordered in 3rd place (sort_order = 2) if not already aligned
-    const savingsEnv = existing.find((e) => e.slug === 'savings');
-    const regularEnv = existing.find((e) => e.slug === 'regular');
+    // Ensure Emergency has Protected Reserve ON
     const emergencyEnv = existing.find((e) => e.slug === 'emergency');
+    if (emergencyEnv && emergencyEnv.is_system_reserved === false) {
+      try {
+        await supabase
+          .from('envelopes')
+          .update({ is_system_reserved: true })
+          .eq('id', emergencyEnv.id);
+        emergencyEnv.is_system_reserved = true;
+      } catch (err) {
+        console.warn('[Envello API] Could not auto-update emergency envelope reserve:', err);
+      }
+    }
+
+    // Ensure Savings is ordered in 3rd place (sort_order = 2) and has Protected Reserve ON
+    const savingsEnv = existing.find((e) => e.slug === 'savings');
+    if (savingsEnv && savingsEnv.is_system_reserved === false) {
+      try {
+        await supabase
+          .from('envelopes')
+          .update({ is_system_reserved: true })
+          .eq('id', savingsEnv.id);
+        savingsEnv.is_system_reserved = true;
+      } catch (err) {
+        console.warn('[Envello API] Could not auto-update savings envelope reserve:', err);
+      }
+    }
+
     if (
       savingsEnv &&
       (savingsEnv.sort_order === undefined || savingsEnv.sort_order === 0 || savingsEnv.sort_order > 2) &&
@@ -247,8 +277,14 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
 
   const { error: insertError } = await supabase.from('envelopes').insert(rowsToInsert);
   if (insertError) {
-    console.error('[Envello API] Error seeding default envelopes:', insertError.message);
-    throw insertError;
+    // If sort_order does not exist in DB yet, fallback without sort_order
+    if (insertError.message?.includes('sort_order') || insertError.code === '42703') {
+      const fallbackRows = rowsToInsert.map(({ sort_order, ...rest }) => rest);
+      await supabase.from('envelopes').insert(fallbackRows);
+    } else {
+      console.error('[Envello API] Error seeding default envelopes:', insertError.message);
+      throw insertError;
+    }
   }
 }
 
@@ -329,6 +365,13 @@ export async function fetchEnvelopesWithAllocations(
   }
 
   if (localOrder.length > 0) {
+    const liveIds = new Set(validEnvelopes.map((e) => e.id));
+    const cleanedOrder = localOrder.filter((id) => liveIds.has(id));
+    if (cleanedOrder.length !== localOrder.length && typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(`envello_envelope_order_${userId}`, JSON.stringify(cleanedOrder));
+    }
+    localOrder = cleanedOrder;
+
     validEnvelopes.sort((a, b) => {
       const idxA = localOrder.indexOf(a.id);
       const idxB = localOrder.indexOf(b.id);
@@ -860,18 +903,20 @@ export async function createCustomEnvelope(
     rolloverPolicy: EnvelopeRolloverPolicy;
     isProtected?: boolean;
   }
-): Promise<void> {
+): Promise<string> {
+  const cleanName = data.name.trim();
+
   // Generate safe slug
   const baseSlug =
     data.slug ||
-    data.name
+    cleanName
       .toLowerCase()
-      .trim()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '') ||
     'category';
 
   // Check if slug already exists for this user to prevent unique constraint conflict
+  let finalSlug = baseSlug;
   const { data: existingSlug } = await supabase
     .from('envelopes')
     .select('id')
@@ -879,9 +924,10 @@ export async function createCustomEnvelope(
     .eq('slug', baseSlug)
     .maybeSingle();
 
-  const finalSlug = existingSlug?.id
-    ? `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`
-    : baseSlug;
+  if (existingSlug?.id) {
+    // Generate an unambiguous unique suffix
+    finalSlug = `${baseSlug}-${Date.now().toString(36).slice(-4)}-${Math.random().toString(36).substring(2, 5)}`;
+  }
 
   // Calculate next sort_order
   let nextSortOrder = 0;
@@ -901,34 +947,51 @@ export async function createCustomEnvelope(
     // Ignore if column doesn't exist yet
   }
 
-  const { data: inserted, error } = await supabase
+  const payload: Database['public']['Tables']['envelopes']['Insert'] = {
+    user_id: userId,
+    name: cleanName,
+    slug: finalSlug,
+    icon: data.icon || 'Folder',
+    color: data.color || '#38bdf8',
+    is_system_reserved: Boolean(data.isProtected),
+    rollover_policy: data.rolloverPolicy || 'carry_forward',
+    sort_order: nextSortOrder,
+  };
+
+  let { data: inserted, error } = await supabase
     .from('envelopes')
-    .insert({
-      user_id: userId,
-      name: data.name.trim(),
-      slug: finalSlug,
-      icon: data.icon || 'Folder',
-      color: data.color || '#38bdf8',
-      is_system_reserved: Boolean(data.isProtected),
-      rollover_policy: data.rolloverPolicy,
-      sort_order: nextSortOrder,
-    })
+    .insert(payload)
     .select('id')
-    .single();
+    .maybeSingle();
+
+  // If insert failed because sort_order column does not exist in remote DB, retry without sort_order
+  if (error && (error.message?.includes('sort_order') || error.code === '42703')) {
+    const fallbackPayload: Database['public']['Tables']['envelopes']['Insert'] = { ...payload };
+    delete fallbackPayload.sort_order;
+    const retry = await supabase
+      .from('envelopes')
+      .insert(fallbackPayload)
+      .select('id')
+      .maybeSingle();
+    inserted = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.error('[Envello API] Error creating custom envelope:', error.message);
     throw error;
   }
 
+  const newId = inserted?.id || '';
+
   // Also append to local order cache if present
   try {
-    if (typeof window !== 'undefined' && window.localStorage && inserted?.id) {
+    if (typeof window !== 'undefined' && window.localStorage && newId) {
       const raw = localStorage.getItem(`envello_envelope_order_${userId}`);
       if (raw) {
         const order: string[] = JSON.parse(raw);
-        if (!order.includes(inserted.id)) {
-          order.push(inserted.id);
+        if (!order.includes(newId)) {
+          order.push(newId);
           localStorage.setItem(`envello_envelope_order_${userId}`, JSON.stringify(order));
         }
       }
@@ -936,6 +999,8 @@ export async function createCustomEnvelope(
   } catch {
     // Ignore JSON errors
   }
+
+  return newId;
 }
 
 /**
@@ -1037,14 +1102,14 @@ export async function deleteEnvelope(envelopeId: string, userId: string): Promis
     .eq('envelope_id', envelopeId)
     .eq('user_id', userId);
 
-  // 2. Unlink envelope_id from transaction entries to preserve double-entry ledger history
+  // 3. Unlink envelope_id from transaction entries to preserve double-entry ledger history
   await supabase
     .from('transaction_entries')
     .update({ envelope_id: null })
     .eq('envelope_id', envelopeId)
     .eq('user_id', userId);
 
-  // 3. Delete the envelope
+  // 4. Delete the envelope
   const { error } = await supabase
     .from('envelopes')
     .delete()
@@ -1054,5 +1119,36 @@ export async function deleteEnvelope(envelopeId: string, userId: string): Promis
   if (error) {
     console.error('[Envello API] Error deleting envelope:', error.message);
     throw error;
+  }
+
+  // 5. Clean up local caches (order and recurring rules)
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const orderKey = `envello_envelope_order_${userId}`;
+      const rawOrder = localStorage.getItem(orderKey);
+      if (rawOrder) {
+        const order: string[] = JSON.parse(rawOrder);
+        const filtered = order.filter((id) => id !== envelopeId);
+        localStorage.setItem(orderKey, JSON.stringify(filtered));
+      }
+
+      const recKey = `envello_recurring_rules_${userId}`;
+      const rawRec = localStorage.getItem(recKey);
+      if (rawRec) {
+        const rules = JSON.parse(rawRec);
+        let changed = false;
+        for (const r of rules) {
+          if (r.envelopeId === envelopeId) {
+            r.envelopeId = null;
+            changed = true;
+          }
+        }
+        if (changed) {
+          localStorage.setItem(recKey, JSON.stringify(rules));
+        }
+      }
+    }
+  } catch {
+    // Ignore cache cleanup errors
   }
 }
