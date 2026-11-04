@@ -23,6 +23,7 @@ import {
 import type { EnvelopeRolloverPolicy } from '@/types/accounting.types';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { ModalPortal } from '@/components/common/ModalPortal';
+import { RolloverPolicySelector } from './RolloverPolicySelector';
 
 interface CreateEnvelopeModalProps {
   isOpen: boolean;
@@ -234,36 +235,12 @@ export const CreateEnvelopeModal: React.FC<CreateEnvelopeModalProps> = ({
               </button>
             </div>
 
-            {/* Rollover Policy */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-neutral-300">Month-End Rollover Policy</label>
-              <select
-                value={rolloverPolicy}
-                onChange={(e) => setRolloverPolicy(e.target.value as EnvelopeRolloverPolicy)}
-                className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
-              >
-                <option value="carry_forward" className="bg-neutral-900 text-white">
-                  Carry Forward (Keep unused funds & account holds in this envelope for next month)
-                </option>
-                <option value="reset" className="bg-neutral-900 text-white">
-                  Release to Respective Liquid Accounts (Return unused budget & holds back to bank accounts)
-                </option>
-              </select>
-
-              {/* Dynamic Policy Explanatory Note */}
-              <div className="p-2.5 rounded-xl bg-neutral-950/70 border border-white/5 text-[11px] text-neutral-400 leading-relaxed font-sans">
-                {rolloverPolicy === 'carry_forward' && (
-                  <span>
-                    <strong className="text-white">Carry Forward:</strong> Any unused funds remain reserved in this envelope into the next month, preserving backing liquid account holds without release.
-                  </span>
-                )}
-                {(rolloverPolicy === 'reset' || rolloverPolicy === 'sweep_to_regular') && (
-                  <span>
-                    <strong className="text-white">Release to Respective Liquid Accounts:</strong> Unspent envelope funds and holds are released at month-end, returning money back to the respective liquid bank accounts&apos; free unallocated balances.
-                  </span>
-                )}
-              </div>
-            </div>
+            {/* Rollover Policy Custom UI Selector */}
+            <RolloverPolicySelector
+              value={rolloverPolicy}
+              onChange={setRolloverPolicy}
+              disabled={isSubmitting}
+            />
 
             <div className="pt-2">
               <button
