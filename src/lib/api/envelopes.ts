@@ -44,7 +44,7 @@ export type EnvelopeWithDetails = EnvelopeWithAllocation;
 
 export const DEFAULT_ENVELOPES_CONFIG = [
   {
-    name: 'Spendable',
+    name: 'Regular',
     slug: 'regular',
     icon: 'Mail',
     color: '#38bdf8', // sky-400
@@ -161,7 +161,7 @@ export async function getOrCreateBudgetPeriod(userId: string, periodKey: string)
 export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
   const { data: existing, error: checkError } = await supabase
     .from('envelopes')
-    .select('id, slug, name')
+    .select('id, slug, name, sort_order')
     .eq('user_id', userId);
 
   if (checkError) {
@@ -169,7 +169,10 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
     throw checkError;
   }
 
-  // If user already has envelopes, clean up unreferenced legacy envelopes (credit-cards, emis, monthly-targets)
+  // If user already has envelopes:
+  // 1. Clean up unreferenced legacy envelopes (credit-cards, emis, monthly-targets)
+  // 2. Standardize 'Regular / Balance' or 'Spendable' to 'Regular'
+  // 3. Ensure Savings is in the third place (sort_order = 2)
   if (existing && existing.length > 0) {
     const deprecatedEnvs = existing.filter((env) =>
       ['credit-cards', 'emis', 'monthly-targets'].includes(env.slug)
@@ -190,6 +193,44 @@ export async function ensureDefaultEnvelopes(userId: string): Promise<void> {
         console.warn(`[Envello API] Could not auto-delete deprecated envelope ${dep.slug}:`, err);
       }
     }
+
+    // Standardize default envelope name to 'Regular'
+    const legacyRegular = existing.find(
+      (env) => env.slug === 'regular' && (env.name === 'Regular / Balance' || env.name === 'Regular/Balance' || env.name === 'Spendable')
+    );
+    if (legacyRegular) {
+      try {
+        await supabase
+          .from('envelopes')
+          .update({ name: 'Regular' })
+          .eq('id', legacyRegular.id);
+        legacyRegular.name = 'Regular';
+      } catch (err) {
+        console.warn('[Envello API] Could not auto-rename regular envelope:', err);
+      }
+    }
+
+    // Ensure Savings is ordered in 3rd place (sort_order = 2) if not already aligned
+    const savingsEnv = existing.find((e) => e.slug === 'savings');
+    const regularEnv = existing.find((e) => e.slug === 'regular');
+    const emergencyEnv = existing.find((e) => e.slug === 'emergency');
+    if (
+      savingsEnv &&
+      (savingsEnv.sort_order === undefined || savingsEnv.sort_order === 0 || savingsEnv.sort_order > 2) &&
+      (!regularEnv?.sort_order || regularEnv.sort_order === 0)
+    ) {
+      try {
+        if (regularEnv) await supabase.from('envelopes').update({ sort_order: 0 }).eq('id', regularEnv.id);
+        if (emergencyEnv) await supabase.from('envelopes').update({ sort_order: 1 }).eq('id', emergencyEnv.id);
+        await supabase.from('envelopes').update({ sort_order: 2 }).eq('id', savingsEnv.id);
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.removeItem(`envello_envelope_order_${userId}`);
+        }
+      } catch (err) {
+        console.warn('[Envello API] Could not auto-reorder savings envelope:', err);
+      }
+    }
+
     return;
   }
 

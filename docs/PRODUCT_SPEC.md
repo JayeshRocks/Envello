@@ -15,7 +15,7 @@ The application strictly rejects a single ambiguous "Total Balance" figure. The 
    - Sum of all liquid checking/savings bank accounts and physical cash on hand.
    - Represents money that is actually available to be spent or allocated.
 2. **Envelope Allocations (Assigned Money)**:
-   - Funds from spendable cash that have been budgeted into active spending categories (across Spendable, Emergency, Savings, and lifestyle envelopes).
+   - Funds from spendable cash that have been budgeted into active spending categories (across Regular, Emergency, Savings, and lifestyle envelopes).
 3. **FDs & RDs (Term Assets)**:
    - Long-term reserves, bank fixed deposits (FDs), and recurring deposits (RDs) with monthly contributions.
    - Shortened to **"FDs & RDs"** on space-constrained UI elements (metric cards, navigation pills, tab headers).
@@ -38,7 +38,7 @@ Envello utilizes zero-based envelope budgeting principles: every rupee of spenda
 #### Total User Control & Dynamic Layout:
 - **Total User Envelope Control**: Every envelope can be edited, renamed, customized, rearranged, and deleted. No envelopes are locked or permanent mandatory compartments.
 - **Envelope Rearranging**: Users can reorder envelopes via tactile move arrow buttons and drag-and-drop, persisted with `sort_order` in the database and local state.
-- **Starter Envelopes**: Workspace initialization automatically generates default starter envelopes (`Spendable`, `Emergency`, `Savings`) alongside common lifestyle categories (`Groceries`, `Dining Out`, `Utilities`, `Entertainment`, `Travel`).
+- **Starter Envelopes**: Workspace initialization automatically generates default starter envelopes (`Regular`, `Emergency`, `Savings`) with Savings ordered in third place, alongside common lifestyle categories (`Groceries`, `Dining Out`, `Utilities`, `Entertainment`, `Travel`).
 - **Protected Reserve Feature**: Any envelope can be designated as a "Protected Reserve" styled in emerald green with a compact shield symbol. Expanding reveals full protection rules. Direct expenses and transfers out require an explicit warning confirmation and user authorization checkbox (`Emergency` and `Savings` spawn with this feature on by default).
 - Credit Cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT envelopes.
 

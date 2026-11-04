@@ -45,7 +45,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     realWorldExample:
       'If your "Dining Out" envelope has ₹1,500 available, you cannot log a ₹2,000 dinner against it. Envello guards you from overspending. You must either reallocate ₹500 first, or choose "None" for direct non-budgeted bills.',
     keyRules: [
-      'Default Starter Envelopes: Spendable, Emergency, and Savings spawn automatically for new accounts.',
+      'Default Starter Envelopes: Regular, Emergency, and Savings spawn automatically for new accounts.',
       'Total User Control: Every envelope can be edited, renamed, customized, or deleted at any time.',
       'Protected Reserve Feature: Any envelope can be toggled as a Protected Reserve to require explicit confirmation before spending or withdrawing funds.',
       'Anti-Negative Invariant: Envelopes can NEVER be overspent into negative (amount <= available).',

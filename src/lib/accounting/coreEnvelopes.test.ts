@@ -3,9 +3,9 @@ import { DEFAULT_ENVELOPES_CONFIG } from '@/lib/api/envelopes';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 
 describe('Envelope Specifications & Protected Reserve Feature', () => {
-  it('seeds default starter envelopes including Spendable, Emergency, and Savings', () => {
+  it('seeds default starter envelopes including Regular, Emergency, and Savings', () => {
     const allSlugs = DEFAULT_ENVELOPES_CONFIG.map((e) => e.slug);
-    expect(allSlugs).toContain('regular'); // Spendable
+    expect(allSlugs).toContain('regular'); // Regular
     expect(allSlugs).toContain('emergency');
     expect(allSlugs).toContain('savings');
 
@@ -18,10 +18,13 @@ describe('Envelope Specifications & Protected Reserve Feature', () => {
     expect(savings?.is_system_reserved).toBe(true);
     expect(savings?.color).toBe('#10b981');
     expect(savings?.icon).toBe('PiggyBank');
+    expect(savings?.sort_order).toBe(2); // 3rd place (0-indexed: 2)
 
-    // Spendable spawns as a flexible envelope without lock
-    const spendable = DEFAULT_ENVELOPES_CONFIG.find((e) => e.slug === 'regular');
-    expect(spendable?.is_system_reserved).toBe(false);
+    // Regular spawns as a flexible envelope without lock
+    const regular = DEFAULT_ENVELOPES_CONFIG.find((e) => e.slug === 'regular');
+    expect(regular?.name).toBe('Regular');
+    expect(regular?.is_system_reserved).toBe(false);
+    expect(regular?.sort_order).toBe(0); // 1st place
   });
 
   it('strictly excludes credit-cards and emis envelopes from default configuration', () => {
@@ -33,7 +36,7 @@ describe('Envelope Specifications & Protected Reserve Feature', () => {
 
   it('correctly filters out legacy credit-cards and emis envelopes from active list', () => {
     const mockEnvelopes: Partial<EnvelopeWithAllocation>[] = [
-      { id: '1', name: 'Spendable', slug: 'regular', isSystemReserved: false },
+      { id: '1', name: 'Regular', slug: 'regular', isSystemReserved: false },
       { id: '2', name: 'Emergency', slug: 'emergency', isSystemReserved: true },
       { id: '3', name: 'Savings', slug: 'savings', isSystemReserved: true },
       { id: '4', name: 'Credit Cards', slug: 'credit-cards', isSystemReserved: true },
@@ -49,9 +52,9 @@ describe('Envelope Specifications & Protected Reserve Feature', () => {
     expect(filtered.map((e) => e.slug)).toEqual(['regular', 'emergency', 'savings', 'gym']);
   });
 
-  it('supports custom sort order and rearranging envelopes', () => {
+  it('supports custom sort order and rearranging envelopes with Savings in 3rd place', () => {
     const envelopes: Partial<EnvelopeWithAllocation>[] = [
-      { id: '1', name: 'Spendable', sortOrder: 0 },
+      { id: '1', name: 'Regular', sortOrder: 0 },
       { id: '2', name: 'Emergency', sortOrder: 1 },
       { id: '3', name: 'Savings', sortOrder: 2 },
       { id: '4', name: 'Essentials', sortOrder: 3 },
@@ -65,6 +68,6 @@ describe('Envelope Specifications & Protected Reserve Feature', () => {
       return idxA - idxB;
     });
 
-    expect(reordered.map((e) => e.name)).toEqual(['Essentials', 'Spendable', 'Emergency', 'Savings']);
+    expect(reordered.map((e) => e.name)).toEqual(['Essentials', 'Regular', 'Emergency', 'Savings']);
   });
 });

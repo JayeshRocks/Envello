@@ -38,7 +38,7 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **No Binary Floating-Point Math**: Store all currency in integer paise (the smallest currency unit in INR: ₹1.00 = 100 paise) or PostgreSQL `NUMERIC(12, 2)`. Never use JavaScript `Number` floats for financial additions/subtractions without a fixed-point precision helper.
 - **Clear Balance Taxonomy**: Never display a single ambiguous number labeled "Total Balance". The UI must distinguish:
   1. **Liquid Funds** (liquid bank accounts and cash in hand).
-  2. **Envelope Allocations** (assigned funds for specific purposes across Spendable, Emergency, Savings, and custom categories).
+  2. **Envelope Allocations** (assigned funds for specific purposes across Regular, Emergency, Savings, and custom categories).
   3. **FDs & RDs** (locked term deposits, recurring deposits, and growth assets).
   4. **Credit Card Liabilities** (unsettled card debt).
   5. **Actual Debts** (debts owed to friends, family, or lenders).
@@ -46,7 +46,7 @@ This document is the authoritative, permanent instructions guide for any AI agen
 - **Total User Envelope Control, Envelope Rearranging & Protected Reserve Feature**:
   - Total user control: Every envelope can be edited, customized, renamed, rearranged, and deleted. No envelopes are locked or permanent mandatory compartments.
   - Envelope Rearranging: Users can reorder envelopes via tactile move arrow buttons and drag-and-drop, persisted with `sort_order` in the database and local cache.
-  - Default starter envelopes: Spendable, Emergency, and Savings spawn automatically upon workspace initialization alongside lifestyle categories.
+  - Default starter envelopes: Regular (1st), Emergency (2nd), and Savings (3rd) spawn automatically upon workspace initialization alongside lifestyle categories.
   - Protected Reserve Feature: Any envelope can be toggled on/off as a Protected Reserve in emerald green. On envelope cards, a compact green shield symbol is displayed; clicking/expanding it reveals the full "Protected Reserve" description and rules. Requires explicit user authorization warnings and confirmation checkboxes before funds can be withdrawn or debited for expenses (Emergency and Savings spawn with this feature on by default).
   - Credit Cards and EMIs are direct liabilities/repayments tracked under Cards & Debts, never envelopes.
 - **Anti-Negative Envelope Guard**: Envelopes can NEVER be overspent into negative balances. When recording an expense, the transaction engine strictly enforces that debits do not exceed available allocation (`amountPaise <= availablePaise`). Direct bills without envelope deduction must use "None". Income can be credited directly to accounts and optionally assigned to an envelope.
