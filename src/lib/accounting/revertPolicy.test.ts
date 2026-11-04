@@ -297,4 +297,264 @@ describe('analyzeTransactionReversion — Financial Ledger Impact & Negative Env
     expect(envImpact?.amountPaise).toBe(500000n);
     expect(envImpact?.description).toContain('refunded back into available budget');
   });
+
+  describe('Reconciliation (Adjustment) Reversion Guard & Impact', () => {
+    it('accurately previews reconciliation surplus reversion by deducting the surplus from account', () => {
+      const surplusTx: TransactionRecord = {
+        id: 'tx-adj-surplus',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'adjustment',
+        totalAmountPaise: 250000n, // ₹2,500 surplus
+        description: 'Reconcile Primary Savings (+₹2,500.00)',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-adj-1',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Primary Savings',
+            direction: 'credit', // surplus credited to account
+            amountPaise: 250000n,
+          },
+        ],
+      };
+
+      const accounts = [
+        {
+          id: 'acc-savings',
+          name: 'Primary Savings',
+          balancePaise: 10000000n, // ₹1,00,000
+          unallocatedPaise: 8000000n, // ₹80,000 free
+        },
+      ];
+
+      const analysis = analyzeTransactionReversion(surplusTx, mockEnvelopes, refDate, accounts);
+      expect(analysis.eligibility.isReversible).toBe(true);
+      expect(analysis.canSafelyRevert).toBe(true);
+      expect(analysis.impacts.length).toBe(1);
+
+      const impact = analysis.impacts[0];
+      expect(impact.action).toBe('debit');
+      expect(impact.isRefund).toBe(false);
+      expect(impact.amountPaise).toBe(250000n);
+      expect(impact.description).toContain('reconciliation surplus will be deducted');
+    });
+
+    it('blocks reconciliation surplus reversion when account lacks free unallocated funds due to envelope holds', () => {
+      const surplusTx: TransactionRecord = {
+        id: 'tx-adj-surplus-2',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'adjustment',
+        totalAmountPaise: 500000n, // ₹5,000 surplus
+        description: 'Reconcile Primary Savings (+₹5,000.00)',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-adj-2',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Primary Savings',
+            direction: 'credit',
+            amountPaise: 500000n,
+          },
+        ],
+      };
+
+      const accounts = [
+        {
+          id: 'acc-savings',
+          name: 'Primary Savings',
+          balancePaise: 500000n,    // ₹5,000 total balance
+          unallocatedPaise: 100000n, // only ₹1,000 unallocated (₹4,000 on hold)
+        },
+      ];
+
+      const analysis = analyzeTransactionReversion(surplusTx, mockEnvelopes, refDate, accounts);
+      expect(analysis.eligibility.isReversible).toBe(true);
+      expect(analysis.canSafelyRevert).toBe(false);
+      expect(analysis.blockingReason).toContain('active envelope holds');
+      expect(analysis.blockingReason).toContain('exceeds free unallocated balance');
+    });
+
+    it('accurately previews reconciliation deficit reversion by refunding the deficit to account', () => {
+      const deficitTx: TransactionRecord = {
+        id: 'tx-adj-deficit',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'adjustment',
+        totalAmountPaise: 150000n, // ₹1,500 deficit
+        description: 'Reconcile Primary Savings (-₹1,500.00)',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-adj-3',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Primary Savings',
+            direction: 'debit', // deficit debited from account
+            amountPaise: 150000n,
+          },
+        ],
+      };
+
+      const analysis = analyzeTransactionReversion(deficitTx, mockEnvelopes, refDate);
+      expect(analysis.eligibility.isReversible).toBe(true);
+      expect(analysis.canSafelyRevert).toBe(true);
+      expect(analysis.impacts.length).toBe(1);
+
+      const impact = analysis.impacts[0];
+      expect(impact.action).toBe('credit');
+      expect(impact.isRefund).toBe(true);
+      expect(impact.amountPaise).toBe(150000n);
+      expect(impact.description).toContain('reconciliation deficit will be restored');
+    });
+  });
+
+  describe('Transfer Reversion Guard & Impact', () => {
+    it('accurately previews transfer reversion refunding origin and debiting destination', () => {
+      const transferTx: TransactionRecord = {
+        id: 'tx-transfer-1',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'transfer',
+        totalAmountPaise: 300000n, // ₹3,000
+        description: 'Transfer from Checking to Savings',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-xfer-from',
+            accountId: 'acc-checking',
+            envelopeId: null,
+            accountName: 'Checking Account',
+            direction: 'credit',
+            amountPaise: 300000n,
+          },
+          {
+            id: 'e-xfer-to',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Primary Savings',
+            direction: 'debit',
+            amountPaise: 300000n,
+          },
+        ],
+      };
+
+      const accounts = [
+        {
+          id: 'acc-checking',
+          name: 'Checking Account',
+          balancePaise: 500000n,
+          unallocatedPaise: 500000n,
+        },
+        {
+          id: 'acc-savings',
+          name: 'Primary Savings',
+          balancePaise: 1000000n,
+          unallocatedPaise: 1000000n,
+        },
+      ];
+
+      const analysis = analyzeTransactionReversion(transferTx, mockEnvelopes, refDate, accounts);
+      expect(analysis.eligibility.isReversible).toBe(true);
+      expect(analysis.canSafelyRevert).toBe(true);
+      expect(analysis.impacts.length).toBe(2);
+
+      const refundImpact = analysis.impacts.find((i) => i.targetName === 'Checking Account');
+      expect(refundImpact?.action).toBe('credit');
+      expect(refundImpact?.isRefund).toBe(true);
+
+      const debitImpact = analysis.impacts.find((i) => i.targetName === 'Primary Savings');
+      expect(debitImpact?.action).toBe('debit');
+      expect(debitImpact?.isRefund).toBe(false);
+    });
+
+    it('blocks transfer reversion if destination account has insufficient unallocated balance', () => {
+      const transferTx: TransactionRecord = {
+        id: 'tx-transfer-2',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'transfer',
+        totalAmountPaise: 500000n, // ₹5,000
+        description: 'Transfer to Savings',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-xfer-from',
+            accountId: 'acc-checking',
+            envelopeId: null,
+            accountName: 'Checking',
+            direction: 'credit',
+            amountPaise: 500000n,
+          },
+          {
+            id: 'e-xfer-to',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Savings',
+            direction: 'debit',
+            amountPaise: 500000n,
+          },
+        ],
+      };
+
+      const accounts = [
+        {
+          id: 'acc-savings',
+          name: 'Savings',
+          balancePaise: 500000n,
+          unallocatedPaise: 200000n, // only ₹2,000 unallocated (₹3,000 held by envelopes)
+        },
+      ];
+
+      const analysis = analyzeTransactionReversion(transferTx, mockEnvelopes, refDate, accounts);
+      expect(analysis.canSafelyRevert).toBe(false);
+      expect(analysis.blockingReason).toContain('exceeds free unallocated balance');
+    });
+  });
+
+  describe('Income Reversion Guard with Account Holds', () => {
+    it('blocks income reversion if receiving account has reserved the money in envelope holds', () => {
+      const incomeTx: TransactionRecord = {
+        id: 'tx-income-held',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'income',
+        totalAmountPaise: 1000000n, // ₹10,000
+        description: 'Consulting Fee',
+        notes: null,
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-inc-acc',
+            accountId: 'acc-savings',
+            envelopeId: null,
+            accountName: 'Primary Savings',
+            direction: 'debit', // income debits account
+            amountPaise: 1000000n,
+          },
+        ],
+      };
+
+      const accounts = [
+        {
+          id: 'acc-savings',
+          name: 'Primary Savings',
+          balancePaise: 1000000n,    // ₹10,000 total balance
+          unallocatedPaise: 200000n, // only ₹2,000 free (₹8,000 put on hold in envelopes!)
+        },
+      ];
+
+      const analysis = analyzeTransactionReversion(incomeTx, mockEnvelopes, refDate, accounts);
+      expect(analysis.canSafelyRevert).toBe(false);
+      expect(analysis.blockingReason).toContain('active envelope holds');
+    });
+  });
 });

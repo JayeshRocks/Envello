@@ -922,6 +922,7 @@ export const App: React.FC = () => {
             <TransactionTable
               transactions={transactions}
               envelopes={envelopes}
+              accounts={accounts}
               isLoading={isTxLoading}
               typeFilter={typeFilter}
               onTypeFilterChange={setTypeFilter}

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
 import { useDevice } from '@/hooks/useDevice';
@@ -21,6 +22,7 @@ import { RevertTransactionModal } from './RevertTransactionModal';
 interface TransactionTableProps {
   transactions: TransactionRecord[];
   envelopes?: EnvelopeWithAllocation[];
+  accounts?: AccountItem[];
   isLoading: boolean;
   typeFilter: string;
   onTypeFilterChange: (type: string) => void;
@@ -33,6 +35,7 @@ interface TransactionTableProps {
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
   envelopes = [],
+  accounts = [],
   isLoading,
   typeFilter,
   onTypeFilterChange,
@@ -473,6 +476,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         isOpen={Boolean(revertingTx)}
         transaction={revertingTx}
         envelopes={envelopes}
+        accounts={accounts}
         isDeleting={isDeleting}
         onClose={() => setRevertingTx(null)}
         onConfirmRevert={async (txId) => {

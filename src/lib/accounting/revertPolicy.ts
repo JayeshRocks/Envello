@@ -8,6 +8,13 @@ export interface ReversionEligibility {
   isMonthEndGracePeriod?: boolean;
 }
 
+export interface RevertAccountInfo {
+  id: string;
+  name: string;
+  balancePaise: bigint;
+  unallocatedPaise: bigint;
+}
+
 export interface RevertImpactItem {
   targetType: 'account' | 'envelope' | 'card' | 'loan';
   targetName: string;
@@ -84,7 +91,8 @@ export function checkReversionEligibility(
 export function analyzeTransactionReversion(
   tx: TransactionRecord,
   currentEnvelopes: EnvelopeWithAllocation[] = [],
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  currentAccounts: RevertAccountInfo[] = []
 ): RevertAnalysis {
   const eligibility = checkReversionEligibility(tx.transactionDate, referenceDate);
   const impacts: RevertImpactItem[] = [];
@@ -94,6 +102,11 @@ export function analyzeTransactionReversion(
   const envMap = new Map<string, EnvelopeWithAllocation>();
   for (const env of currentEnvelopes) {
     envMap.set(env.id, env);
+  }
+
+  const accMap = new Map<string, RevertAccountInfo>();
+  for (const acc of currentAccounts) {
+    accMap.set(acc.id, acc);
   }
 
   switch (tx.type) {
@@ -156,6 +169,17 @@ export function analyzeTransactionReversion(
       // 1. Account entry: Reversion debits account
       const accEntry = tx.entries.find((e) => e.accountId);
       if (accEntry) {
+        if (accEntry.accountId && accMap.has(accEntry.accountId)) {
+          const liveAcc = accMap.get(accEntry.accountId)!;
+          if (liveAcc.balancePaise < accEntry.amountPaise) {
+            canSafelyRevert = false;
+            blockingReason = `Cannot revert income: "${liveAcc.name}" only has ${formatINR(liveAcc.balancePaise)} balance. Deducting ${formatINR(accEntry.amountPaise)} would cause a negative balance.`;
+          } else if (liveAcc.unallocatedPaise < accEntry.amountPaise) {
+            canSafelyRevert = false;
+            blockingReason = `Cannot revert income: "${liveAcc.name}" has active envelope holds. Reverting requires deducting ${formatINR(accEntry.amountPaise)}, which exceeds free unallocated funds (${formatINR(liveAcc.unallocatedPaise)}).`;
+          }
+        }
+
         impacts.push({
           targetType: 'account',
           targetName: accEntry.accountName || 'Bank Account',
@@ -291,6 +315,17 @@ export function analyzeTransactionReversion(
         });
       }
       if (toAcc) {
+        if (toAcc.accountId && accMap.has(toAcc.accountId)) {
+          const liveToAcc = accMap.get(toAcc.accountId)!;
+          if (liveToAcc.balancePaise < toAcc.amountPaise) {
+            canSafelyRevert = false;
+            blockingReason = `Cannot revert transfer: Destination account "${liveToAcc.name}" only has ${formatINR(liveToAcc.balancePaise)} balance. Deducting ${formatINR(toAcc.amountPaise)} would cause a negative balance.`;
+          } else if (liveToAcc.unallocatedPaise < toAcc.amountPaise) {
+            canSafelyRevert = false;
+            blockingReason = `Cannot revert transfer: Destination account "${liveToAcc.name}" has active envelope holds. Reverting requires deducting ${formatINR(toAcc.amountPaise)}, which exceeds free unallocated balance (${formatINR(liveToAcc.unallocatedPaise)}).`;
+          }
+        }
+
         impacts.push({
           targetType: 'account',
           targetName: toAcc.accountName || 'Destination Account',
@@ -299,6 +334,44 @@ export function analyzeTransactionReversion(
           description: `${formatINR(toAcc.amountPaise)} will be deducted from ${toAcc.accountName || 'destination account'}.`,
           isRefund: false,
         });
+      }
+      break;
+    }
+
+    case 'adjustment': {
+      const accEntry = tx.entries.find((e) => e.accountId);
+      const isSurplus = tx.description.includes('(+') || accEntry?.direction === 'credit';
+      if (accEntry) {
+        if (isSurplus) {
+          if (accEntry.accountId && accMap.has(accEntry.accountId)) {
+            const liveAcc = accMap.get(accEntry.accountId)!;
+            if (liveAcc.balancePaise < accEntry.amountPaise) {
+              canSafelyRevert = false;
+              blockingReason = `Cannot revert reconciliation surplus: "${liveAcc.name}" only has ${formatINR(liveAcc.balancePaise)} balance. Deducting ${formatINR(accEntry.amountPaise)} would cause a negative balance.`;
+            } else if (liveAcc.unallocatedPaise < accEntry.amountPaise) {
+              canSafelyRevert = false;
+              blockingReason = `Cannot revert reconciliation surplus: "${liveAcc.name}" has active envelope holds. Reverting requires deducting ${formatINR(accEntry.amountPaise)}, which exceeds free unallocated balance (${formatINR(liveAcc.unallocatedPaise)}).`;
+            }
+          }
+
+          impacts.push({
+            targetType: 'account',
+            targetName: accEntry.accountName || 'Bank Account',
+            action: 'debit',
+            amountPaise: accEntry.amountPaise,
+            description: `${formatINR(accEntry.amountPaise)} reconciliation surplus will be deducted from ${accEntry.accountName || 'account balance'}.`,
+            isRefund: false,
+          });
+        } else {
+          impacts.push({
+            targetType: 'account',
+            targetName: accEntry.accountName || 'Bank Account',
+            action: 'credit',
+            amountPaise: accEntry.amountPaise,
+            description: `${formatINR(accEntry.amountPaise)} reconciliation deficit will be restored back to ${accEntry.accountName || 'account balance'}.`,
+            isRefund: true,
+          });
+        }
       }
       break;
     }
@@ -319,7 +392,7 @@ export function analyzeTransactionReversion(
   return {
     eligibility,
     impacts,
-    canSafelyRevert: canSafelyRevert && (!blockingReason || eligibility.isReversible),
-    blockingReason,
+    canSafelyRevert,
+    blockingReason: canSafelyRevert ? undefined : (blockingReason || undefined),
   };
 }

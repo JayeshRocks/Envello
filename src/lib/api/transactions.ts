@@ -4,6 +4,7 @@ import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations
 import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
 import { fetchEnvelopeAllocationSources } from './envelopes';
 import { calculateGreedyAccountDeduction, type GreedyDeductionPlan } from '@/lib/accounting/greedyDeduction';
+import { formatINR } from '@/lib/accounting/currency';
 
 export interface TransactionEntryRecord {
   id: string;
@@ -630,6 +631,7 @@ export async function recordIncomeTransaction(
       .eq('period_id', periodId)
       .maybeSingle();
 
+    let activeAllocationId = allocData?.id;
     if (allocData?.id) {
       await supabase
         .from('envelope_allocations')
@@ -639,14 +641,47 @@ export async function recordIncomeTransaction(
         })
         .eq('id', allocData.id);
     } else {
-      await supabase.from('envelope_allocations').insert({
-        envelope_id: params.envelopeId!,
-        period_id: periodId,
-        user_id: userId,
-        allocated_paise: numAmount,
-        carried_over_paise: 0,
-        spent_paise: 0,
-      });
+      const { data: newAlloc } = await supabase
+        .from('envelope_allocations')
+        .insert({
+          envelope_id: params.envelopeId!,
+          period_id: periodId,
+          user_id: userId,
+          allocated_paise: numAmount,
+          carried_over_paise: 0,
+          spent_paise: 0,
+        })
+        .select('id')
+        .single();
+      activeAllocationId = newAlloc?.id;
+    }
+
+    // Explicitly track backing liquid account hold for this income assignment
+    if (activeAllocationId) {
+      const { data: srcRow } = await supabase
+        .from('envelope_allocation_sources')
+        .select('id, amount_paise')
+        .eq('allocation_id', activeAllocationId)
+        .eq('account_id', params.accountId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (srcRow) {
+        await supabase
+          .from('envelope_allocation_sources')
+          .update({
+            amount_paise: srcRow.amount_paise + numAmount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', srcRow.id);
+      } else {
+        await supabase.from('envelope_allocation_sources').insert({
+          user_id: userId,
+          allocation_id: activeAllocationId,
+          account_id: params.accountId,
+          amount_paise: numAmount,
+        });
+      }
     }
   }
 
@@ -911,9 +946,93 @@ export async function deleteTransaction(transactionId: string, userId: string): 
     throw new Error('Failed to fetch entries for transaction deletion.');
   }
 
-  // 4. Reverse account and envelope entries
-  for (const entry of entries || []) {
-    // 4.1 Account balance reversal
+  const txEntries = entries || [];
+  const yearMonth = tx.transaction_date.substring(0, 7);
+  const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
+
+  // --- PRE-VALIDATION PHASE ---
+  // Ensure that no accounts or envelopes will drop below zero or breach invariants BEFORE mutating anything!
+  for (const entry of txEntries) {
+    // 1. Check Envelopes (income assignment or reallocation destination)
+    if (entry.envelope_id) {
+      if (
+        (tx.type === 'income' && entry.direction === 'credit') ||
+        (tx.type === 'envelope_allocation' && entry.direction === 'debit')
+      ) {
+        const { data: alloc } = await supabase
+          .from('envelope_allocations')
+          .select('allocated_paise, carried_over_paise, spent_paise')
+          .eq('user_id', userId)
+          .eq('envelope_id', entry.envelope_id)
+          .eq('period_id', periodId)
+          .maybeSingle();
+
+        const { data: env } = await supabase
+          .from('envelopes')
+          .select('name')
+          .eq('id', entry.envelope_id)
+          .single();
+
+        const envName = env?.name || 'Envelope';
+
+        if (alloc) {
+          const safeCapacity =
+            (alloc.allocated_paise || 0) + (alloc.carried_over_paise || 0) - (alloc.spent_paise || 0);
+          if (entry.amount_paise > safeCapacity) {
+            throw new Error(
+              `Cannot revert: "${envName}" has already spent these funds (${formatINR(BigInt(alloc.spent_paise || 0))} spent). Deducting ${formatINR(BigInt(entry.amount_paise))} would force the envelope into a negative balance.`
+            );
+          }
+        }
+      }
+    }
+
+    // 2. Check Accounts for balance deductions
+    if (entry.account_id) {
+      const isAdjustmentSurplus =
+        tx.type === 'adjustment' && (tx.description.includes('(+') || entry.direction === 'credit');
+      const isIncomeAccount = tx.type === 'income' && entry.direction === 'debit';
+      const isTransferDestination = tx.type === 'transfer' && entry.direction === 'debit';
+
+      if (isAdjustmentSurplus || isIncomeAccount || isTransferDestination) {
+        const { data: acc } = await supabase
+          .from('accounts')
+          .select('balance_paise, name')
+          .eq('id', entry.account_id)
+          .eq('user_id', userId)
+          .single();
+
+        if (acc) {
+          const currentBal = BigInt(acc.balance_paise);
+          const deductAmt = BigInt(entry.amount_paise);
+
+          if (currentBal < deductAmt) {
+            throw new Error(
+              `Cannot revert transaction: Account "${acc.name}" only has ${formatINR(currentBal)}, but reverting requires deducting ${formatINR(deductAmt)}.`
+            );
+          }
+
+          // Check active holds
+          const { data: holds } = await supabase
+            .from('envelope_allocation_sources')
+            .select('amount_paise')
+            .eq('account_id', entry.account_id)
+            .eq('user_id', userId);
+
+          const totalHolds = (holds || []).reduce((sum, h) => sum + BigInt(h.amount_paise), 0n);
+          if (currentBal - deductAmt < totalHolds) {
+            throw new Error(
+              `Cannot revert transaction: Account "${acc.name}" has ${formatINR(totalHolds)} reserved across envelope holds. Deducting ${formatINR(deductAmt)} would breach reserved holds.`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // --- EXECUTION PHASE ---
+  // 4. Reverse account balances
+  for (const entry of txEntries) {
     if (entry.account_id) {
       const { data: acc } = await supabase
         .from('accounts')
@@ -923,11 +1042,21 @@ export async function deleteTransaction(transactionId: string, userId: string): 
         .single();
 
       if (acc) {
-        // If entry was credit (money went out), reverse adds it back
-        // If entry was debit (money went in), reverse deducts it
-        const adjustment = entry.direction === 'credit' ? entry.amount_paise : -entry.amount_paise;
-        const newBalance = acc.balance_paise + adjustment;
+        let adjustment: number;
+        if (tx.type === 'adjustment') {
+          // In reconciliation:
+          // A surplus (+): reconciliation added money to account balance. Revert must DEDUCT it.
+          // A deficit (-): reconciliation deducted money from account balance. Revert must RESTORE it.
+          const isSurplus = tx.description.includes('(+') || entry.direction === 'credit';
+          adjustment = isSurplus ? -entry.amount_paise : entry.amount_paise;
+        } else {
+          // Standard double-entry:
+          // Entry was credit (money left account): reverse adds it back (+amount)
+          // Entry was debit (money entered account): reverse deducts it (-amount)
+          adjustment = entry.direction === 'credit' ? entry.amount_paise : -entry.amount_paise;
+        }
 
+        const newBalance = acc.balance_paise + adjustment;
         await supabase
           .from('accounts')
           .update({
@@ -938,13 +1067,11 @@ export async function deleteTransaction(transactionId: string, userId: string): 
           .eq('user_id', userId);
       }
     }
+  }
 
-    // 4.2 Reverse envelope spent_paise if this entry was debit on an envelope (expense)
-    // Decreasing spent_paise refunds money back into available envelope budget!
-    if (entry.envelope_id && entry.direction === 'debit' && tx.type !== 'envelope_allocation') {
-      const yearMonth = tx.transaction_date.substring(0, 7);
-      const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
-
+  // 5. Reverse envelope allocations & restore/decrement holds
+  for (const entry of txEntries) {
+    if (entry.envelope_id) {
       const { data: alloc } = await supabase
         .from('envelope_allocations')
         .select('*')
@@ -954,125 +1081,112 @@ export async function deleteTransaction(transactionId: string, userId: string): 
         .maybeSingle();
 
       if (alloc) {
-        const newSpent = Math.max(0, alloc.spent_paise - entry.amount_paise);
-        await supabase
-          .from('envelope_allocations')
-          .update({
-            spent_paise: newSpent,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', alloc.id);
+        // 5.1 Expense: decrease spent_paise and restore backing source holds
+        if (tx.type === 'expense' && entry.direction === 'debit') {
+          const newSpent = Math.max(0, alloc.spent_paise - entry.amount_paise);
+          await supabase
+            .from('envelope_allocations')
+            .update({
+              spent_paise: newSpent,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', alloc.id);
 
-        // Also restore allocation hold for each credited account
-        const creditedAccEntries = (entries || []).filter((e) => e.account_id && e.direction === 'credit');
-        for (const cAcc of creditedAccEntries) {
-          try {
-            const { data: existingSrc } = await supabase
+          // Restore allocation hold for each credited account
+          const creditedAccEntries = txEntries.filter((e) => e.account_id && e.direction === 'credit');
+          for (const cAcc of creditedAccEntries) {
+            try {
+              const { data: existingSrc } = await supabase
+                .from('envelope_allocation_sources')
+                .select('id, amount_paise')
+                .eq('allocation_id', alloc.id)
+                .eq('account_id', cAcc.account_id!)
+                .eq('user_id', userId)
+                .maybeSingle();
+
+              if (existingSrc?.id) {
+                await supabase
+                  .from('envelope_allocation_sources')
+                  .update({
+                    amount_paise: existingSrc.amount_paise + cAcc.amount_paise,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', existingSrc.id);
+              } else {
+                await supabase.from('envelope_allocation_sources').insert({
+                  user_id: userId,
+                  allocation_id: alloc.id,
+                  account_id: cAcc.account_id!,
+                  amount_paise: cAcc.amount_paise,
+                });
+              }
+            } catch (err) {
+              console.warn('[Envello API] Error restoring allocation source on reversal:', err);
+            }
+          }
+        }
+
+        // 5.2 Income assignment: decrease allocated_paise and remove backing hold
+        if (tx.type === 'income' && entry.direction === 'credit') {
+          const newAllocated = Math.max(0, alloc.allocated_paise - entry.amount_paise);
+          await supabase
+            .from('envelope_allocations')
+            .update({
+              allocated_paise: newAllocated,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', alloc.id);
+
+          // Remove or decrement backing hold from envelope_allocation_sources
+          const accEntry = txEntries.find((e) => e.account_id && e.direction === 'debit');
+          if (accEntry?.account_id) {
+            const { data: srcRow } = await supabase
               .from('envelope_allocation_sources')
               .select('id, amount_paise')
               .eq('allocation_id', alloc.id)
-              .eq('account_id', cAcc.account_id!)
+              .eq('account_id', accEntry.account_id)
               .eq('user_id', userId)
               .maybeSingle();
 
-            if (existingSrc?.id) {
-              await supabase
-                .from('envelope_allocation_sources')
-                .update({
-                  amount_paise: existingSrc.amount_paise + cAcc.amount_paise,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', existingSrc.id);
-            } else {
-              await supabase.from('envelope_allocation_sources').insert({
-                user_id: userId,
-                allocation_id: alloc.id,
-                account_id: cAcc.account_id!,
-                amount_paise: cAcc.amount_paise,
-              });
+            if (srcRow) {
+              const remainingHold = srcRow.amount_paise - entry.amount_paise;
+              if (remainingHold <= 0) {
+                await supabase.from('envelope_allocation_sources').delete().eq('id', srcRow.id);
+              } else {
+                await supabase
+                  .from('envelope_allocation_sources')
+                  .update({
+                    amount_paise: remainingHold,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', srcRow.id);
+              }
             }
-          } catch (err) {
-            console.warn('[Envello API] Error restoring allocation source on reversal:', err);
           }
         }
-      }
-    }
 
-    // 4.3 Reverse envelope allocated_paise if this entry was credit on an envelope (income assignment)
-    if (entry.envelope_id && entry.direction === 'credit' && tx.type === 'income') {
-      const yearMonth = tx.transaction_date.substring(0, 7);
-      const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
-
-      const { data: alloc } = await supabase
-        .from('envelope_allocations')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('envelope_id', entry.envelope_id)
-        .eq('period_id', periodId)
-        .maybeSingle();
-
-      if (alloc) {
-        // Guard against negative envelope balance:
-        const safeCapacity =
-          (alloc.allocated_paise || 0) + (alloc.carried_over_paise || 0) - (alloc.spent_paise || 0);
-        if (entry.amount_paise > safeCapacity) {
-          throw new Error(
-            'Cannot revert income: Funds assigned to this envelope have already been spent this month. Reverting would force the envelope into negative available.'
-          );
-        }
-
-        const newAllocated = Math.max(0, alloc.allocated_paise - entry.amount_paise);
-        await supabase
-          .from('envelope_allocations')
-          .update({
-            allocated_paise: newAllocated,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', alloc.id);
-      }
-    }
-
-    // 4.4 Reverse envelope allocation transfer if tx was an internal envelope reallocation
-    if (entry.envelope_id && tx.type === 'envelope_allocation') {
-      const yearMonth = tx.transaction_date.substring(0, 7);
-      const periodId = await getOrCreateBudgetPeriod(userId, yearMonth);
-
-      const { data: alloc } = await supabase
-        .from('envelope_allocations')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('envelope_id', entry.envelope_id)
-        .eq('period_id', periodId)
-        .maybeSingle();
-
-      if (alloc) {
-        if (entry.direction === 'credit') {
-          // Source envelope: restore budget allocation
-          await supabase
-            .from('envelope_allocations')
-            .update({
-              allocated_paise: alloc.allocated_paise + entry.amount_paise,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', alloc.id);
-        } else if (entry.direction === 'debit') {
-          // Destination envelope: guard against negative envelope balance
-          const safeCapacity =
-            (alloc.allocated_paise || 0) + (alloc.carried_over_paise || 0) - (alloc.spent_paise || 0);
-          if (entry.amount_paise > safeCapacity) {
-            throw new Error(
-              'Cannot revert reallocation: Destination envelope has already spent these transferred funds. Reverting would force the envelope into negative available.'
-            );
+        // 5.3 Envelope Reallocation
+        if (tx.type === 'envelope_allocation') {
+          if (entry.direction === 'credit') {
+            // Source envelope: restore budget allocation
+            await supabase
+              .from('envelope_allocations')
+              .update({
+                allocated_paise: alloc.allocated_paise + entry.amount_paise,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', alloc.id);
+          } else if (entry.direction === 'debit') {
+            // Destination envelope: remove transferred budget allowance
+            const newAlloc = Math.max(0, alloc.allocated_paise - entry.amount_paise);
+            await supabase
+              .from('envelope_allocations')
+              .update({
+                allocated_paise: newAlloc,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', alloc.id);
           }
-
-          const newAlloc = Math.max(0, alloc.allocated_paise - entry.amount_paise);
-          await supabase
-            .from('envelope_allocations')
-            .update({
-              allocated_paise: newAlloc,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', alloc.id);
         }
       }
     }

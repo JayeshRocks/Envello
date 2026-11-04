@@ -13,9 +13,11 @@ import {
   ArrowUpRight,
   CreditCard,
   Landmark,
+  Scale,
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { analyzeTransactionReversion } from '@/lib/accounting/revertPolicy';
 import { ModalPortal } from '@/components/common/ModalPortal';
@@ -25,6 +27,7 @@ interface RevertTransactionModalProps {
   isOpen: boolean;
   transaction: TransactionRecord | null;
   envelopes: EnvelopeWithAllocation[];
+  accounts?: AccountItem[];
   isDeleting: boolean;
   onClose: () => void;
   onConfirmRevert: (transactionId: string) => Promise<void>;
@@ -34,6 +37,7 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
   isOpen,
   transaction,
   envelopes,
+  accounts = [],
   isDeleting,
   onClose,
   onConfirmRevert,
@@ -42,8 +46,8 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
 
   const analysis = useMemo(() => {
     if (!transaction) return null;
-    return analyzeTransactionReversion(transaction, envelopes);
-  }, [transaction, envelopes]);
+    return analyzeTransactionReversion(transaction, envelopes, new Date(), accounts);
+  }, [transaction, envelopes, accounts]);
 
   if (!isOpen || !transaction || !analysis) return null;
 
@@ -97,6 +101,12 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
           label: 'Debt Repayment',
           bg: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
           icon: Landmark,
+        };
+      case 'adjustment':
+        return {
+          label: 'Reconciliation',
+          bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+          icon: Scale,
         };
       default:
         return {
