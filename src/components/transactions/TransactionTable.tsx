@@ -323,7 +323,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   <th className="py-3 px-4 w-[12%]">Type</th>
                   <th className="py-3 px-4 w-[21%]">Envelope / Account</th>
                   <th className="py-3 px-4 text-right w-[14%]">Amount</th>
-                  <th className="py-3 pr-6 pl-2 text-center w-[10%] min-w-[80px]">Actions</th>
+                  <th className="py-3 px-4 text-center w-[10%] min-w-[80px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-neutral-300">
@@ -335,7 +335,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       <td className="py-4 px-4"><Skeleton className="w-16 h-4 rounded-full" /></td>
                       <td className="py-4 px-4"><Skeleton className="w-24 h-3.5 rounded" /></td>
                       <td className="py-4 px-4 text-right"><Skeleton className="w-20 h-3.5 rounded ml-auto" /></td>
-                      <td className="py-4 pr-6 pl-2 text-center"><Skeleton className="w-8 h-3.5 rounded mx-auto" /></td>
+                      <td className="py-4 px-4 text-center"><Skeleton className="w-8 h-3.5 rounded mx-auto" /></td>
                     </tr>
                   ))
                 ) : filteredTransactions.length === 0 ? (
@@ -439,7 +439,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 pr-6 pl-2 text-center whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           {(() => {
                             const eligibility = checkReversionEligibility(tx.transactionDate);
                             return (

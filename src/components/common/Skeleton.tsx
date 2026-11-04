@@ -101,7 +101,7 @@ export const SkeletonTableRow: React.FC = () => {
       <td className="py-4 px-4"><Skeleton className="w-14 h-3.5 rounded-full" /></td>
       <td className="py-4 px-4"><Skeleton className="w-24 h-3.5 rounded" /></td>
       <td className="py-4 px-4 text-right"><Skeleton className="w-20 h-3.5 rounded ml-auto" /></td>
-      <td className="py-4 pr-6 pl-2 text-center"><Skeleton className="w-8 h-3.5 rounded mx-auto" /></td>
+      <td className="py-4 px-4 text-center"><Skeleton className="w-8 h-3.5 rounded mx-auto" /></td>
     </tr>
   );
 };
