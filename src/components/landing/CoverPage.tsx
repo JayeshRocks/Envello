@@ -387,9 +387,9 @@ export const CoverPage: React.FC<CoverPageProps> = ({
                   },
                   {
                     id: 'reset',
-                    label: 'Reset to Zero',
-                    rule: 'Clears allocation clean for fresh, fixed monthly budgets.',
-                    example: 'Envelope resets to ₹0 unspent, ready for a fresh monthly allocation without drift.',
+                    label: 'Reset to Bank',
+                    rule: 'Releases unused budget and backing holds back to your bank account free balance.',
+                    example: 'Unspent ₹2,000 is released back to your bank free balance on the 1st of the month.',
                     badge: 'Strict Budgets',
                   },
                 ].map((item) => (
@@ -424,9 +424,9 @@ export const CoverPage: React.FC<CoverPageProps> = ({
                     badge: 'Liquid Surplus',
                   },
                   reset: {
-                    label: 'Reset to Zero',
-                    rule: 'Clears allocation clean for fresh, fixed monthly budgets.',
-                    example: 'Envelope resets to ₹0 unspent, ready for a fresh monthly allocation without drift.',
+                    label: 'Reset to Bank',
+                    rule: 'Releases unused budget and backing holds back to your bank account free balance.',
+                    example: 'Unspent ₹2,000 is released back to your bank free balance on the 1st of the month.',
                     badge: 'Strict Budgets',
                   },
                 };

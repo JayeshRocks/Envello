@@ -19,9 +19,18 @@ import { EnvelopeAllocationViewModal } from './EnvelopeAllocationViewModal';
 import { BudgetPeriodSelector } from './BudgetPeriodSelector';
 import { formatINR } from '@/lib/accounting/currency';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
+import type { AccountItem } from '@/lib/api/accounts';
 import { useToast } from '@/context/ToastContext';
 
-export const EnvelopeGrid: React.FC = () => {
+interface EnvelopeGridProps {
+  accounts?: AccountItem[];
+  onRefreshAccounts?: () => Promise<void>;
+}
+
+export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
+  accounts: accountsProp,
+  onRefreshAccounts,
+}) => {
   const { showToast } = useToast();
   const {
     envelopes,
@@ -44,7 +53,9 @@ export const EnvelopeGrid: React.FC = () => {
     lastAllocation,
   } = useEnvelopes();
 
-  const { accounts } = useAccounts();
+  const { accounts: internalAccounts, refreshAccounts: internalRefresh } = useAccounts();
+  const accounts = accountsProp ?? internalAccounts;
+  const refreshAccounts = onRefreshAccounts ?? internalRefresh;
 
   const [allocatingEnvelope, setAllocatingEnvelope] = useState<EnvelopeWithAllocation | null>(null);
   const [viewingAllocationEnvelope, setViewingAllocationEnvelope] = useState<EnvelopeWithAllocation | null>(null);
@@ -350,11 +361,13 @@ export const EnvelopeGrid: React.FC = () => {
         isOpen={Boolean(allocatingEnvelope)}
         envelope={allocatingEnvelope}
         accounts={accounts}
+        onRefreshAccounts={refreshAccounts}
         onClose={() => setAllocatingEnvelope(null)}
         onAllocate={async (envelopeId, amount, sources) => {
           const prevAlloc = allocatingEnvelope?.allocatedPaise ?? 0n;
           const envName = allocatingEnvelope?.name ?? 'Envelope';
           await allocateFunds(envelopeId, amount, sources);
+          await refreshAccounts();
 
           if (prevAlloc !== amount) {
             showToast(`Allocated ${formatINR(amount)} to ${envName}`, 'success');

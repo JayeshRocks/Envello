@@ -278,15 +278,34 @@ export const EditEnvelopeModal: React.FC<EditEnvelopeModalProps> = ({
                 className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
               >
                 <option value="carry_forward" className="bg-neutral-900 text-white">
-                  Carry Forward (Keep unused funds in this envelope)
+                  Carry Forward (Keep unused funds & account holds reserved for next month)
                 </option>
                 <option value="sweep_to_regular" className="bg-neutral-900 text-white">
-                  Sweep to Spendable (Return unused surplus to main pool)
+                  Sweep to Spendable (Transfer unused budget surplus to Spendable envelope at month-end)
                 </option>
                 <option value="reset" className="bg-neutral-900 text-white">
-                  Reset (Zero out balance at month boundary)
+                  Reset to Bank (Release unused budget & holds back to bank account's free balance)
                 </option>
               </select>
+
+              {/* Dynamic Policy Explanatory Note */}
+              <div className="p-2.5 rounded-xl bg-neutral-950/70 border border-white/5 text-[11px] text-neutral-400 leading-relaxed font-sans">
+                {rolloverPolicy === 'carry_forward' && (
+                  <span>
+                    <strong className="text-white">Carry Forward:</strong> Any unused funds remain reserved in this envelope into the next month, preserving backing liquid account holds without release.
+                  </span>
+                )}
+                {rolloverPolicy === 'sweep_to_regular' && (
+                  <span>
+                    <strong className="text-white">Sweep to Spendable:</strong> Unspent budget surplus at month-end is transferred into the Spendable envelope, consolidating leftover funds into your main spending pool.
+                  </span>
+                )}
+                {rolloverPolicy === 'reset' && (
+                  <span>
+                    <strong className="text-white">Reset to Bank:</strong> Unspent envelope funds are zeroed out at month-end, clearing holds and releasing money back to the backing bank accounts' free unallocated balances.
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="pt-2 flex items-center space-x-3">

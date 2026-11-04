@@ -77,6 +77,19 @@ function getIconComponent(iconName?: string) {
   }
 }
 
+function formatRolloverPolicy(policy?: string) {
+  switch (policy) {
+    case 'carry_forward':
+      return 'Rollover: Carry Forward';
+    case 'sweep_to_regular':
+      return 'Rollover: Sweep to Spendable';
+    case 'reset':
+      return 'Rollover: Reset to Bank';
+    default:
+      return `Rollover: ${policy?.replace(/_/g, ' ') || 'Carry Forward'}`;
+  }
+}
+
 export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   envelope,
   index,
@@ -114,10 +127,15 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
+      onClick={() => {
+        if (!isReorderMode && onViewAllocation) {
+          onViewAllocation();
+        }
+      }}
       className={`space-y-4 relative overflow-hidden group p-5 border transition-all duration-300 ${
         isReorderMode
           ? 'border-sky-500/40 ring-1 ring-sky-500/20 bg-[#121417] cursor-grab active:cursor-grabbing'
-          : 'border-white/10 hover:border-white/20'
+          : 'border-white/10 hover:border-white/25 hover:bg-white/[0.02] cursor-pointer'
       }`}
     >
       {/* Header */}
@@ -135,7 +153,10 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
               {isProtected && (
                 <button
                   type="button"
-                  onClick={() => setIsProtectedExpanded((prev) => !prev)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsProtectedExpanded((prev) => !prev);
+                  }}
                   title={
                     isProtectedExpanded
                       ? 'Collapse Protected Reserve info'
@@ -152,21 +173,27 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
                 </button>
               )}
             </div>
-            <div className="text-[11px] text-neutral-400 capitalize">
-              {envelope.rolloverPolicy.replace(/_/g, ' ')}
+            <div className="text-[11px] text-neutral-400">
+              {formatRolloverPolicy(envelope.rolloverPolicy)}
             </div>
           </div>
         </div>
 
         {/* Quick action buttons or Reorder controls */}
         {isReorderMode ? (
-          <div className="flex items-center space-x-1 bg-neutral-900/90 p-1 rounded-xl border border-white/10 shadow-sm">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center space-x-1 bg-neutral-900/90 p-1 rounded-xl border border-white/10 shadow-sm"
+          >
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/5 text-neutral-300 font-semibold select-none">
               #{(index ?? 0) + 1}
             </span>
             <button
               type="button"
-              onClick={onMoveLeft}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveLeft?.();
+              }}
               disabled={index === 0}
               title="Move left / earlier"
               className="p-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none transition min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-90 cursor-pointer"
@@ -175,7 +202,10 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
             </button>
             <button
               type="button"
-              onClick={onMoveRight}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveRight?.();
+              }}
               disabled={index === (totalCount ?? 1) - 1}
               title="Move right / later"
               className="p-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-white/10 disabled:opacity-25 disabled:pointer-events-none transition min-h-[36px] min-w-[36px] flex items-center justify-center active:scale-90 cursor-pointer"
@@ -190,27 +220,42 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center space-x-1 opacity-100 sm:opacity-85 sm:group-hover:opacity-100 transition-opacity">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center space-x-1.5 opacity-100 sm:opacity-90 sm:group-hover:opacity-100 transition-opacity"
+          >
             <button
-              onClick={onEdit}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
               title="Edit Envelope Details"
-              className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
+              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/5 text-neutral-300 hover:text-white transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm"
             >
-              <Pencil className="w-3.5 h-3.5" />
+              <Pencil className="w-4 h-4" />
             </button>
             <button
-              onClick={onTransfer}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTransfer();
+              }}
               title="Transfer / Reallocate Funds"
-              className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
+              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/5 text-neutral-300 hover:text-white transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm"
             >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <ArrowRightLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={onAllocate}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAllocate();
+              }}
               title="Modify Budget"
-              className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all duration-200 active:scale-90 min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center cursor-pointer"
+              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/5 text-neutral-300 hover:text-white transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="w-4 h-4" />
             </button>
           </div>
         )}
@@ -218,7 +263,10 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
 
       {/* Protected Reserve Details Banner (Expandable) */}
       {isProtected && isProtectedExpanded && (
-        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs space-y-1.5 animate-fade-in relative shadow-inner">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs space-y-1.5 animate-fade-in relative shadow-inner"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1.5 font-semibold text-emerald-300">
               <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -226,7 +274,10 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => setIsProtectedExpanded(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsProtectedExpanded(false);
+              }}
               className="text-neutral-400 hover:text-white p-1 rounded-md transition cursor-pointer"
               title="Close info"
               aria-label="Close info"
@@ -295,7 +346,10 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
         {onViewAllocation && (
           <button
             type="button"
-            onClick={onViewAllocation}
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewAllocation();
+            }}
             className="text-xs text-sky-400 hover:text-sky-300 font-medium inline-flex items-center space-x-1 cursor-pointer transition active:scale-95 ml-auto py-1 px-1.5 rounded-md hover:bg-sky-500/10 min-h-[32px]"
           >
             <span>View Allocation</span>

@@ -783,7 +783,7 @@ export const App: React.FC = () => {
             />
 
             {/* Section: Envelope Budgeting */}
-            <EnvelopeGrid />
+            <EnvelopeGrid accounts={accounts} onRefreshAccounts={refreshAccounts} />
 
             {/* Section: Liabilities, Locked Assets & Goals */}
             <LiabilitiesAndAssetsContainer

@@ -87,12 +87,17 @@ Never classify a transaction as an expense unless purchasing power is actually c
 ## 5. Envelope Budgeting Rules
 
 ### 5.1 Envelopes Architecture
-1. **Core System Envelopes (Mandatory & Permanent)**:
-   - **Spendable** (`regular`): Primary liquid clearinghouse and general spending pool.
-   - **Emergency** (`emergency`): Guarded safety reserve. Never auto-deducts to cover general expenses. Any withdrawal or direct expense requires explicit confirmation and authorization.
-   - **Savings** (`savings`): Untouched capital reserve set aside to earn normal bank interest and build positive net worth without locking funds in fixed term deposits. Requires explicit confirmation warnings to withdraw or debit.
+1. **Total User Control & Default Starter Envelopes**:
+   - Every envelope can be edited, renamed, customized, rearranged, and deleted. No envelopes are permanently locked system compartments.
+   - **Spendable**, **Emergency**, and **Savings** spawn automatically upon workspace initialization alongside custom categories.
+   - **Protected Reserve Feature**: Any envelope can be toggled on/off as a Protected Reserve (Emergency and Savings spawn with this enabled by default). When active, it displays a compact green shield symbol and requires explicit user authorization confirmation before funds can be withdrawn or spent.
+   - **Backing Account Holds & Multi-Account Funding**: Allocating budget to an envelope places an explicit hold on backing liquid accounts (`envelope_allocation_sources`). Users can fund an envelope from multiple accounts via "Add from another account", which locks previous account selectors and offers row-level revert buttons. Each account's funding is strictly capped at its available headroom ($\text{unallocatedPaise} + \text{existingHoldOnEnvelope} \le \text{balancePaise}$), preventing over-allocation.
+   - **Month-End Rollover Policies**:
+     - **Carry Forward** (`carry_forward`): Retains unused funds and backing account holds in this envelope into next month.
+     - **Sweep to Spendable** (`sweep_to_regular`): Transfers unused budget surplus to the Spendable envelope at month-end.
+     - **Reset to Bank** (`reset`): Releases unused budget and holds back to the backing bank account's free unallocated balance.
 2. **User-Defined Lifestyle Envelopes**: Custom envelopes (e.g. `Dining Out`, `Groceries`, `Utilities`, `Travel`, `Entertainment`).
-3. **Cards & Debts Separation**: Credit cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT core envelopes.
+3. **Cards & Debts Separation**: Credit cards and EMIs are direct debt liabilities and repayments managed in the Cards & Debts hub, NOT envelopes.
 
 ### 5.2 Anti-Negative Envelope Balance Guard
 - **Strict Invariant**: Envelopes can NEVER be overspent into negative balances.
