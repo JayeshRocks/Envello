@@ -28,7 +28,7 @@ interface AccountListModalProps {
     }
   ) => Promise<void>;
   onDeleteAccount?: (accountId: string) => Promise<void>;
-  onOpenReconcileModal?: (accountId: string) => void;
+  onOpenReconcileModal?: (accountId?: string) => void;
 }
 
 export const AccountListModal: React.FC<AccountListModalProps> = ({
@@ -207,6 +207,24 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
             Checking accounts, savings accounts, and physical cash. Edit nicknames, reconcile balances, or add new accounts.
           </p>
         </div>
+
+        {onOpenReconcileModal && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenReconcileModal();
+            }}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-neutral-800/80 hover:bg-neutral-800 border border-emerald-500/30 text-emerald-300 text-xs font-medium transition active:scale-95 shadow-sm group cursor-pointer"
+            title="Audit account balances against monthly bank statements"
+          >
+            <div className="flex items-center space-x-2">
+              <Scale className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform flex-shrink-0" />
+              <span>Reconcile Accounts against Bank Statements</span>
+            </div>
+            <ArrowRight className="w-3.5 h-3.5 text-emerald-400/70 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+          </button>
+        )}
 
         {error && (
           <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-start space-x-2">

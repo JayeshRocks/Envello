@@ -55,12 +55,12 @@ export const SpotlightTour: React.FC<SpotlightTourProps> = ({
     },
     {
       id: 'accounts',
-      targetId: 'accounts-reconcile-actions',
+      targetId: 'header-accounts-dropdown',
       fallbackTargetId: 'financial-pillars',
       title: 'Accounts & Bank Reconciliation',
       badge: 'Liquid Assets',
       description:
-        'Click "Accounts" to manage liquid bank checking, savings, and cash in hand. Use "Reconcile" at month-end to audit against bank statements.',
+        'Click "Accounts" in the header to manage bank checking, savings, and cash in hand, or to reconcile against bank statements.',
       actionText: 'Open Accounts Drawer',
       onAction: () => {
         if (onOpenAccounts) onOpenAccounts();

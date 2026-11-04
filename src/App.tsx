@@ -6,7 +6,6 @@ import {
   CalendarClock,
 
   Landmark,
-  Scale,
   Plus,
   AlertTriangle,
   RotateCcw,
@@ -425,6 +424,11 @@ export const App: React.FC = () => {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onRecordTransactionClick={() => setIsRecordTxModalOpen(true)}
         onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
+        onOpenReconcileModal={() => {
+          setReconcileAccountId(undefined);
+          setIsReconcileModalOpen(true);
+        }}
+        accountsCount={accounts.length}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenSetNameModal={() => {
           setIsFirstTimeNameModal(false);
@@ -517,39 +521,16 @@ export const App: React.FC = () => {
 
             {/* Section: The Six Financial Pillars */}
             <section id="financial-pillars" className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h2 className="text-base sm:text-lg font-semibold tracking-tight text-white">Financial Pillars</h2>
-                    <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      Deterministic Math
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-400 mt-0.5">
-                    Explicit balance taxonomy. Liquid cash is never conflated with credit limits or locked savings.
-                  </p>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-base sm:text-lg font-semibold tracking-tight text-white">Financial Pillars</h2>
+                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    Deterministic Math
+                  </span>
                 </div>
-
-                <div id="accounts-reconcile-actions" className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
-                  <button
-                    onClick={() => {
-                      setReconcileAccountId(undefined);
-                      setIsReconcileModalOpen(true);
-                    }}
-                    className="px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center justify-center space-x-1.5 transition active:scale-95 shadow-sm"
-                    title="Reconcile Account Balance against Bank Statement"
-                  >
-                    <Scale className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                    <span>Reconcile</span>
-                  </button>
-                  <button
-                    onClick={() => setIsAccountsModalOpen(true)}
-                    className="px-3 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm text-neutral-300 border border-white/10 flex items-center justify-center space-x-1.5 transition active:scale-95 shadow-sm"
-                  >
-                    <Landmark className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
-                    <span className="truncate">{accounts.length} Accounts</span>
-                  </button>
-                </div>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Explicit balance taxonomy. Liquid cash is never conflated with credit limits or locked savings.
+                </p>
               </div>
 
               {/* The 6 Pillars Grid (Cult UI Cursor-Tracking Spotlight Cards) */}
