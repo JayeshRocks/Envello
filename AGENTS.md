@@ -72,6 +72,10 @@ This document is the authoritative, permanent instructions guide for any AI agen
   Real-time due triggers alert when items are due to be logged with 1-click batch entry and normalized 30-day monthly commitment projections.
 - **Atomic Operations & High-Performance RPCs**: Transfers, allocations, reversals, and multi-table financial movements must be executed inside database transactions or secure PostgreSQL RPC functions (`upsert_envelope_allocation_atomic`, `revert_transaction_atomic`, `execute_account_transfer`). No partial state updates and zero multi-step frontend waterfall delays.
 - **Inline Liquid Account Headroom Display & Non-Neglect Visual Standard**: Liquid accounts display bank balance, envelope holds, and free unallocated headroom inline in a single cohesive visual row for immediate operational clarity. Progress bars and ratio graphs for account holds vs free funds strictly enforce the non-neglect standard (guaranteed minimum 0.1% display and visible tactile minimum width of 3.0% when values > 0n, summing strictly to 100%), ensuring small holds are never neglected against large balances and vice versa.
+- **Historical Ledger Preservation on Envelope Deletion**:
+  - When an envelope is deleted, past transactions permanently preserve their historical categorization. The double-entry ledger stamps `[envelope:${name}]` into database audit notes and synchronizes a local deleted envelopes cache (`envello_deleted_envelopes_${userId}`).
+  - The transaction ledger cleanly displays the historical envelope name with a dedicated `(Deleted)` badge and explanatory tooltip (e.g., `Dining Out (Deleted)`) rather than an empty unassigned pill. Envelope reallocations preserve both source and destination envelopes (`From → To`).
+  - If a past transaction from a deleted envelope is reverted, the refund safely restores to the backing liquid bank account's free spendable headroom with a clear explanation in the reversion preview.
 
 ### 3.2 Security, Auth & Profile Lifecycle
 - **RLS on Every Table**: Every table, view, and bucket must have Row Level Security enabled with explicit least-privilege policies.

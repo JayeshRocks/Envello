@@ -1212,11 +1212,100 @@ export async function updateEnvelope(
 }
 
 /**
+ * Local cache for tracking names of deleted envelopes so historical
+ * transaction entries retain their envelope context in the ledger.
+ */
+export function saveDeletedEnvelopeCache(userId: string, envelopeId: string, name: string): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const key = `envello_deleted_envelopes_${userId}`;
+    const raw = localStorage.getItem(key);
+    const map: Record<string, string> = raw ? JSON.parse(raw) : {};
+    map[envelopeId] = name;
+    localStorage.setItem(key, JSON.stringify(map));
+  } catch (err) {
+    console.warn('[Envello Cache] Failed to cache deleted envelope:', err);
+  }
+}
+
+export function getDeletedEnvelopesCache(userId: string): Map<string, string> {
+  const map = new Map<string, string>();
+  if (typeof window === 'undefined' || !window.localStorage) return map;
+  try {
+    const key = `envello_deleted_envelopes_${userId}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const obj: Record<string, string> = JSON.parse(raw);
+      for (const [id, name] of Object.entries(obj)) {
+        map.set(id, name);
+      }
+    }
+  } catch (err) {
+    console.warn('[Envello Cache] Failed to read deleted envelopes cache:', err);
+  }
+  return map;
+}
+
+/**
  * Deletes any user envelope and cleans up its allocations.
- * Past transaction records retain ledger history by unlinking envelope_id.
+ * Past transaction records retain ledger history by stamping the envelope identity
+ * into transaction notes and the persistent cache before unlinking.
  */
 export async function deleteEnvelope(envelopeId: string, userId: string): Promise<void> {
-  // 1. Delete envelope allocation sources first
+  // 1. Fetch envelope details before deletion to preserve historical ledger records
+  let envelopeName = 'Deleted Envelope';
+  try {
+    const { data: env } = await supabase
+      .from('envelopes')
+      .select('name')
+      .eq('id', envelopeId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (env?.name) {
+      envelopeName = env.name.trim();
+      saveDeletedEnvelopeCache(userId, envelopeId, envelopeName);
+    }
+  } catch (err) {
+    console.warn('[Envello API] Error fetching envelope before deletion:', err);
+  }
+
+  // 2. Preserve envelope identity in parent transaction notes before unlinking entries
+  try {
+    const { data: linkedEntries } = await supabase
+      .from('transaction_entries')
+      .select('transaction_id')
+      .eq('envelope_id', envelopeId)
+      .eq('user_id', userId);
+
+    if (linkedEntries && linkedEntries.length > 0) {
+      const txIds = [...new Set(linkedEntries.map((e) => e.transaction_id))];
+      const { data: txList } = await supabase
+        .from('transactions')
+        .select('id, notes')
+        .in('id', txIds)
+        .eq('user_id', userId);
+
+      if (txList && txList.length > 0) {
+        for (const tx of txList) {
+          const currentNotes = tx.notes || '';
+          if (!currentNotes.includes(`[envelope:`)) {
+            const updatedNotes = currentNotes
+              ? `${currentNotes} • [envelope:${envelopeName}]`
+              : `[envelope:${envelopeName}]`;
+            await supabase
+              .from('transactions')
+              .update({ notes: updatedNotes, updated_at: new Date().toISOString() })
+              .eq('id', tx.id)
+              .eq('user_id', userId);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Envello API] Error stamping deleted envelope into transaction notes:', err);
+  }
+
+  // 3. Delete envelope allocation sources first
   try {
     const { data: allocs } = await supabase
       .from('envelope_allocations')
@@ -1235,21 +1324,21 @@ export async function deleteEnvelope(envelopeId: string, userId: string): Promis
     console.warn('[Envello API] Error deleting allocation sources on envelope deletion:', err);
   }
 
-  // 2. Delete envelope allocations
+  // 4. Delete envelope allocations
   await supabase
     .from('envelope_allocations')
     .delete()
     .eq('envelope_id', envelopeId)
     .eq('user_id', userId);
 
-  // 3. Unlink envelope_id from transaction entries to preserve double-entry ledger history
+  // 5. Unlink envelope_id from transaction entries to satisfy foreign key constraints
   await supabase
     .from('transaction_entries')
     .update({ envelope_id: null })
     .eq('envelope_id', envelopeId)
     .eq('user_id', userId);
 
-  // 4. Delete the envelope
+  // 6. Delete the envelope
   const { error } = await supabase
     .from('envelopes')
     .delete()

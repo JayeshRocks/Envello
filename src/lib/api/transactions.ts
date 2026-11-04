@@ -1,8 +1,7 @@
 import { supabase } from '@/lib/supabase/client';
-import { getOrCreateBudgetPeriod } from './envelopes';
+import { getOrCreateBudgetPeriod, fetchEnvelopeAllocationSources, getDeletedEnvelopesCache } from './envelopes';
 import { calculateAvailableEnvelopeBalance } from '@/lib/accounting/calculations';
 import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
-import { fetchEnvelopeAllocationSources } from './envelopes';
 import { calculateGreedyAccountDeduction, type GreedyDeductionPlan } from '@/lib/accounting/greedyDeduction';
 import { formatINR } from '@/lib/accounting/currency';
 
@@ -127,8 +126,20 @@ export async function recordExpenseTransaction(
       throw new Error('Selected credit card not found.');
     }
 
+    let envelopeNameTag = '';
+    if (hasEnvelope) {
+      const { data: envData } = await supabase
+        .from('envelopes')
+        .select('name')
+        .eq('id', params.envelopeId!)
+        .maybeSingle();
+      if (envData?.name) {
+        envelopeNameTag = ` • [envelope:${envData.name.trim()}]`;
+      }
+    }
+
     const userNotes = params.notes?.trim() || '';
-    const systemNotes = `[card:${cardData.id}] Paid via ${cardData.card_name}${userNotes ? ` • ${userNotes}` : ''}`;
+    const systemNotes = `[card:${cardData.id}] Paid via ${cardData.card_name}${envelopeNameTag}${userNotes ? ` • ${userNotes}` : ''}`;
 
     const { data: tx, error: txError } = await supabase
       .from('transactions')
@@ -289,8 +300,18 @@ export async function recordExpenseTransaction(
     );
 
     // Insert master transaction
+    let envelopeNameTag = '';
+    const { data: envData } = await supabase
+      .from('envelopes')
+      .select('name')
+      .eq('id', params.envelopeId!)
+      .maybeSingle();
+    if (envData?.name) {
+      envelopeNameTag = ` • [envelope:${envData.name.trim()}]`;
+    }
+
     const userNotes = params.notes?.trim() || '';
-    const systemNotes = `[ghost_bank] Paid via envelope • ${deductionPlan.summaryText}${userNotes ? ` • ${userNotes}` : ''}`;
+    const systemNotes = `[ghost_bank] Paid via envelope • ${deductionPlan.summaryText}${envelopeNameTag}${userNotes ? ` • ${userNotes}` : ''}`;
 
     const { data: tx, error: txError } = await supabase
       .from('transactions')
@@ -437,6 +458,20 @@ export async function recordExpenseTransaction(
       }
     }
 
+    let envelopeNameTag = '';
+    if (hasEnvelope) {
+      const { data: envData } = await supabase
+        .from('envelopes')
+        .select('name')
+        .eq('id', params.envelopeId!)
+        .maybeSingle();
+      if (envData?.name) {
+        envelopeNameTag = `[envelope:${envData.name.trim()}]`;
+      }
+    }
+    const userNotes = params.notes?.trim() || '';
+    const combinedNotes = [userNotes, envelopeNameTag].filter(Boolean).join(' • ') || null;
+
     const { data: tx, error: txError } = await supabase
       .from('transactions')
       .insert({
@@ -445,7 +480,7 @@ export async function recordExpenseTransaction(
         type: 'expense',
         total_amount_paise: numAmount,
         description: params.payee.trim(),
-        notes: params.notes?.trim() || null,
+        notes: combinedNotes,
       })
       .select('id')
       .single();
@@ -573,6 +608,20 @@ export async function recordIncomeTransaction(
   const numAmount = Number(params.amountPaise);
   const hasEnvelope = Boolean(params.envelopeId && params.envelopeId !== 'none');
 
+  let envelopeNameTag = '';
+  if (hasEnvelope) {
+    const { data: envData } = await supabase
+      .from('envelopes')
+      .select('name')
+      .eq('id', params.envelopeId!)
+      .maybeSingle();
+    if (envData?.name) {
+      envelopeNameTag = `[envelope:${envData.name.trim()}]`;
+    }
+  }
+  const userNotes = params.notes?.trim() || '';
+  const combinedNotes = [userNotes, envelopeNameTag].filter(Boolean).join(' • ') || null;
+
   // 1. Insert master transaction
   const { data: tx, error: txError } = await supabase
     .from('transactions')
@@ -582,7 +631,7 @@ export async function recordIncomeTransaction(
       type: 'income',
       total_amount_paise: numAmount,
       description: params.source.trim(),
-      notes: params.notes?.trim() || null,
+      notes: combinedNotes,
     })
     .select('id')
     .single();
@@ -877,15 +926,57 @@ export async function fetchTransactions(
     envelopeMap.set(env.id, env.name);
   }
 
+  const deletedEnvelopesMap = getDeletedEnvelopesCache(userId);
+
+  const txMap = new Map<string, (typeof txList)[0]>();
+  for (const t of txList) {
+    txMap.set(t.id, t);
+  }
+
   const entriesByTxId = new Map<string, TransactionEntryRecord[]>();
   for (const entry of entriesData || []) {
     const list = entriesByTxId.get(entry.transaction_id) || [];
+    const parentTx = txMap.get(entry.transaction_id);
+
+    let resolvedEnvelopeName: string | undefined = undefined;
+
+    if (entry.envelope_id) {
+      if (envelopeMap.has(entry.envelope_id)) {
+        resolvedEnvelopeName = envelopeMap.get(entry.envelope_id);
+      } else if (deletedEnvelopesMap.has(entry.envelope_id)) {
+        resolvedEnvelopeName = `${deletedEnvelopesMap.get(entry.envelope_id)} (Deleted)`;
+      } else {
+        resolvedEnvelopeName = 'Deleted Envelope';
+      }
+    } else if (parentTx) {
+      // Intelligently resolve historical envelope context if envelope_id was unlinked
+      const notesMatch = parentTx.notes?.match(/\[envelope:(.+?)\]/);
+      if (notesMatch && notesMatch[1]) {
+        const rawName = notesMatch[1].trim();
+        const activeMatch = [...envelopeMap.values()].find(
+          (name) => name.toLowerCase() === rawName.toLowerCase()
+        );
+        resolvedEnvelopeName = activeMatch ? activeMatch : `${rawName} (Deleted)`;
+      } else if (parentTx.type === 'envelope_allocation') {
+        const reallocMatch = parentTx.description?.match(/Reallocation:\s*(.+?)\s*→\s*(.+)/);
+        if (reallocMatch) {
+          const fromName = reallocMatch[1].trim();
+          const toName = reallocMatch[2].trim();
+          const targetName = entry.direction === 'credit' ? fromName : toName;
+          const activeMatch = [...envelopeMap.values()].find(
+            (name) => name.toLowerCase() === targetName.toLowerCase()
+          );
+          resolvedEnvelopeName = activeMatch ? activeMatch : `${targetName} (Deleted)`;
+        }
+      }
+    }
+
     list.push({
       id: entry.id,
       accountId: entry.account_id,
       envelopeId: entry.envelope_id,
       accountName: entry.account_id ? accountMap.get(entry.account_id) : undefined,
-      envelopeName: entry.envelope_id ? envelopeMap.get(entry.envelope_id) : undefined,
+      envelopeName: resolvedEnvelopeName,
       direction: entry.direction,
       amountPaise: BigInt(entry.amount_paise),
     });

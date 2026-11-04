@@ -125,24 +125,38 @@ export function analyzeTransactionReversion(
       }
 
       // 2. Envelope entry (money was debited from envelope): Reversion credits envelope (reduces spent)
-      const envEntry = tx.entries.find((e) => e.envelopeId);
+      const envEntry = tx.entries.find((e) => e.envelopeId || e.envelopeName);
       if (envEntry) {
         const liveEnv = envEntry.envelopeId ? envMap.get(envEntry.envelopeId) : undefined;
-        const policy = liveEnv?.rolloverPolicy || 'carry_forward';
-        const isCarryForward = policy === 'carry_forward';
+        const isDeleted = !liveEnv;
+        const rawName = envEntry.envelopeName?.replace(' (Deleted)', '') || 'Deleted Envelope';
 
-        impacts.push({
-          targetType: 'envelope',
-          targetName: envEntry.envelopeName || 'Envelope',
-          action: 'credit',
-          amountPaise: envEntry.amountPaise,
-          description: eligibility.isMonthEndGracePeriod
-            ? isCarryForward
-              ? `${formatINR(envEntry.amountPaise)} will be restored to previous month's ${envEntry.envelopeName || 'envelope'} and immediately rolled forward into the active month.`
-              : `${formatINR(envEntry.amountPaise)} will be restored to previous month's ${envEntry.envelopeName || 'envelope'} and released to liquid bank account free balance per its rollover policy.`
-            : `${formatINR(envEntry.amountPaise)} will be refunded back into available budget (spent decreases).`,
-          isRefund: true,
-        });
+        if (isDeleted) {
+          impacts.push({
+            targetType: 'envelope',
+            targetName: `${rawName} (Deleted)`,
+            action: 'credit',
+            amountPaise: envEntry.amountPaise,
+            description: `${formatINR(envEntry.amountPaise)} was originally spent from deleted envelope "${rawName}". Since this envelope is no longer active, the refunded money is restored directly to your bank account's free spendable balance.`,
+            isRefund: true,
+          });
+        } else {
+          const policy = liveEnv?.rolloverPolicy || 'carry_forward';
+          const isCarryForward = policy === 'carry_forward';
+
+          impacts.push({
+            targetType: 'envelope',
+            targetName: envEntry.envelopeName || 'Envelope',
+            action: 'credit',
+            amountPaise: envEntry.amountPaise,
+            description: eligibility.isMonthEndGracePeriod
+              ? isCarryForward
+                ? `${formatINR(envEntry.amountPaise)} will be restored to previous month's ${envEntry.envelopeName || 'envelope'} and immediately rolled forward into the active month.`
+                : `${formatINR(envEntry.amountPaise)} will be restored to previous month's ${envEntry.envelopeName || 'envelope'} and released to liquid bank account free balance per its rollover policy.`
+              : `${formatINR(envEntry.amountPaise)} will be refunded back into available budget (spent decreases).`,
+            isRefund: true,
+          });
+        }
       }
       break;
     }
@@ -159,14 +173,20 @@ export function analyzeTransactionReversion(
       });
 
       // 2. Envelope entry (if assigned): Reversion credits envelope back
-      const envEntry = tx.entries.find((e) => e.envelopeId);
+      const envEntry = tx.entries.find((e) => e.envelopeId || e.envelopeName);
       if (envEntry) {
+        const liveEnv = envEntry.envelopeId ? envMap.get(envEntry.envelopeId) : undefined;
+        const isDeleted = !liveEnv;
+        const rawName = envEntry.envelopeName?.replace(' (Deleted)', '') || 'Deleted Envelope';
+
         impacts.push({
           targetType: 'envelope',
-          targetName: envEntry.envelopeName || 'Envelope',
+          targetName: isDeleted ? `${rawName} (Deleted)` : envEntry.envelopeName || 'Envelope',
           action: 'credit',
           amountPaise: envEntry.amountPaise,
-          description: `${formatINR(envEntry.amountPaise)} will be refunded back into available budget (spent decreases).`,
+          description: isDeleted
+            ? `${formatINR(envEntry.amountPaise)} was assigned to deleted envelope "${rawName}". Card liability is reduced.`
+            : `${formatINR(envEntry.amountPaise)} will be refunded back into available budget (spent decreases).`,
           isRefund: true,
         });
       }

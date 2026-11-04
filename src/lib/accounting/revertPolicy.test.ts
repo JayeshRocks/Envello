@@ -730,5 +730,47 @@ describe('analyzeTransactionReversion — Financial Ledger Impact & Negative Env
       const envImpact = analysis.impacts.find((i) => i.targetType === 'envelope');
       expect(envImpact?.description).toContain('released to liquid bank account free balance per its rollover policy');
     });
+
+    it('safely handles reverting transactions whose envelope was subsequently deleted', () => {
+      const deletedEnvTx: TransactionRecord = {
+        id: 'tx-del-1',
+        userId: 'user-1',
+        transactionDate: '2026-11-02',
+        type: 'expense',
+        totalAmountPaise: 80000n, // ₹800
+        description: 'Monthly Gym Membership',
+        notes: '[envelope:Gym]',
+        createdAt: '2026-11-02T10:00:00Z',
+        entries: [
+          {
+            id: 'e-d1',
+            accountId: 'acc-bank',
+            envelopeId: null,
+            accountName: 'HDFC Savings',
+            direction: 'credit',
+            amountPaise: 80000n,
+          },
+          {
+            id: 'e-d2',
+            accountId: null,
+            envelopeId: 'env-gym-deleted',
+            envelopeName: 'Gym (Deleted)',
+            direction: 'debit',
+            amountPaise: 80000n,
+          },
+        ],
+      };
+
+      // Notice mockEnvelopes does NOT contain 'env-gym-deleted'
+      const analysis = analyzeTransactionReversion(deletedEnvTx, mockEnvelopes, refDate);
+      expect(analysis.eligibility.isReversible).toBe(true);
+      expect(analysis.canSafelyRevert).toBe(true);
+
+      const envImpact = analysis.impacts.find((i) => i.targetType === 'envelope');
+      expect(envImpact).toBeDefined();
+      expect(envImpact?.targetName).toBe('Gym (Deleted)');
+      expect(envImpact?.description).toContain('was originally spent from deleted envelope "Gym"');
+      expect(envImpact?.description).toContain('restored directly to your bank account\'s free spendable balance');
+    });
   });
 });

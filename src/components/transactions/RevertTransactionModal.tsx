@@ -182,11 +182,19 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
               </div>
             </div>
 
-            {transaction.notes && (
-              <p className="text-xs text-neutral-400 italic bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5 truncate">
-                "{transaction.notes}"
-              </p>
-            )}
+            {(() => {
+              const cleanNotes = transaction.notes
+                ?.replace(/\[envelope:[^\]]+\]/g, '')
+                .replace(/\[ghost_bank\][^•\n]*(•\s*)?/g, '')
+                .replace(/\[card:[^\]]+\][^•\n]*(•\s*)?/g, '')
+                .replace(/^[•\s]+|[•\s]+$/g, '')
+                .trim();
+              return cleanNotes ? (
+                <p className="text-xs text-neutral-400 italic bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5 truncate">
+                  "{cleanNotes}"
+                </p>
+              ) : null;
+            })()}
           </div>
 
           {/* Month-End Grace Period or Locked Notice */}

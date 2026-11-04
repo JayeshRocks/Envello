@@ -50,6 +50,46 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<'all' | 'this_month' | 'last_month'>('all');
 
+  // Cleans internal system tags (e.g. [envelope:...], [ghost_bank]) so user notes render cleanly
+  const cleanNotesForDisplay = (notes?: string | null): string | null => {
+    if (!notes) return null;
+    const cleaned = notes
+      .replace(/\[envelope:[^\]]+\]/g, '')
+      .replace(/\[ghost_bank\][^•\n]*(•\s*)?/g, '')
+      .replace(/\[card:[^\]]+\][^•\n]*(•\s*)?/g, '')
+      .replace(/^[•\s]+|[•\s]+$/g, '')
+      .trim();
+    return cleaned || null;
+  };
+
+  const renderEnvelopeBadge = (name?: string) => {
+    if (!name) return null;
+    const isDeleted = name.includes('(Deleted)');
+    const cleanName = name.replace(' (Deleted)', '').trim();
+
+    if (isDeleted) {
+      return (
+        <span
+          key={name}
+          title={`This transaction was categorized under "${cleanName}", which has since been deleted. Historical ledger entry preserved.`}
+          className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-neutral-800/80 text-neutral-400 border border-white/10 text-[10px] max-w-[140px] truncate flex-shrink-0"
+        >
+          <span className="line-through opacity-70 truncate">{cleanName}</span>
+          <span className="text-[9px] text-neutral-500 font-mono shrink-0">(Deleted)</span>
+        </span>
+      );
+    }
+
+    return (
+      <span
+        key={name}
+        className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[10px] max-w-[120px] truncate flex-shrink-0"
+      >
+        {name}
+      </span>
+    );
+  };
+
   const filteredTransactions = transactions.filter((tx) => {
     if (periodFilter === 'all') return true;
     const now = new Date();
@@ -197,7 +237,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
               const isEnvelopeAllocation = tx.type === 'envelope_allocation';
 
               const envelopeEntry = tx.entries.find((e) => e.envelopeName);
+              const fromEnvelopeEntry =
+                tx.entries.find((e) => e.envelopeName && e.direction === 'credit') || tx.entries[0];
+              const toEnvelopeEntry =
+                tx.entries.find((e) => e.envelopeName && e.direction === 'debit') || tx.entries[1];
               const accountEntry = tx.entries.find((e) => e.accountName);
+              const displayNotes = cleanNotesForDisplay(tx.notes);
 
               return (
                 <div
@@ -232,9 +277,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     </div>
                   </div>
 
-                  {tx.notes && (
+                  {displayNotes && (
                     <p className="text-xs text-neutral-400 line-clamp-2">
-                      {tx.notes}
+                      {displayNotes}
                     </p>
                   )}
 
@@ -266,11 +311,17 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         </span>
                       )}
 
-                      {envelopeEntry?.envelopeName && (
-                        <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[10px] flex-shrink-0 max-w-[120px] truncate">
-                          {envelopeEntry.envelopeName}
-                        </span>
+                      {/* Envelope Badges */}
+                      {isEnvelopeAllocation ? (
+                        <div className="inline-flex items-center gap-1 min-w-0 flex-shrink-0">
+                          {renderEnvelopeBadge(fromEnvelopeEntry?.envelopeName)}
+                          <span className="text-[10px] text-neutral-500 font-bold shrink-0">→</span>
+                          {renderEnvelopeBadge(toEnvelopeEntry?.envelopeName)}
+                        </div>
+                      ) : (
+                        envelopeEntry?.envelopeName && renderEnvelopeBadge(envelopeEntry.envelopeName)
                       )}
+
                       {accountEntry?.accountName && (
                         <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 text-[10px] flex-shrink-0 max-w-[120px] truncate">
                           {accountEntry.accountName}
@@ -360,7 +411,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                     const isEnvelopeAllocation = tx.type === 'envelope_allocation';
 
                     const envelopeEntry = tx.entries.find((e) => e.envelopeName);
+                    const fromEnvelopeEntry =
+                      tx.entries.find((e) => e.envelopeName && e.direction === 'credit') || tx.entries[0];
+                    const toEnvelopeEntry =
+                      tx.entries.find((e) => e.envelopeName && e.direction === 'debit') || tx.entries[1];
                     const accountEntry = tx.entries.find((e) => e.accountName);
+                    const displayNotes = cleanNotesForDisplay(tx.notes);
 
                     return (
                       <tr key={tx.id} className="hover:bg-white/[0.02] transition">
@@ -372,7 +428,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         {/* Description */}
                         <td className="py-3.5 px-4 font-medium text-white truncate">
                           <div className="truncate">{tx.description}</div>
-                          {tx.notes && <div className="text-[11px] text-neutral-500 truncate">{tx.notes}</div>}
+                          {displayNotes && <div className="text-[11px] text-neutral-500 truncate">{displayNotes}</div>}
                         </td>
 
                         {/* Type */}
@@ -406,10 +462,14 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         {/* Envelope & Account */}
                         <td className="py-3.5 px-4 truncate">
                           <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                            {envelopeEntry?.envelopeName && (
-                              <span className="px-2 py-0.5 rounded-md bg-neutral-800 text-sky-400 border border-white/5 text-[10px] max-w-[120px] truncate">
-                                {envelopeEntry.envelopeName}
-                              </span>
+                            {isEnvelopeAllocation ? (
+                              <div className="inline-flex items-center gap-1 min-w-0">
+                                {renderEnvelopeBadge(fromEnvelopeEntry?.envelopeName)}
+                                <span className="text-[10px] text-neutral-500 font-bold shrink-0">→</span>
+                                {renderEnvelopeBadge(toEnvelopeEntry?.envelopeName)}
+                              </div>
+                            ) : (
+                              envelopeEntry?.envelopeName && renderEnvelopeBadge(envelopeEntry.envelopeName)
                             )}
                             {accountEntry?.accountName && (
                               <span className="px-2 py-0.5 rounded-md bg-neutral-800/60 text-neutral-400 border border-white/5 text-[10px] max-w-[120px] truncate">
