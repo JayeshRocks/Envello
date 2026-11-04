@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GripVertical,
+  Lock,
 } from 'lucide-react';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import { formatINR } from '@/lib/accounting/currency';
@@ -32,10 +33,12 @@ interface EnvelopeCardProps {
   index?: number;
   totalCount?: number;
   isReorderMode?: boolean;
+  isReadOnly?: boolean;
   onAllocate: () => void;
   onTransfer: () => void;
   onEdit: () => void;
   onViewAllocation?: () => void;
+  onAttemptEdit?: () => void;
   onMoveLeft?: () => void;
   onMoveRight?: () => void;
   onDragStart?: (e: React.DragEvent<HTMLElement>) => void;
@@ -94,10 +97,12 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
   index,
   totalCount,
   isReorderMode = false,
+  isReadOnly = false,
   onAllocate,
   onTransfer,
   onEdit,
   onViewAllocation,
+  onAttemptEdit,
   onMoveLeft,
   onMoveRight,
   onDragStart,
@@ -149,6 +154,15 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
           <div>
             <div className="text-sm font-semibold text-white tracking-tight flex items-center space-x-1.5 flex-wrap gap-y-1">
               <span>{envelope.name}</span>
+              {isReadOnly && (
+                <span
+                  className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400 text-[10px] font-mono border border-white/5"
+                  title="Historical snapshot — Read-only balances before rollover"
+                >
+                  <Lock className="w-2.5 h-2.5 text-neutral-500" />
+                  <span>Locked</span>
+                </span>
+              )}
               {isProtected && (
                 <button
                   type="button"
@@ -227,21 +241,45 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit();
+                if (isReadOnly) {
+                  onAttemptEdit?.();
+                } else {
+                  onEdit();
+                }
               }}
-              title="Edit Envelope Details"
-              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/5 text-neutral-300 hover:text-white transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm"
+              title={
+                isReadOnly
+                  ? 'Locked: Move to the current month to edit this envelope'
+                  : 'Edit Envelope Details'
+              }
+              className={`p-2 rounded-xl border transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm ${
+                isReadOnly
+                  ? 'bg-neutral-900/60 border-white/5 text-neutral-500 hover:text-amber-400 hover:border-amber-500/20'
+                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white'
+              }`}
             >
-              <Pencil className="w-4 h-4" />
+              {isReadOnly ? <Lock className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
             </button>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onTransfer();
+                if (isReadOnly) {
+                  onAttemptEdit?.();
+                } else {
+                  onTransfer();
+                }
               }}
-              title="Transfer / Reallocate Funds"
-              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/5 text-neutral-300 hover:text-white transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm"
+              title={
+                isReadOnly
+                  ? 'Locked: Move to the current month to transfer funds'
+                  : 'Transfer / Reallocate Funds'
+              }
+              className={`p-2 rounded-xl border transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm ${
+                isReadOnly
+                  ? 'bg-neutral-900/60 border-white/5 text-neutral-500 hover:text-amber-400 hover:border-amber-500/20'
+                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white'
+              }`}
             >
               <ArrowRightLeft className="w-4 h-4" />
             </button>
@@ -249,10 +287,22 @@ export const EnvelopeCard: React.FC<EnvelopeCardProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onAllocate();
+                if (isReadOnly) {
+                  onAttemptEdit?.();
+                } else {
+                  onAllocate();
+                }
               }}
-              title="Modify Budget"
-              className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.12] border border-white/5 text-neutral-300 hover:text-white transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm"
+              title={
+                isReadOnly
+                  ? 'Locked: Move to the current month to modify budget'
+                  : 'Modify Budget'
+              }
+              className={`p-2 rounded-xl border transition-all duration-200 active:scale-95 min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center cursor-pointer shadow-sm ${
+                isReadOnly
+                  ? 'bg-neutral-900/60 border-white/5 text-neutral-500 hover:text-amber-400 hover:border-amber-500/20'
+                  : 'bg-white/[0.04] hover:bg-white/[0.12] border-white/5 text-neutral-300 hover:text-white'
+              }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
             </button>

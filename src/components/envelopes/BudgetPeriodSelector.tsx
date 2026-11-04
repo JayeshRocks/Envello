@@ -1,16 +1,18 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Lock } from 'lucide-react';
 
 interface BudgetPeriodSelectorProps {
   selectedPeriod: string; // YYYY-MM
   onPrev: () => void;
   onNext: () => void;
+  isPastPeriod?: boolean;
 }
 
 export const BudgetPeriodSelector: React.FC<BudgetPeriodSelectorProps> = ({
   selectedPeriod,
   onPrev,
   onNext,
+  isPastPeriod = false,
 }) => {
   const [yearStr, monthStr] = selectedPeriod.split('-');
   const year = parseInt(yearStr, 10);
@@ -34,9 +36,18 @@ export const BudgetPeriodSelector: React.FC<BudgetPeriodSelectorProps> = ({
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center space-x-2 px-3 py-1 text-xs sm:text-sm font-semibold text-neutral-200">
-          <Calendar className="w-3.5 h-3.5 text-sky-400" />
+        <div className="flex items-center space-x-1.5 px-3 py-1 text-xs sm:text-sm font-semibold text-neutral-200">
+          <Calendar className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
           <span>{formattedMonth}</span>
+          {isPastPeriod && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 font-mono font-medium flex items-center space-x-1"
+              title="Historical month — Read-only balances before rollover"
+            >
+              <Lock className="w-2.5 h-2.5" />
+              <span>Past</span>
+            </span>
+          )}
         </div>
 
         <button

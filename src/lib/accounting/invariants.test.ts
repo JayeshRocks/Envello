@@ -9,7 +9,7 @@ import {
   calculateSelfEmiProgress,
   calculateReconciliationDiscrepancy,
 } from './calculations';
-import { shiftYearMonth } from '@/hooks/useEnvelopes';
+import { shiftYearMonth, getCurrentYearMonth } from '@/hooks/useEnvelopes';
 
 describe('Accounting Engine — Invariants & Precision', () => {
   describe('Zero Floating-Point Error Arithmetic', () => {
@@ -389,6 +389,20 @@ describe('Accounting Engine — Invariants & Precision', () => {
       // Guard check: Reverting is invalid while spent > originalAllocation
       const isUndoAllowed = originalAllocation >= spentAfterAllocation;
       expect(isUndoAllowed).toBe(false);
+    });
+
+    it('identifies previous months as historical read-only periods', () => {
+      const current = getCurrentYearMonth();
+      const prevMonth = shiftYearMonth(current, -1);
+      const isPast = prevMonth < current;
+      const isCurrent = prevMonth === current;
+
+      expect(isPast).toBe(true);
+      expect(isCurrent).toBe(false);
+
+      // Current month check
+      expect(current === getCurrentYearMonth()).toBe(true);
+      expect(current < getCurrentYearMonth()).toBe(false);
     });
 
     it('mixed lifecycle operations (allocate -> spend -> transfer -> delete expense) maintains absolute ledger accuracy', () => {

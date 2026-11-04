@@ -24,7 +24,7 @@ export interface AllocationHistoryEntry {
 /**
  * Returns the current date in YYYY-MM format.
  */
-function getCurrentYearMonth(): string {
+export function getCurrentYearMonth(): string {
   const now = new Date();
   const year = now.getFullYear();
   const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -47,11 +47,19 @@ export function shiftYearMonth(yearMonth: string, deltaMonths: number): string {
 
 export function useEnvelopes() {
   const { user } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = useState<string>(getCurrentYearMonth());
+  const currentPeriod = useMemo(() => getCurrentYearMonth(), []);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(currentPeriod);
   const [envelopes, setEnvelopes] = useState<EnvelopeWithAllocation[]>([]);
   const [undoStack, setUndoStack] = useState<AllocationHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isCurrentPeriod = selectedPeriod === currentPeriod;
+  const isPastPeriod = selectedPeriod < currentPeriod;
+
+  const goToCurrentPeriod = useCallback(() => {
+    setSelectedPeriod(getCurrentYearMonth());
+  }, []);
 
   const loadEnvelopes = useCallback(async () => {
     if (!user) {
@@ -106,6 +114,9 @@ export function useEnvelopes() {
     fundingSources?: Array<{ accountId: string; amountPaise: bigint }>
   ) => {
     if (!user) throw new Error('User is not authenticated.');
+    if (selectedPeriod < currentPeriod) {
+      throw new Error('Previous months are locked. Move to the current month to allocate funds.');
+    }
     setError(null);
     const target = envelopes.find((e) => e.id === envelopeId);
     const prevAllocated = target ? target.allocatedPaise : 0n;
@@ -164,6 +175,9 @@ export function useEnvelopes() {
 
   const transferFunds = async (fromId: string, toId: string, amountPaise: bigint) => {
     if (!user) throw new Error('User is not authenticated.');
+    if (selectedPeriod < currentPeriod) {
+      throw new Error('Previous months are locked. Move to the current month to transfer funds.');
+    }
     setError(null);
     try {
       await transferBetweenEnvelopes(user.id, selectedPeriod, fromId, toId, amountPaise);
@@ -282,6 +296,10 @@ export function useEnvelopes() {
     error,
     selectedPeriod,
     setSelectedPeriod,
+    currentPeriod,
+    isCurrentPeriod,
+    isPastPeriod,
+    goToCurrentPeriod,
     prevPeriod,
     nextPeriod,
     totalAllocatedPaise,

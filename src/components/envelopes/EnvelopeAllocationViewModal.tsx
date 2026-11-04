@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Landmark, Layers, ShieldCheck } from 'lucide-react';
+import { X, Landmark, Layers, ShieldCheck, Lock } from 'lucide-react';
 import type { EnvelopeWithAllocation, AllocationSourceRecord } from '@/types/accounting.types';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
@@ -10,6 +10,7 @@ interface EnvelopeAllocationViewModalProps {
   isOpen: boolean;
   envelope: EnvelopeWithAllocation | null;
   accounts?: AccountItem[];
+  isReadOnly?: boolean;
   onClose: () => void;
   onModifyBudget?: () => void;
 }
@@ -18,6 +19,7 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
   isOpen,
   envelope,
   accounts = [],
+  isReadOnly = false,
   onClose,
   onModifyBudget,
 }) => {
@@ -177,7 +179,12 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
 
           {/* Actions */}
           <div className="pt-2 flex items-center justify-end space-x-2.5">
-            {onModifyBudget && (
+            {isReadOnly ? (
+              <div className="w-full py-2.5 px-3 rounded-xl bg-neutral-950/80 border border-white/5 text-xs text-neutral-400 flex items-center justify-center space-x-1.5 font-medium">
+                <Lock className="w-3.5 h-3.5 text-neutral-500" />
+                <span>Historical Snapshot (Read-Only)</span>
+              </div>
+            ) : onModifyBudget ? (
               <button
                 type="button"
                 onClick={() => {
@@ -188,7 +195,7 @@ export const EnvelopeAllocationViewModal: React.FC<EnvelopeAllocationViewModalPr
               >
                 Modify Budget
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

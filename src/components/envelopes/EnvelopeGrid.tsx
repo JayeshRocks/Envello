@@ -7,6 +7,8 @@ import {
   RotateCcw,
   ArrowUpDown,
   Check,
+  Lock,
+  ArrowRight,
 } from 'lucide-react';
 import { useEnvelopes } from '@/hooks/useEnvelopes';
 import { useAccounts } from '@/hooks/useAccounts';
@@ -39,6 +41,9 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
     totalSpentPaise,
     totalAvailablePaise,
     selectedPeriod,
+    isCurrentPeriod,
+    isPastPeriod,
+    goToCurrentPeriod,
     prevPeriod,
     nextPeriod,
     allocateFunds,
@@ -65,6 +70,28 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
   const [isUndoing, setIsUndoing] = useState(false);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Notify user when attempting an edit action on a historical past month
+  const handleAttemptEdit = useCallback(() => {
+    showToast(
+      'Previous month envelopes are locked. Please move to the current month to edit envelopes — historical records display balances before month-end rollover took effect.',
+      {
+        type: 'info',
+        durationMs: 6000,
+        action: {
+          label: 'Move to Current Month',
+          onClick: goToCurrentPeriod,
+        },
+      }
+    );
+  }, [goToCurrentPeriod, showToast]);
+
+  // Turn off reorder mode automatically if navigating to a past period
+  useEffect(() => {
+    if (isPastPeriod) {
+      setIsReorderMode(false);
+    }
+  }, [isPastPeriod]);
 
   const handleUndoAllocation = useCallback(async () => {
     if (!canUndoAllocation || isUndoing) return;
@@ -164,7 +191,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {canUndoAllocation && lastAllocation && (
+          {canUndoAllocation && lastAllocation && isCurrentPeriod && (
             <button
               onClick={handleUndoAllocation}
               disabled={isUndoing}
@@ -183,6 +210,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
             selectedPeriod={selectedPeriod}
             onPrev={prevPeriod}
             onNext={nextPeriod}
+            isPastPeriod={isPastPeriod}
           />
 
           <button
@@ -238,6 +266,33 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
         </div>
       </div>
 
+      {/* Historical Snapshot Read-Only Banner */}
+      {isPastPeriod && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs shadow-md animate-fade-in">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 flex-shrink-0">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-semibold text-amber-300">
+                Historical Snapshot (Read-Only)
+              </div>
+              <p className="text-[11px] text-amber-200/80 mt-0.5">
+                Viewing envelope balances before month-end rollover took effect. Move to the current month to allocate budget or edit envelopes.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={goToCurrentPeriod}
+            className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white border border-amber-500/30 text-xs font-semibold transition active:scale-95 flex items-center space-x-1.5 cursor-pointer whitespace-nowrap min-h-[36px]"
+          >
+            <span>Move to Current Month</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Category Header Strip, Rearrange Mode & New Envelope Trigger */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
         <div className="flex items-center space-x-2">
@@ -250,13 +305,21 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           {envelopes.length > 1 && (
             <button
-              onClick={() => setIsReorderMode((prev) => !prev)}
+              onClick={() => {
+                if (isPastPeriod) {
+                  handleAttemptEdit();
+                } else {
+                  setIsReorderMode((prev) => !prev);
+                }
+              }}
               className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] ${
                 isReorderMode
                   ? 'bg-sky-500 text-neutral-950 shadow-md shadow-sky-500/25 ring-2 ring-sky-400/40'
+                  : isPastPeriod
+                  ? 'bg-neutral-900/60 text-neutral-500 border border-white/5 hover:text-neutral-300'
                   : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-white/10 hover:text-white'
               }`}
-              title="Rearrange envelope display order"
+              title={isPastPeriod ? 'Move to the current month to rearrange envelopes' : 'Rearrange envelope display order'}
             >
               {isReorderMode ? (
                 <>
@@ -273,10 +336,21 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
           )}
 
           <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 font-bold text-xs transition active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] shadow-md shadow-sky-500/20"
+            onClick={() => {
+              if (isPastPeriod) {
+                handleAttemptEdit();
+              } else {
+                setIsCreateModalOpen(true);
+              }
+            }}
+            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl font-bold text-xs transition active:scale-95 cursor-pointer min-h-[44px] sm:min-h-[36px] shadow-md ${
+              isPastPeriod
+                ? 'bg-neutral-800 text-neutral-400 border border-white/5 hover:bg-neutral-700 hover:text-white'
+                : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-neutral-950 shadow-sky-500/20'
+            }`}
+            title={isPastPeriod ? 'Move to the current month to create new envelopes' : 'Create New Envelope'}
           >
-            <Plus className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
+            <Plus className={`w-4 h-4 stroke-[2.5] ${isPastPeriod ? 'text-neutral-400' : 'text-neutral-950'}`} />
             <span>New Envelope</span>
           </button>
         </div>
@@ -334,9 +408,29 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
               index={index}
               totalCount={envelopes.length}
               isReorderMode={isReorderMode}
-              onAllocate={() => setAllocatingEnvelope(env)}
-              onTransfer={() => setTransferringEnvelopeId(env.id)}
-              onEdit={() => setEditingEnvelope(env)}
+              isReadOnly={isPastPeriod}
+              onAllocate={() => {
+                if (isPastPeriod) {
+                  handleAttemptEdit();
+                } else {
+                  setAllocatingEnvelope(env);
+                }
+              }}
+              onTransfer={() => {
+                if (isPastPeriod) {
+                  handleAttemptEdit();
+                } else {
+                  setTransferringEnvelopeId(env.id);
+                }
+              }}
+              onEdit={() => {
+                if (isPastPeriod) {
+                  handleAttemptEdit();
+                } else {
+                  setEditingEnvelope(env);
+                }
+              }}
+              onAttemptEdit={handleAttemptEdit}
               onViewAllocation={() => setViewingAllocationEnvelope(env)}
               onMoveLeft={() => handleMove(index, 'left')}
               onMoveRight={() => handleMove(index, 'right')}
@@ -372,8 +466,13 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
         isOpen={Boolean(viewingAllocationEnvelope)}
         envelope={viewingAllocationEnvelope}
         accounts={accounts}
+        isReadOnly={isPastPeriod}
         onClose={() => setViewingAllocationEnvelope(null)}
         onModifyBudget={() => {
+          if (isPastPeriod) {
+            handleAttemptEdit();
+            return;
+          }
           const target = viewingAllocationEnvelope;
           setViewingAllocationEnvelope(null);
           if (target) setAllocatingEnvelope(target);
