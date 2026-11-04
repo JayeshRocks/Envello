@@ -373,68 +373,120 @@ export const AccountListModal: React.FC<AccountListModalProps> = ({
               );
             }
 
+            const freePaise = acc.unallocatedPaise ?? acc.balancePaise;
+            const heldPaise = acc.allocatedPaise ?? 0n;
+            const totalPaise = acc.balancePaise;
+
+            const freePercent =
+              totalPaise > 0n
+                ? Math.max(0, Math.min(100, Number((freePaise * 10000n) / totalPaise) / 100))
+                : 0;
+            const heldPercent =
+              totalPaise > 0n
+                ? Math.max(0, Math.min(100, Number((heldPaise * 10000n) / totalPaise) / 100))
+                : 0;
+
             return (
               <div
                 key={acc.id}
-                className="p-3.5 rounded-xl bg-neutral-900/80 border border-white/5 flex items-center justify-between group hover:border-white/15 transition"
+                className="p-3.5 rounded-xl bg-neutral-900/80 border border-white/5 space-y-2.5 group hover:border-white/15 transition"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-xl bg-neutral-800 flex items-center justify-center text-sky-400">
-                    {acc.accountType === 'cash' ? (
-                      <Wallet className="w-4 h-4" />
-                    ) : (
-                      <Landmark className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-white flex items-center space-x-1.5">
-                      <span>{acc.name}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-neutral-800 flex items-center justify-center text-sky-400 shrink-0">
+                      {acc.accountType === 'cash' ? (
+                        <Wallet className="w-4 h-4" />
+                      ) : (
+                        <Landmark className="w-4 h-4" />
+                      )}
                     </div>
-                    <div className="text-[11px] text-neutral-400">
-                      {acc.institution} • <span className="capitalize">{acc.accountType}</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-white flex items-center space-x-1.5 truncate">
+                        <span>{acc.name}</span>
+                      </div>
+                      <div className="text-[11px] text-neutral-400 truncate">
+                        {acc.institution} • <span className="capitalize">{acc.accountType}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <div className="text-right">
+                      <div className="font-mono text-sm font-bold text-white tabular-nums">
+                        {formatINR(acc.balancePaise)}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      {onOpenReconcileModal && (
+                        <button
+                          onClick={() => {
+                            onOpenReconcileModal(acc.id);
+                          }}
+                          aria-label={`Reconcile ${acc.name} with bank statement`}
+                          className="p-1.5 rounded-lg text-neutral-400 hover:text-emerald-400 hover:bg-white/5 transition"
+                          title="Reconcile against bank statement"
+                        >
+                          <Scale className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {onEditAccount && (
+                        <button
+                          onClick={() => handleStartEdit(acc)}
+                          aria-label={`Edit ${acc.name}`}
+                          className="p-1.5 rounded-lg text-neutral-500 hover:text-sky-400 hover:bg-white/5 transition"
+                          title="Edit Account Details"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <div className="font-mono text-sm font-bold text-white tabular-nums">
-                      {formatINR(acc.balancePaise)}
-                    </div>
-                    <div className="flex items-center justify-end space-x-1.5 text-[10px] font-mono mt-0.5">
-                      <span className="text-emerald-400 font-medium" title="Free Spendable Balance">
-                        Free: {formatINR(acc.unallocatedPaise ?? acc.balancePaise)}
-                      </span>
-                      {(acc.allocatedPaise ?? 0n) > 0n && (
-                        <span className="text-neutral-400" title="Reserved across Envelopes">
-                          • Held: {formatINR(acc.allocatedPaise!)}
-                        </span>
-                      )}
-                    </div>
+                {/* Free and Held visual line & single-row status breakdown */}
+                <div className="pt-2 border-t border-white/5 space-y-1.5">
+                  <div className="w-full bg-neutral-800/80 rounded-full h-1.5 overflow-hidden flex">
+                    {totalPaise > 0n ? (
+                      <>
+                        <div
+                          className="bg-emerald-400 h-full transition-all duration-300"
+                          style={{
+                            width: `${heldPaise > 0n && freePaise > 0n ? Math.max(3, freePercent) : freePercent}%`,
+                          }}
+                          title={`Free: ${formatINR(freePaise)} (${freePercent.toFixed(1)}%)`}
+                        />
+                        <div
+                          className="bg-amber-400/90 h-full transition-all duration-300"
+                          style={{
+                            width: `${heldPaise > 0n && freePaise > 0n ? Math.max(3, heldPercent) : heldPercent}%`,
+                          }}
+                          title={`Held: ${formatINR(heldPaise)} (${heldPercent.toFixed(1)}%)`}
+                        />
+                      </>
+                    ) : (
+                      <div className="bg-neutral-700 w-full h-full" />
+                    )}
                   </div>
-                  <div className="flex items-center space-x-1">
-                    {onOpenReconcileModal && (
-                      <button
-                        onClick={() => {
-                          onOpenReconcileModal(acc.id);
-                        }}
-                        aria-label={`Reconcile ${acc.name} with bank statement`}
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-emerald-400 hover:bg-white/5 transition"
-                        title="Reconcile against bank statement"
+
+                  <div className="flex items-center justify-between text-[11px] font-mono leading-none">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                      <span className="text-neutral-400">Free:</span>
+                      <span className={`font-semibold tabular-nums ${freePaise < 0n ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        {formatINR(freePaise)}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${heldPaise > 0n ? 'bg-amber-400' : 'bg-neutral-600'}`}
+                      />
+                      <span className="text-neutral-400">Held:</span>
+                      <span
+                        className={`font-semibold tabular-nums ${heldPaise > 0n ? 'text-amber-400/90' : 'text-neutral-500'}`}
                       >
-                        <Scale className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {onEditAccount && (
-                      <button
-                        onClick={() => handleStartEdit(acc)}
-                        aria-label={`Edit ${acc.name}`}
-                        className="p-1.5 rounded-lg text-neutral-500 hover:text-sky-400 hover:bg-white/5 transition"
-                        title="Edit Account Details"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                        {formatINR(heldPaise)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
