@@ -457,7 +457,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
             />
           </div>
 
-          {/* Expense: Payment Method (Ghost Bank Envelope, Direct Bank Account, or Card) */}
+          {/* Expense: Payment Method (Envelope, Direct Liquid Account, or Credit Card) */}
           {mode === 'expense' && (
             <div className="space-y-3">
               <div className="space-y-1.5">
@@ -467,37 +467,51 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                   onChange={(e) => setSelectedPaymentSource(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl glass-input text-base sm:text-sm text-white bg-neutral-900 border border-white/10 focus:ring-1 focus:ring-sky-500"
                 >
-                  {envelopes.length > 0 && (
-                    <optgroup label="✉️ Envelopes (Ghost Banks)">
-                      {envelopes.map((env) => (
+                  <optgroup label="Envelopes">
+                    {envelopes.length > 0 ? (
+                      envelopes.map((env) => (
                         <option key={env.id} value={`envelope:${env.id}`} className="bg-neutral-900 text-white">
                           {env.name} ({formatINR(env.availablePaise)} available)
                         </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  <optgroup label="🏦 Bank Accounts & Cash (Direct Spending)">
-                    {accounts.map((acc) => {
-                      const free = acc.unallocatedPaise ?? acc.balancePaise;
-                      return (
-                        <option key={acc.id} value={`account:${acc.id}`} className="bg-neutral-900 text-white">
-                          {acc.name} • Free: {formatINR(free)} (Total: {formatINR(acc.balancePaise)})
-                        </option>
-                      );
-                    })}
+                      ))
+                    ) : (
+                      <option value="" disabled className="bg-neutral-900 text-neutral-500 italic">
+                        None available
+                      </option>
+                    )}
                   </optgroup>
-                  {creditCards && creditCards.length > 0 && (
-                    <optgroup label="💳 Credit Cards">
-                      {creditCards.map((card) => {
+                  <optgroup label="Liquid Accounts">
+                    {accounts.length > 0 ? (
+                      accounts.map((acc) => {
+                        const free = acc.unallocatedPaise ?? acc.balancePaise;
+                        return (
+                          <option key={acc.id} value={`account:${acc.id}`} className="bg-neutral-900 text-white">
+                            {acc.name} • Free: {formatINR(free)} (Total: {formatINR(acc.balancePaise)})
+                          </option>
+                        );
+                      })
+                    ) : (
+                      <option value="" disabled className="bg-neutral-900 text-neutral-500 italic">
+                        None available
+                      </option>
+                    )}
+                  </optgroup>
+                  <optgroup label="Credit Cards">
+                    {creditCards && creditCards.length > 0 ? (
+                      creditCards.map((card) => {
                         const availablePaise = BigInt(card.credit_limit_paise) - BigInt(card.outstanding_balance_paise);
                         return (
                           <option key={card.id} value={`card:${card.id}`} className="bg-neutral-900 text-white">
                             {card.card_name} ({formatINR(availablePaise)} available limit)
                           </option>
                         );
-                      })}
-                    </optgroup>
-                  )}
+                      })
+                    ) : (
+                      <option value="" disabled className="bg-neutral-900 text-neutral-500 italic">
+                        None available
+                      </option>
+                    )}
+                  </optgroup>
                 </select>
               </div>
 
@@ -538,7 +552,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center justify-between">
                     <div className="flex items-center space-x-2 min-w-0">
                       <Layers className="w-4 h-4 flex-shrink-0 text-emerald-400" />
-                      <span className="truncate">Ghost Bank: Pays via {ghostEnvelope.name}</span>
+                      <span className="truncate">Envelope Spending: Pays via {ghostEnvelope.name}</span>
                     </div>
                     <span className="font-mono text-emerald-400 font-semibold flex-shrink-0">
                       {formatINR(ghostEnvelope.availablePaise)} available
@@ -559,7 +573,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
                   <div className="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs flex items-center justify-between">
                     <div className="flex items-center space-x-2 min-w-0">
                       <Landmark className="w-4 h-4 flex-shrink-0 text-sky-400" />
-                      <span className="truncate">Direct Spend: {directAccount.name}</span>
+                      <span className="truncate">Direct Account Spending: Pays via {directAccount.name}</span>
                     </div>
                     <span className="font-mono text-sky-400 font-semibold flex-shrink-0">
                       {formatINR(directAccountFreePaise)} free
