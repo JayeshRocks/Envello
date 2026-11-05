@@ -7,6 +7,7 @@ import { NetWorthTracker } from './NetWorthTracker';
 
 interface AnalyticsDashboardProps {
   isLoading?: boolean;
+  isEnvelopesLoading?: boolean;
   transactions: TransactionWithEntries[];
   envelopes: EnvelopeWithDetails[];
   spendableCashPaise: bigint;
@@ -17,6 +18,7 @@ interface AnalyticsDashboardProps {
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   isLoading = false,
+  isEnvelopesLoading = false,
   transactions,
   envelopes,
   spendableCashPaise,
@@ -53,7 +55,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       {/* Grid of Cashflow & Envelope Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CashflowChart transactions={transactions} isLoading={isLoading} />
-        <EnvelopeBreakdownChart envelopes={envelopes} />
+        <EnvelopeBreakdownChart envelopes={envelopes} isLoading={isEnvelopesLoading || isLoading} />
       </div>
     </section>
   );

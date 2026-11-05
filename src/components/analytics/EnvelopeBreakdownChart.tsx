@@ -3,9 +3,11 @@ import { PieChart, Sparkles } from 'lucide-react';
 import type { EnvelopeWithDetails } from '@/lib/api/envelopes';
 import { formatINR } from '@/lib/accounting/currency';
 import { SpotlightCard } from '@/components/common/SpotlightCard';
+import { Skeleton } from '@/components/common/Skeleton';
 
 interface EnvelopeBreakdownChartProps {
   envelopes: EnvelopeWithDetails[];
+  isLoading?: boolean;
 }
 
 interface Segment {
@@ -28,7 +30,7 @@ const DEFAULT_COLORS = [
   '#6366f1', // indigo-500
 ];
 
-export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ envelopes }) => {
+export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ envelopes, isLoading = false }) => {
   const { segments, totalPaise, isShowingAllocated } = useMemo(() => {
     // Check if any envelope has spent money
     const totalSpent = envelopes.reduce((sum, e) => sum + e.spentPaise, 0n);
@@ -125,12 +127,43 @@ export const EnvelopeBreakdownChart: React.FC<EnvelopeBreakdownChartProps> = ({ 
           </p>
         </div>
 
-        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-white/10 font-mono">
-          Total: {formatINR(totalPaise)}
-        </span>
+        {isLoading ? (
+          <Skeleton className="h-5 w-24 rounded-full" />
+        ) : (
+          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-white/10 font-mono">
+            Total: {formatINR(totalPaise)}
+          </span>
+        )}
       </div>
 
-      {segments.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
+          {/* Donut Chart Skeleton */}
+          <div className="relative w-40 h-40 flex-shrink-0 flex items-center justify-center">
+            <Skeleton className="w-36 h-36 rounded-full" />
+            <div className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-[#0f1011]" />
+          </div>
+
+          {/* Legend Skeleton Rows */}
+          <div className="flex-1 w-full space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between p-2.5 rounded-xl bg-[#0b0c0e] border border-white/5"
+              >
+                <div className="flex items-center space-x-2.5">
+                  <Skeleton className="w-2.5 h-2.5 rounded-full flex-shrink-0" />
+                  <Skeleton className="h-3.5 w-28 rounded" />
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Skeleton className="h-3.5 w-12 rounded" />
+                  <Skeleton className="h-3.5 w-16 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : segments.length === 0 ? (
         <div className="p-8 text-center text-xs text-neutral-500 flex flex-col items-center justify-center space-y-2">
           <Sparkles className="w-6 h-6 text-neutral-600" />
           <span>Allocate or spend from envelopes to visualize category distribution.</span>

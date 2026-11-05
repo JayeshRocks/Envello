@@ -48,6 +48,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
   }, [totalLiabilitiesPaise, totalVolume]);
 
   const assetSharePercent = useMemo(() => {
+    if (totalAssetsPaise === 0n && totalLiabilitiesPaise === 0n) return 100;
     if (totalAssetsPaise === 0n) return 0;
     if (totalVolume === 0n) return 100;
     const raw = Number((totalAssetsPaise * 10000n) / totalVolume) / 100;
@@ -67,6 +68,7 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
   }, [totalLiabilitiesPaise, liabilitySharePercent]);
 
   const barAssetWidth = useMemo(() => {
+    if (totalAssetsPaise === 0n && totalLiabilitiesPaise === 0n) return 100;
     if (totalAssetsPaise === 0n) return 0;
     if (totalLiabilitiesPaise === 0n) return 100;
     return Math.max(0, 100 - barLiabilityWidth);
@@ -158,10 +160,17 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
 
       {/* Visual Asset vs Liability Ratio Bar */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-[11px] font-mono">
-          <span className="text-emerald-400 font-semibold">Assets ({assetSharePercent.toFixed(1)}%)</span>
-          <span className="text-rose-400 font-semibold">Liabilities ({liabilitySharePercent.toFixed(1)}%)</span>
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3.5 w-24 rounded" />
+            <Skeleton className="h-3.5 w-28 rounded" />
+          </div>
+        ) : (
+          <div className="flex items-center justify-between text-[11px] font-mono">
+            <span className="text-emerald-400 font-semibold">Assets ({assetSharePercent.toFixed(1)}%)</span>
+            <span className="text-rose-400 font-semibold">Liabilities ({liabilitySharePercent.toFixed(1)}%)</span>
+          </div>
+        )}
         {isLoading ? (
           <Skeleton className="w-full h-2.5 rounded-full" />
         ) : (
@@ -178,10 +187,17 @@ export const NetWorthTracker: React.FC<NetWorthTrackerProps> = ({
         )}
       </div>
 
-      <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">
-        <span>Liquidity: {formatINR(effectiveLiquidFunds)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
-        <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
-      </div>
+      {isLoading ? (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 pt-0.5">
+          <Skeleton className="h-3 w-52 rounded" />
+          <Skeleton className="h-3 w-44 rounded" />
+        </div>
+      ) : (
+        <div className="text-[10px] text-neutral-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-0.5 font-mono">
+          <span>Liquidity: {formatINR(effectiveLiquidFunds)} • FDs & RDs: {formatINR(savingsAndFDsPaise)}</span>
+          <span>Cards: {formatINR(creditCardLiabilitiesPaise)} • Debts: {formatINR(actualDebtsPaise)}</span>
+        </div>
+      )}
     </SpotlightCard>
   );
 };

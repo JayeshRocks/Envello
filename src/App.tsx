@@ -875,7 +875,7 @@ export const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    {isDebtsLoading ? (
+                    {isDebtsLoading || isDebtsLoansLoading ? (
                       <div className="space-y-1.5 py-1">
                         <Skeleton className="h-7 w-36 rounded-lg" />
                         <Skeleton className="h-4 w-32 rounded-md" />
@@ -947,7 +947,8 @@ export const App: React.FC = () => {
 
             {/* Section: Analytics & Interactive Visual Insights */}
             <AnalyticsDashboard
-              isLoading={isAccountsLoading || isTxLoading || isCardsLoading || isFdsLoading || isDebtsLoading}
+              isLoading={isAccountsLoading || isTxLoading || isCardsLoading || isFdsLoading || isDebtsLoading || isDebtsLoansLoading}
+              isEnvelopesLoading={isEnvelopesLoading}
               transactions={transactions}
               envelopes={activeEnvelopes}
               spendableCashPaise={effectiveLiquidFundsPaise}
