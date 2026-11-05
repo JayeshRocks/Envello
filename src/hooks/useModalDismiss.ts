@@ -52,6 +52,10 @@ function canElementScroll(target: EventTarget | null, deltaY: number, deltaX: nu
 }
 
 function handleGlobalWheel(e: WheelEvent) {
+  const target = e.target as HTMLElement | null;
+  if (target?.closest?.('.modal-panel') || target?.closest?.('[role="dialog"]')) {
+    return;
+  }
   // If the target element cannot scroll further in this direction, prevent scroll chaining to the background page
   if (!canElementScroll(e.target, e.deltaY, e.deltaX)) {
     e.preventDefault();
@@ -66,6 +70,22 @@ function handleGlobalTouchStart(e: globalThis.TouchEvent) {
 }
 
 function handleGlobalTouchMove(e: globalThis.TouchEvent) {
+  const target = e.target as HTMLElement | null;
+
+  // Never block touch scrolling if touch originates inside a modal dialog or interactive form element
+  if (
+    target?.closest?.('.modal-panel') ||
+    target?.closest?.('[role="dialog"]') ||
+    target?.closest?.('.overflow-y-auto')
+  ) {
+    return;
+  }
+
+  // Never block touch scrolling if the user is typing with virtual keyboard open
+  if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+    return;
+  }
+
   if (e.touches && e.touches.length > 0) {
     const deltaY = touchStartY - e.touches[0].clientY;
     const deltaX = touchStartX - e.touches[0].clientX;
@@ -107,10 +127,24 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
       mouseDownTargetRef.current = e.target;
     };
 
+    // Smoothly ensure focused inputs remain visible when mobile virtual keyboard opens/resizes
+    const handleViewportChange = () => {
+      const active = document.activeElement as HTMLElement | null;
+      if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) {
+        setTimeout(() => {
+          active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }, 80);
+      }
+    };
+
+    window.visualViewport?.addEventListener('resize', handleViewportChange);
+    window.visualViewport?.addEventListener('scroll', handleViewportChange);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('mousedown', handleGlobalMouseDown, true);
 
     return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousedown', handleGlobalMouseDown, true);
       activeModalsCount--;
@@ -138,6 +172,10 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
   };
 
   const handleBackdropTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    // If the modal overlay has scrollable overflow, allow vertical scrolling so user can drag modal up/down
+    if (e.currentTarget.scrollHeight > e.currentTarget.clientHeight) {
+      return;
+    }
     if (e.target === e.currentTarget) {
       e.preventDefault();
     }

@@ -60,12 +60,12 @@ export const EnvelopePaymentReceiptModal: React.FC<EnvelopePaymentReceiptModalPr
   return (
     <ModalPortal>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/80 backdrop-blur-sm modal-overlay animate-in fade-in duration-200"
         onClick={handleBackdropClick}
         onTouchMove={handleBackdropTouchMove}
       >
         <div
-          className="bg-neutral-900 border border-white/10 rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+          className="bg-neutral-900 border border-white/10 rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto modal-panel"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

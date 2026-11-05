@@ -226,8 +226,19 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   overscroll-behavior: contain;
-  touch-action: none;
+  touch-action: pan-y;
   will-change: opacity;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 639px) {
+  .modal-overlay {
+    align-items: flex-start !important;
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem)) !important;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem)) !important;
+  }
 }
 
 @keyframes appleBackdropFadeIn {
@@ -289,6 +300,29 @@
   -webkit-overflow-scrolling: touch;
   will-change: transform, opacity;
   transform-origin: center center;
+  margin-top: auto;
+  margin-bottom: auto;
+  max-height: calc(100dvh - 1.5rem) !important;
+}
+
+@media (max-width: 639px) {
+  .modal-panel {
+    padding-bottom: max(2.25rem, env(safe-area-inset-bottom, 2.25rem)) !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .modal-panel {
+    max-height: min(88vh, calc(100dvh - 2rem)) !important;
+  }
+}
+
+/* Ensure mobile form fields have comfortable breathing clearance above virtual keyboard */
+input,
+textarea,
+select {
+  scroll-margin-top: 2rem;
+  scroll-margin-bottom: 5rem;
 }
 
 /* Prevent background scroll when any modal is open without resetting scroll position */

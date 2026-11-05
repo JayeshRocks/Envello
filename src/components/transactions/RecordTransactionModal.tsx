@@ -295,7 +295,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
         <div
           style={formStyle}
           onClick={(e) => e.stopPropagation()}
-          className="max-w-lg w-full bg-[#0f1011] rounded-2xl sm:rounded-3xl border border-sky-500/25 shadow-[0_0_50px_-10px_rgba(56,189,248,0.3)] relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto p-5 sm:p-7 space-y-4 sm:space-y-5"
+          className="max-w-lg w-full bg-[#0f1011] rounded-2xl sm:rounded-3xl border border-sky-500/25 shadow-[0_0_50px_-10px_rgba(56,189,248,0.3)] relative max-h-[90vh] sm:max-h-[88vh] overflow-y-auto p-5 sm:p-7 space-y-4 sm:space-y-5 modal-panel"
         >
           <button
             type="button"
