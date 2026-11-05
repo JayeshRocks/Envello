@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   Layers,
   Plus,
-  RefreshCw,
   FolderPlus,
   RotateCcw,
   ArrowUpDown,
@@ -52,7 +51,6 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
     editEnvelope,
     removeEnvelope,
     reorderEnvelopes,
-    refresh,
     undoLastAllocation,
     canUndoAllocation,
     lastAllocation,
@@ -211,14 +209,6 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
             onNext={nextPeriod}
             isPastPeriod={isPastPeriod}
           />
-
-          <button
-            onClick={() => refresh()}
-            title="Refresh Envelopes"
-            className="p-2 sm:p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white transition shadow-sm min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] flex items-center justify-center active:scale-95 cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-sky-400' : ''}`} />
-          </button>
         </div>
       </div>
 
@@ -228,9 +218,13 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
           <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
             Total Monthly Budget
           </div>
-          <div className="text-xl font-bold font-mono tracking-tight text-white tabular-nums">
-            {formatINR(totalAllocatedPaise)}
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-7 w-32 rounded-lg my-0.5" />
+          ) : (
+            <div className="text-xl font-bold font-mono tracking-tight text-white tabular-nums">
+              {formatINR(totalAllocatedPaise)}
+            </div>
+          )}
           <div className="text-[10px] text-neutral-500 font-mono">Assigned to active envelopes</div>
         </div>
 
@@ -238,9 +232,13 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
           <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
             Total Spent This Month
           </div>
-          <div className="text-xl font-bold font-mono tracking-tight text-neutral-300 tabular-nums">
-            {formatINR(totalSpentPaise)}
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-7 w-32 rounded-lg my-0.5" />
+          ) : (
+            <div className="text-xl font-bold font-mono tracking-tight text-neutral-300 tabular-nums">
+              {formatINR(totalSpentPaise)}
+            </div>
+          )}
           <div className="text-[10px] text-neutral-500 font-mono">Debited from allocations</div>
         </div>
 
@@ -248,13 +246,17 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
           <div className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
             Total Available Balance
           </div>
-          <div
-            className={`text-xl font-bold font-mono tracking-tight tabular-nums ${
-              totalAvailablePaise < 0n ? 'text-rose-400' : 'text-emerald-400'
-            }`}
-          >
-            {formatINR(totalAvailablePaise)}
-          </div>
+          {isLoading ? (
+            <Skeleton className="h-7 w-32 rounded-lg my-0.5" />
+          ) : (
+            <div
+              className={`text-xl font-bold font-mono tracking-tight tabular-nums ${
+                totalAvailablePaise < 0n ? 'text-rose-400' : 'text-emerald-400'
+              }`}
+            >
+              {formatINR(totalAvailablePaise)}
+            </div>
+          )}
           <div
             className={`text-[10px] font-mono ${
               totalAvailablePaise < 0n ? 'text-rose-400/80 font-medium' : 'text-emerald-400/80'
@@ -366,7 +368,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
       )}
 
       {/* Envelope Cards Section */}
-      {isLoading && envelopes.length === 0 ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
