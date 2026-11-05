@@ -1,22 +1,17 @@
-import { useEffect, useRef, MouseEvent, TouchEvent } from 'react';
+import { useEffect, useRef, MouseEvent } from 'react';
 
 /**
  * Hook providing uniform modal dismiss behaviors and total background scroll isolation:
  * 1. Escape key press handler
  * 2. Backdrop click handler (safeguards against mouse-drag text selection originating inside the modal)
  * 3. Body & documentElement scroll locking and background coordination while any modal is open
- * 4. Active scroll-chaining prevention (wheel & touchmove) so scrolling on non-overflowing forms never moves background
+ * 4. Active scroll-chaining prevention (wheel) so scrolling on desktop never moves background
+ * 5. Dynamic visual viewport tracking so mobile forms shrink to space above virtual keyboard
  */
 
 let activeModalsCount = 0;
 let savedScrollY = 0;
-let touchStartY = 0;
-let touchStartX = 0;
 
-/**
- * Determines whether a target element or any of its ancestors inside the modal
- * can still scroll in the intended direction.
- */
 function canElementScroll(target: EventTarget | null, deltaY: number, deltaX: number = 0): boolean {
   if (!(target instanceof HTMLElement)) return false;
 
@@ -53,7 +48,7 @@ function canElementScroll(target: EventTarget | null, deltaY: number, deltaX: nu
 
 function handleGlobalWheel(e: WheelEvent) {
   const target = e.target as HTMLElement | null;
-  if (target?.closest?.('.modal-panel') || target?.closest?.('[role="dialog"]')) {
+  if (target?.closest?.('.modal-panel') || target?.closest?.('[role="dialog"]') || target?.closest?.('.overflow-y-auto')) {
     return;
   }
   // If the target element cannot scroll further in this direction, prevent scroll chaining to the background page
@@ -62,41 +57,11 @@ function handleGlobalWheel(e: WheelEvent) {
   }
 }
 
-function handleGlobalTouchStart(e: globalThis.TouchEvent) {
-  if (e.touches && e.touches.length > 0) {
-    touchStartY = e.touches[0].clientY;
-    touchStartX = e.touches[0].clientX;
-  }
-}
-
-function handleGlobalTouchMove(e: globalThis.TouchEvent) {
-  const target = e.target as HTMLElement | null;
-
-  // Never block touch scrolling if touch originates inside a modal dialog or interactive form element
-  if (
-    target?.closest?.('.modal-panel') ||
-    target?.closest?.('[role="dialog"]') ||
-    target?.closest?.('.overflow-y-auto')
-  ) {
-    return;
-  }
-
-  // Never block touch scrolling if the user is typing with virtual keyboard open
-  if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-    return;
-  }
-
-  if (e.touches && e.touches.length > 0) {
-    const deltaY = touchStartY - e.touches[0].clientY;
-    const deltaX = touchStartX - e.touches[0].clientX;
-
-    if (!canElementScroll(e.target, deltaY, deltaX)) {
-      e.preventDefault();
-    }
-
-    touchStartY = e.touches[0].clientY;
-    touchStartX = e.touches[0].clientX;
-  }
+function updateVisualViewportCSS() {
+  if (typeof window === 'undefined') return;
+  const vv = window.visualViewport;
+  const height = vv ? Math.round(vv.height) : window.innerHeight;
+  document.documentElement.style.setProperty('--vv-height', `${height}px`);
 }
 
 export function useModalDismiss(isOpen: boolean, onClose: () => void) {
@@ -107,13 +72,13 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
   useEffect(() => {
     if (!isOpen) return;
 
+    updateVisualViewportCSS();
+
     if (activeModalsCount === 0) {
       savedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
       document.documentElement.classList.add('modal-open');
       document.body.classList.add('modal-open');
       window.addEventListener('wheel', handleGlobalWheel, { passive: false });
-      window.addEventListener('touchstart', handleGlobalTouchStart, { passive: true });
-      window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
     }
     activeModalsCount++;
 
@@ -127,24 +92,29 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
       mouseDownTargetRef.current = e.target;
     };
 
-    // Smoothly ensure focused inputs remain visible when mobile virtual keyboard opens/resizes
-    const handleViewportChange = () => {
-      const active = document.activeElement as HTMLElement | null;
-      if (active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) {
-        setTimeout(() => {
-          active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }, 80);
-      }
+    const handleViewportResize = () => {
+      updateVisualViewportCSS();
     };
 
-    window.visualViewport?.addEventListener('resize', handleViewportChange);
-    window.visualViewport?.addEventListener('scroll', handleViewportChange);
+    const handleFocusChange = () => {
+      setTimeout(updateVisualViewportCSS, 60);
+      setTimeout(updateVisualViewportCSS, 250);
+    };
+
+    window.visualViewport?.addEventListener('resize', handleViewportResize);
+    window.addEventListener('resize', handleViewportResize);
+    window.addEventListener('orientationchange', handleViewportResize);
+    document.addEventListener('focusin', handleFocusChange);
+    document.addEventListener('focusout', handleFocusChange);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('mousedown', handleGlobalMouseDown, true);
 
     return () => {
-      window.visualViewport?.removeEventListener('resize', handleViewportChange);
-      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
+      window.visualViewport?.removeEventListener('resize', handleViewportResize);
+      window.removeEventListener('resize', handleViewportResize);
+      window.removeEventListener('orientationchange', handleViewportResize);
+      document.removeEventListener('focusin', handleFocusChange);
+      document.removeEventListener('focusout', handleFocusChange);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousedown', handleGlobalMouseDown, true);
       activeModalsCount--;
@@ -152,9 +122,8 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
         activeModalsCount = 0;
         document.documentElement.classList.remove('modal-open');
         document.body.classList.remove('modal-open');
+        document.documentElement.style.removeProperty('--vv-height');
         window.removeEventListener('wheel', handleGlobalWheel);
-        window.removeEventListener('touchstart', handleGlobalTouchStart);
-        window.removeEventListener('touchmove', handleGlobalTouchMove);
         // Seamlessly restore scroll position without jumping to top
         window.scrollTo({ top: savedScrollY, behavior: 'instant' as ScrollBehavior });
       }
@@ -171,14 +140,8 @@ export function useModalDismiss(isOpen: boolean, onClose: () => void) {
     mouseDownTargetRef.current = null;
   };
 
-  const handleBackdropTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    // If the modal overlay has scrollable overflow, allow vertical scrolling so user can drag modal up/down
-    if (e.currentTarget.scrollHeight > e.currentTarget.clientHeight) {
-      return;
-    }
-    if (e.target === e.currentTarget) {
-      e.preventDefault();
-    }
+  const handleBackdropTouchMove = () => {
+    // Never block touch gestures on mobile so users can drag and scroll forms freely
   };
 
   return { handleBackdropClick, handleBackdropTouchMove };

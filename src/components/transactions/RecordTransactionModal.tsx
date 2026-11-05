@@ -768,6 +768,7 @@ export const RecordTransactionModal: React.FC<RecordTransactionModalProps> = ({
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
+          <div className="h-6 sm:h-0 shrink-0" aria-hidden="true" />
         </form>
       </div>
     </div>

@@ -221,23 +221,33 @@
 
 /* Modal backdrop overlay with deep frosted blur & Apple smooth fade */
 .modal-overlay {
+  position: fixed;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  height: var(--vv-height, 100dvh) !important;
+  max-height: var(--vv-height, 100dvh) !important;
   animation: appleBackdropFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   overscroll-behavior: contain;
-  touch-action: pan-y;
-  will-change: opacity;
-  overflow-y: auto !important;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 @media (max-width: 639px) {
   .modal-overlay {
-    align-items: flex-start !important;
-    padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem)) !important;
-    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem)) !important;
+    align-items: center !important;
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0.5rem)) !important;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem)) !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
   }
 }
 
@@ -302,12 +312,16 @@
   transform-origin: center center;
   margin-top: auto;
   margin-bottom: auto;
-  max-height: calc(100dvh - 1.5rem) !important;
+  max-height: calc(var(--vv-height, 100dvh) - 1rem) !important;
+}
+
+.modal-panel:not(.overflow-hidden) {
+  overflow-y: auto !important;
 }
 
 @media (max-width: 639px) {
   .modal-panel {
-    padding-bottom: max(2.25rem, env(safe-area-inset-bottom, 2.25rem)) !important;
+    padding-bottom: max(3.5rem, env(safe-area-inset-bottom, 3.5rem)) !important;
   }
 }
 
@@ -322,7 +336,7 @@ input,
 textarea,
 select {
   scroll-margin-top: 2rem;
-  scroll-margin-bottom: 5rem;
+  scroll-margin-bottom: 6rem;
 }
 
 /* Prevent background scroll when any modal is open without resetting scroll position */

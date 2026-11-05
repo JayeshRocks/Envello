@@ -140,10 +140,9 @@ export function useFabMorphAnimation({
         };
       case 'open':
         return {
-          transform: 'scale(1) translateY(0)',
+          transform: 'none',
           opacity: 1,
           pointerEvents: 'auto',
-          transformOrigin: 'center center',
         };
       case 'closing':
         return {
