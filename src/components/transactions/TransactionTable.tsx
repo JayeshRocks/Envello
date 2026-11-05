@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
 import {
   Search,
-  ArrowDownLeft,
-  ArrowUpRight,
-  ArrowRightLeft,
   Receipt,
   Plus,
   X,
-  Layers,
   RotateCcw,
   Lock,
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import type { AccountItem } from '@/lib/api/accounts';
-import { formatINR } from '@/lib/accounting/currency';
 import { checkReversionEligibility } from '@/lib/accounting/revertPolicy';
+import { getTransactionDisplayInfo } from '@/lib/accounting/transactionDisplay';
 import { useDevice } from '@/hooks/useDevice';
 import { RevertTransactionModal } from './RevertTransactionModal';
 import { Skeleton } from '@/components/common/Skeleton';
@@ -231,10 +227,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
             </div>
           ) : (
             filteredTransactions.map((tx) => {
-              const isIncome = tx.type === 'income';
-              const isExpense = tx.type === 'expense';
-              const isTransfer = tx.type === 'transfer';
+              const displayInfo = getTransactionDisplayInfo(tx);
               const isEnvelopeAllocation = tx.type === 'envelope_allocation';
+              const DisplayIcon = displayInfo.Icon;
 
               const envelopeEntry = tx.entries.find((e) => e.envelopeName);
               const fromEnvelopeEntry =
@@ -259,21 +254,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       </div>
                     </div>
                     <div
-                      className={`font-mono font-bold whitespace-nowrap tabular-nums text-base text-right flex-shrink-0 ${
-                        isIncome
-                          ? 'text-emerald-400'
-                          : isExpense
-                          ? 'text-white'
-                          : isEnvelopeAllocation
-                          ? 'text-sky-300'
-                          : 'text-indigo-300'
-                      }`}
+                      className={`font-mono font-bold whitespace-nowrap tabular-nums text-base text-right flex-shrink-0 ${displayInfo.amountColor}`}
                     >
-                      {isIncome
-                        ? `+${formatINR(tx.totalAmountPaise)}`
-                        : isExpense
-                        ? `-${formatINR(tx.totalAmountPaise)}`
-                        : formatINR(tx.totalAmountPaise)}
+                      {displayInfo.formattedAmount}
                     </div>
                   </div>
 
@@ -286,30 +269,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   <div className="flex items-center justify-between pt-1 border-t border-white/5 gap-2">
                     <div className="flex flex-wrap items-center gap-1.5 py-0.5 min-w-0">
                       {/* Type Badge */}
-                      {isExpense && (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-medium flex-shrink-0">
-                          <ArrowDownLeft className="w-2.5 h-2.5" />
-                          <span>Expense</span>
-                        </span>
-                      )}
-                      {isIncome && (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium flex-shrink-0">
-                          <ArrowUpRight className="w-2.5 h-2.5" />
-                          <span>Income</span>
-                        </span>
-                      )}
-                      {isTransfer && (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-medium flex-shrink-0">
-                          <ArrowRightLeft className="w-2.5 h-2.5" />
-                          <span>Transfer</span>
-                        </span>
-                      )}
-                      {isEnvelopeAllocation && (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-medium flex-shrink-0">
-                          <Layers className="w-2.5 h-2.5" />
-                          <span>Reallocation</span>
-                        </span>
-                      )}
+                      <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 border ${displayInfo.badgeClassName}`}>
+                        <DisplayIcon className="w-2.5 h-2.5" />
+                        <span>{displayInfo.typeLabel}</span>
+                      </span>
 
                       {/* Envelope Badges */}
                       {isEnvelopeAllocation ? (
@@ -405,10 +368,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   </tr>
                 ) : (
                   filteredTransactions.map((tx) => {
-                    const isIncome = tx.type === 'income';
-                    const isExpense = tx.type === 'expense';
-                    const isTransfer = tx.type === 'transfer';
+                    const displayInfo = getTransactionDisplayInfo(tx);
                     const isEnvelopeAllocation = tx.type === 'envelope_allocation';
+                    const DisplayIcon = displayInfo.Icon;
 
                     const envelopeEntry = tx.entries.find((e) => e.envelopeName);
                     const fromEnvelopeEntry =
@@ -433,30 +395,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
                         {/* Type */}
                         <td className="py-3.5 px-4 truncate">
-                          {isExpense && (
-                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-medium">
-                              <ArrowDownLeft className="w-2.5 h-2.5" />
-                              <span>Expense</span>
-                            </span>
-                          )}
-                          {isIncome && (
-                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-medium">
-                              <ArrowUpRight className="w-2.5 h-2.5" />
-                              <span>Income</span>
-                            </span>
-                          )}
-                          {isTransfer && (
-                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-medium">
-                              <ArrowRightLeft className="w-2.5 h-2.5" />
-                              <span>Transfer</span>
-                            </span>
-                          )}
-                          {isEnvelopeAllocation && (
-                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-medium">
-                              <Layers className="w-2.5 h-2.5" />
-                              <span>Reallocation</span>
-                            </span>
-                          )}
+                          <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${displayInfo.badgeClassName}`}>
+                            <DisplayIcon className="w-2.5 h-2.5" />
+                            <span>{displayInfo.typeLabel}</span>
+                          </span>
                         </td>
 
                         {/* Envelope & Account */}
@@ -481,21 +423,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
                         {/* Amount */}
                         <td
-                          className={`py-3.5 px-4 text-right font-mono font-bold truncate tabular-nums ${
-                            isIncome
-                              ? 'text-emerald-400'
-                              : isExpense
-                              ? 'text-white'
-                              : isEnvelopeAllocation
-                              ? 'text-sky-300'
-                              : 'text-indigo-300'
-                          }`}
+                          className={`py-3.5 px-4 text-right font-mono font-bold truncate tabular-nums ${displayInfo.amountColor}`}
                         >
-                          {isIncome
-                            ? `+${formatINR(tx.totalAmountPaise)}`
-                            : isExpense
-                            ? `-${formatINR(tx.totalAmountPaise)}`
-                            : formatINR(tx.totalAmountPaise)}
+                          {displayInfo.formattedAmount}
                         </td>
 
                         {/* Actions */}

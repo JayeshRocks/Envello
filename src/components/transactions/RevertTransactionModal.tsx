@@ -9,17 +9,13 @@ import {
   CheckCircle2,
   Calendar,
   Layers,
-  ArrowDownLeft,
-  ArrowUpRight,
-  CreditCard,
-  Landmark,
-  Scale,
 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/api/transactions';
 import type { EnvelopeWithAllocation } from '@/types/accounting.types';
 import type { AccountItem } from '@/lib/api/accounts';
 import { formatINR } from '@/lib/accounting/currency';
 import { analyzeTransactionReversion } from '@/lib/accounting/revertPolicy';
+import { getTransactionDisplayInfo } from '@/lib/accounting/transactionDisplay';
 import { ModalPortal } from '@/components/common/ModalPortal';
 import { useModalDismiss } from '@/hooks/useModalDismiss';
 
@@ -58,67 +54,8 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
     await onConfirmRevert(transaction.id);
   };
 
-  const getTypeBadge = (type: TransactionRecord['type']) => {
-    switch (type) {
-      case 'income':
-        return {
-          label: 'Income',
-          bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-          icon: ArrowDownLeft,
-        };
-      case 'expense':
-        return {
-          label: 'Expense',
-          bg: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-          icon: ArrowUpRight,
-        };
-      case 'transfer':
-        return {
-          label: 'Transfer',
-          bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-          icon: ArrowRight,
-        };
-      case 'envelope_allocation':
-        return {
-          label: 'Reallocation',
-          bg: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-          icon: Layers,
-        };
-      case 'credit_card_purchase':
-        return {
-          label: 'Card Purchase',
-          bg: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-          icon: CreditCard,
-        };
-      case 'credit_card_payment':
-        return {
-          label: 'Card Payment',
-          bg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-          icon: CreditCard,
-        };
-      case 'debt_repayment':
-        return {
-          label: 'Debt Repayment',
-          bg: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-          icon: Landmark,
-        };
-      case 'adjustment':
-        return {
-          label: 'Reconciliation',
-          bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-          icon: Scale,
-        };
-      default:
-        return {
-          label: type,
-          bg: 'bg-neutral-800 text-neutral-300 border-neutral-700',
-          icon: ArrowRight,
-        };
-    }
-  };
-
-  const badge = getTypeBadge(transaction.type);
-  const BadgeIcon = badge.icon;
+  const displayInfo = getTransactionDisplayInfo(transaction);
+  const BadgeIcon = displayInfo.Icon;
 
   return (
     <ModalPortal>
@@ -166,10 +103,10 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
                 <span className="font-mono">{transaction.transactionDate}</span>
               </div>
               <span
-                className={`inline-flex items-center space-x-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badge.bg}`}
+                className={`inline-flex items-center space-x-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${displayInfo.badgeClassName}`}
               >
                 <BadgeIcon className="w-3 h-3" />
-                <span>{badge.label}</span>
+                <span>{displayInfo.typeLabel}</span>
               </span>
             </div>
 
@@ -177,8 +114,8 @@ export const RevertTransactionModal: React.FC<RevertTransactionModalProps> = ({
               <div className="text-sm sm:text-base font-semibold text-white truncate max-w-[240px] sm:max-w-[300px]">
                 {transaction.description}
               </div>
-              <div className="text-lg sm:text-xl font-mono font-bold text-white">
-                {formatINR(transaction.totalAmountPaise)}
+              <div className={`text-lg sm:text-xl font-mono font-bold ${displayInfo.amountColor}`}>
+                {displayInfo.formattedAmount}
               </div>
             </div>
 
