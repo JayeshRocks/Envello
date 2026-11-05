@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './context/ConfirmContext';
+import { EnvelopeProvider } from './context/EnvelopeContext';
 import { DeviceProvider } from './context/DeviceContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import App from './App';
@@ -16,8 +17,10 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
         <AuthProvider>
           <ToastProvider>
             <ConfirmProvider>
-              <App />
-              <Analytics />
+              <EnvelopeProvider>
+                <App />
+                <Analytics />
+              </EnvelopeProvider>
             </ConfirmProvider>
           </ToastProvider>
         </AuthProvider>

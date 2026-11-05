@@ -96,6 +96,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
     try {
       const undone = await undoLastAllocation();
       if (undone) {
+        await refreshAccounts();
         showToast(
           `Reverted ${undone.envelopeName} budget to ${formatINR(undone.previousAllocatedPaise)}`,
           'info'
@@ -106,7 +107,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
     } finally {
       setIsUndoing(false);
     }
-  }, [canUndoAllocation, isUndoing, undoLastAllocation, showToast]);
+  }, [canUndoAllocation, isUndoing, undoLastAllocation, refreshAccounts, showToast]);
 
   // Global keyboard shortcut: Ctrl+Z / Cmd+Z to undo last allocation when not focused on an input
   useEffect(() => {
@@ -496,6 +497,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
           const fromEnv = envelopes.find((e) => e.id === fromId);
           const toEnv = envelopes.find((e) => e.id === toId);
           await transferFunds(fromId, toId, amount);
+          await refreshAccounts();
           showToast(
             `Transferred ${formatINR(amount)} from ${fromEnv?.name || 'source'} to ${toEnv?.name || 'destination'}`,
             'success'
@@ -513,6 +515,7 @@ export const EnvelopeGrid: React.FC<EnvelopeGridProps> = ({
         }}
         onDelete={async (id) => {
           await removeEnvelope(id);
+          await refreshAccounts();
           showToast('Envelope deleted successfully', 'info');
         }}
       />

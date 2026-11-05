@@ -318,8 +318,10 @@ export const App: React.FC = () => {
 
   const {
     envelopes,
+    currentPeriodEnvelopes,
     isLoading: isEnvelopesLoading,
     totalAllocatedPaise,
+    currentPeriodTotalAllocatedPaise,
     refresh: refreshEnvelopes,
   } = useEnvelopes();
 
@@ -422,7 +424,8 @@ export const App: React.FC = () => {
 
   // Authoritative pillars driven dynamically from live Supabase data
   const effectiveLiquidFundsPaise = totalLiquidFundsPaise;
-  const effectiveEnvelopeAllocationsPaise = totalAllocatedPaise;
+  const effectiveEnvelopeAllocationsPaise = currentPeriodTotalAllocatedPaise ?? totalAllocatedPaise;
+  const activeEnvelopes = currentPeriodEnvelopes && currentPeriodEnvelopes.length > 0 ? currentPeriodEnvelopes : envelopes;
   const effectiveSavingsAndFDsPaise = totalPrincipalPaise;
   const effectiveCreditCardLiabilitiesPaise = totalCardOutstandingPaise;
   const effectiveActualDebtsPaise = totalRemainingDebtPaise + totalDebtLoanRemainingPaise;
@@ -946,7 +949,7 @@ export const App: React.FC = () => {
             <AnalyticsDashboard
               isLoading={isAccountsLoading || isTxLoading || isCardsLoading || isFdsLoading || isDebtsLoading}
               transactions={transactions}
-              envelopes={envelopes}
+              envelopes={activeEnvelopes}
               spendableCashPaise={effectiveLiquidFundsPaise}
               savingsAndFDsPaise={effectiveSavingsAndFDsPaise}
               creditCardLiabilitiesPaise={effectiveCreditCardLiabilitiesPaise}
@@ -982,7 +985,7 @@ export const App: React.FC = () => {
               totalRecurringDuePaise={totalRecurringDuePaise}
               totalMonthlyRecurringPaise={totalMonthlyRecurringPaise}
               currentYearMonth={currentYearMonth}
-              envelopes={envelopes}
+              envelopes={activeEnvelopes}
               onAddRecurringRule={async (params) => {
                 await addRecurringRule(params);
                 showToast('Standing recurring rule added', 'success');
@@ -1133,7 +1136,7 @@ export const App: React.FC = () => {
             {/* Section: Transaction Ledger */}
             <TransactionTable
               transactions={transactions}
-              envelopes={envelopes}
+              envelopes={activeEnvelopes}
               accounts={accounts}
               isLoading={isTxLoading}
               typeFilter={typeFilter}
@@ -1158,7 +1161,7 @@ export const App: React.FC = () => {
             isOpen={isRecordTxModalOpen}
             accounts={accounts}
             creditCards={cards}
-            envelopes={envelopes}
+            envelopes={activeEnvelopes}
             onClose={() => setIsRecordTxModalOpen(false)}
             onRecordExpense={async (params) => {
               const result = await addExpense(params);
@@ -1166,7 +1169,7 @@ export const App: React.FC = () => {
               showToast('Expense recorded successfully', 'success');
 
               if (result?.deductionPlan && result.deductionPlan.deductions.length > 0) {
-                const envName = envelopes.find((e) => e.id === params.envelopeId)?.name || 'Envelope';
+                const envName = activeEnvelopes.find((e) => e.id === params.envelopeId)?.name || 'Envelope';
                 setReceiptModalData({
                   transactionId: result.transactionId,
                   payee: params.payee,
@@ -1260,7 +1263,7 @@ export const App: React.FC = () => {
             rules={recurringRules}
             accounts={accounts}
             creditCards={cards}
-            envelopes={envelopes}
+            envelopes={activeEnvelopes}
             currentYearMonth={currentYearMonth}
             onAddRule={async (params) => {
               await addRecurringRule(params);
@@ -1290,7 +1293,7 @@ export const App: React.FC = () => {
             isOpen={isExportModalOpen}
             onClose={() => setIsExportModalOpen(false)}
             accounts={accounts}
-            envelopes={envelopes}
+            envelopes={activeEnvelopes}
             transactions={transactions}
             creditCards={cards}
             fixedDeposits={fixedDeposits}
